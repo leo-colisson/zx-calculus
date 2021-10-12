@@ -1,0 +1,676 @@
+\documentclass[a4paper]{ltxdoc}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Packages
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[margin=3cm]{geometry}
+\usepackage{calc}
+\usepackage{tikz}
+% \usetikzlibrary fails because file is not in current directory, lazy to setup TEXINPUTS
+\makeatletter
+  \input{../tikzlibraryzx.code.tex}
+\makeatother
+% Loads the great package that produces tikz-like manual (see also tikzcd for examples)
+\input{pgfmanual-en-macros.tex} % Is supposed to be included in recent TeX distributions, but I get errors...
+\usepackage{makeidx} % Produces an index of commands.
+\makeindex % Useful or not index will be created
+\usepackage[hidelinks]{hyperref}
+\newcommand{\mylink}[2]{\href{#1}{#2}\footnote{\url{#1}}}
+\usepackage{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Documentation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+%%% Title: thanks tikzcd for the styling
+\begin{center}
+  \vspace*{1em} % Thanks tikzcd
+  \tikz\node[scale=1.2]{%
+    \color{gray}\Huge\ttfamily \char`\{\raisebox{.09em}{\textcolor{red!75!black}{zx}}\char`\}};
+
+  \vspace{0.5em}
+  {\Large\bfseries ZX-calculus with \tikzname}
+
+  \vspace{1em}
+  {Version 1.0 \qquad October 12, 2021}\\[2mm]
+  {\href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}}
+\end{center}
+
+
+\section{Introduction}
+
+This library (based on the great \tikzname{} and \tikzname-cd packages) allows you to typeset ZX-calculus directly in \LaTeX{}. It comes with a default---but customizable---style:
+
+\begin{codeexample}[]
+  \begin{ZX}
+    \zxZ{\alpha} \arrow[r] & \zxFracX-{\pi}{4}\\
+  \end{ZX}
+\end{codeexample}
+
+The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
+
+This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be changed later. The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
+
+\section{Installation}
+
+If your CTAN distribution is recent enough, you can directly insert in your file:
+% verse indents stuff, index adds to the index of command at the end of the file, || is a shortcut of \verb||
+\begin{verse}
+  \index{zx@\protect\texttt{zx} package}%
+  \index{Packages and files!zx@\protect\texttt{tikz-cd}}%
+  |\usepackage{zx}|%
+\end{verse}
+or load \tikzname{} and then use:
+\begin{verse}%
+   \index{cd@\protect\texttt{cd} library}%
+   \index{Libraries!cd@\protect\texttt{cd}}%
+   |\usetikzlibrary{cd}|%
+\end{verse}
+If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx}{\texttt{tikzlibraryzx.code.tex}} and \mylink{https://github.com/leo-colisson/zx}{\texttt{zx.sty}} and copy them at the root of your project.
+
+\section{Usage}
+
+\subsection{Add a diagram}
+\begin{pgfmanualentry}
+  \extractcommand\zx\opt{\oarg{options}}\marg{your diagram}\@@
+  \extractenvironement{ZX}\opt{\oarg{options}}\@@
+  \pgfmanualbody
+  You can create a new ZX-diagram either with a command (quicker for inline diagrams) or with an environment. The \meta{options} can be used to locally change the style of the diagram, using the same options as the |{tikz-cd}| environment (from the \mylink{https://www.ctan.org/pkg/tikz-cd}{\texttt{tikz-cd} package}). The \meta{your diagram} argument, or the content of |{ZX}| environment is a \tikzname{} matrix of nodes, exactly like in the |tikz-cd| package: columns are separated using |&|, columns using |\\|, and nodes are created using \verb#|[tikz style]| node content# or with shortcut commands presented later in this document (recommended). Content is typeset in math mode by default, and diagrams can be included in any equation. Wires can be added like in |tikz-cd| (see more below) using |\arrow| or |\ar|: we provide later recommended styles to quickly create different kinds of wires which can change with the configured style.
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+% Do not indent not to put space in final code
+\begin{codeexample}[]
+Spider \zx{\zxZ{\alpha}}, equation $\zx{\zxZ{}} = \zx{\zxX{}}$ %
+and custom diagram: %
+\begin{ZX}[red]
+  \zxZ{\beta} \arrow[r]                           & \zxZ{\alpha} \\
+  |[fill=pink,draw]| \gamma \arrow[ru,bend right]
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+\subsection{Nodes}
+
+The following commands are useful to create different kinds of nodes. Always add empty arguments like |\example{}| if none are already present, otherwise if you type |\example| we don't guarantee backward compatibility.
+
+\begin{command}{\zxEmptyDiagram{}}
+  Create an empty diagram.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxEmptyDiagram{}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxNone\opt{+}\opt{-}\marg{text}}
+  Adds an empty node with |\zxNone{}|. Combine it with wires and the |wire centered| style for straight lines or |C|-like wires (alias |wc|, or you will get holes) or |between none| style (alias |bn|) for other curved lines. Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved. The \verb#-|+# decorations are used to add a bit of (respectively) horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxNone{} \ar[C,d,wc] \ar[rd,s,bn] &[\zxWCol] \zxNone{}\\[\zxWRow]
+  \zxNone{}             \ar[ru,s,bn] &          \zxNone{}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+
+\begin{command}{\zxNoneDouble\opt{+-}\marg{text}}
+  Like |\zxNone|, but the spacing for \verb#+-|# is large enough to fake two lines in only one. Not extremely useful (or one needs to play with |start anchor=south,end anchor=north|).
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxNoneDouble|{} \ar[r,s,start anchor=north,end anchor=south,l=1.2] \ar[r,s,start anchor=south,end anchor=north,l=1.2] &[\zxWCol] \zxNoneDouble|{}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxFracZ\opt{-}\marg{numerator}\marg{denominator}}
+  Adds a Z node with a fraction, use the minus decorator to add a small minus in front (the default minus is very big).
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxFracZ{\pi}{2} & \zxFracZ-{\pi}{2}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxFracX\opt{-}\marg{numerator}\marg{denominator}}
+  Adds an X node with a fraction.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxFracX{\pi}{2} & \zxFracX-{\pi}{2}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+
+\begin{command}{\zxZ\opt{\oarg{other styles}}\marg{text}}
+  Adds a Z node.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxZ{} & \zxZ{\alpha} & \zxZ{\alpha + \beta} & \zxZ[text=red]{(a \oplus b)\pi}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxX\opt{\oarg{other styles}}\marg{text}}
+  Adds an X node.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{} & \zxX{\alpha} & \zxX{\alpha + \beta} & \zxX[text=green]{(a \oplus b)\pi}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxH\opt{\oarg{other styles}}}
+  Adds an Hadamard node. See also |H| wire style.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxNone{} \rar & \zxH{} \rar & \zxNone{}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+
+
+\begin{command}{\leftManyDots\opt{\oarg{text scale}\oarg{dots scale}}\marg{text}}
+  Shortcut to add a dots and a text next to it. It automatically adds the new column, see more examples below.
+\begin{codeexample}[]
+\begin{ZX}
+  \leftManyDots{n} \zxX{\alpha}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\leftManyDots\opt{\oarg{text scale}\oarg{dots scale}}\marg{text}}
+  Shortcut to add a dots and a text next to it. It automatically adds the new column, see more examples below.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{\alpha} \rightManyDots{m}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\middleManyDots{}}
+  Shortcut to add a dots and a text next to it. It automatically adds the new column, see more examples below.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{\alpha} \middleManyDots{} & \zxX{\beta}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxLoop\opt{\oarg{direction angle}\oarg{opening angle}\oarg{other styles}}}
+  Adds a loop in \meta{direction angle} (defaults to $90$), with opening angle \meta{opening angle} (defaults to $20$).
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{\alpha} \zxLoop{} & \zxX{} \zxLoop[45]{} & \zxX{} \zxLoop[0][30][red]{}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\begin{command}{\zxLoopAboveDots\opt{\oarg{opening angle}\oarg{other styles}}}
+  Adds a loop above the node with some dots.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{\alpha} \zxLoopAboveDots{}
+\end{ZX}
+\end{codeexample}
+\end{command}
+
+\noindent The previous commands can be useful to create this figure:
+\begin{codeexample}[width=0pt]% Forces code/example on two lines.
+\begin{ZX}
+  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+      & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
+\end{ZX}
+\end{codeexample}
+
+\subsection{Wires}
+
+\begin{pgfmanualentry}
+  \extractcommand\arrow\opt{\oarg{options}}\@@
+  \extractcommand\ar\opt{\oarg{options}}\@@
+  \pgfmanualbody
+  These synonym commands (actually coming from |tikz-cd|) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down).
+\begin{codeexample}[]
+\zx{\zxZ{} \ar[r] & \zxX{}} = \zx{\zxX{} \arrow[rd] \\ & \zxZ{}}
+\end{codeexample}
+  \meta{options} can also be used to add any additional style, either custom ones, or the ones defined in this library (this is recommended since it can be easily changed document-wise by simply changing the style). Multiple wires can be added in the same cell. Other shortcuts provided in |tikz-cd| like |\rar|\dots{} can be used.
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{\alpha} \arrow[d, C] % C = Bell-like wire
+               \ar[r,H,o']  % o' = top part of circle
+               % H adds Hadamard, combine with \zxHCol
+               \ar[r,H,o.] &[\zxHCol] \zxZ{\gamma}\\
+  \zxZ{\beta}  \rar        & \zxX{} \ar[ld,red,"\circ" {marking,blue}] \ar[rd,s] \\
+  \zxFracX-{\pi}{4}        & &\zxZ{}
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+As explained in |tikz-cd|, there are further shortened forms:
+\begin{pgfmanualentry}
+  \extractcommand\rar\opt{\oarg{options}}\@@
+  \extractcommand\lar\opt{\oarg{options}}\@@
+  \extractcommand\dar\opt{\oarg{options}}\@@
+  \extractcommand\uar\opt{\oarg{options}}\@@
+  \extractcommand\drar\opt{\oarg{options}}\@@
+  \extractcommand\urar\opt{\oarg{options}}\@@
+  \extractcommand\dlar\opt{\oarg{options}}\@@
+  \extractcommand\ular\opt{\oarg{options}}\@@
+  \pgfmanualbody
+\end{pgfmanualentry}
+The first one is equivalent to
+\begin{verse}
+  |\arrow|{\oarg{options}}|{r}|
+\end{verse}
+and the other ones work analogously.
+
+We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/C\@nil%
+  \extractkey/zx/wires definition/C.\@nil%
+  \extractkey/zx/wires definition/C'\@nil%
+  \extractkey/zx/wires definition/C-\@nil%
+  \makeatother
+  \pgfmanualbody
+  Bell-like wires with an arrival at ``right angle'', |C| represents the shape of the wire, while |.| (bottom), |'| (top) and |-| (side) represent (visually) its position. Combine with |wire centered| (|wc|) to avoid holes when connecting multiple wires.
+\begin{codeexample}[]
+  Bell pair \zx{\zxNone{} \ar[d,C,wc] \\[\zxWRow]
+                \zxNone{}}
+  and funny graph
+  \begin{ZX}
+    \zxX{} \ar[d,C] \ar[r,C']  & \zxZ{} \ar[d,C-]\\
+    \zxZ{} \ar[r,C.]           & \zxX{}
+  \end{ZX}.
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/o'=angle (default 40)\@nil%
+  \extractkey/zx/wires definition/o.=angle (default 40)\@nil%
+  \extractkey/zx/wires definition/o-=angle (default 40)\@nil%
+  \extractkey/zx/wires definition/-o=angle (default 40)\@nil%
+  \makeatother
+  \pgfmanualbody
+  Curved wire, similar to |C| but with a soften angle (optionally specified via \meta{angle}, and globally editable with |\zxDefaultLineWidth|). Again, the symbols specify which part of the circle (represented with |o|) must be kept.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{} \ar[d,-o] \ar[d,o-]\\
+    \zxZ{} \ar[r,o'] \ar[r,o.] & \zxX{}
+  \end{ZX}.
+\end{codeexample}
+ Note that these wires can be combined with |H|, |X| or |Z|, in that case one should use appropriate column and row spacing as explained in their documentation:
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[d,-o,H] \ar[d,o-,H]\\[\zxHRow]
+    \zxZ{\beta} \rar & \zxZ{} \ar[r,o',X] \ar[r,o.,Z] &[\zxSCol] \zxX{}
+  \end{ZX}.
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/(\@nil%
+  \extractkey/zx/wires definition/)\@nil%
+  \makeatother
+  \pgfmanualbody
+  Curved wire, similar to |o| but can be used for diagonal items. The |(| and |)| symbols must be imagined as if the starting point was on top of the parens, and the ending point at the bottom.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{} \ar[rd,(] \ar[rd,),red]\\
+    & \zxZ{}
+  \end{ZX}.
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/s\@nil%
+  \extractkey/zx/wires definition/s'=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/s.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/-s'=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/-s.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/s'-=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/s.-=angle (default 30)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |s| is used to create a s-like wire, to have nicer soften diagonal lines between nodes. Other versions are soften versions (the input and output angles are not as sharp, and the difference angle can be configured as an argument or globally using |\zxDefaultSoftAngleS|). Adding |'| or |.| specifies if the wire is going up-right or down-right.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[s,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[s.,rd] \\
+                           & \zxZ{\beta}\\
+                           & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[s,ru] \\
+                           & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[s',ru] \\
+  \end{ZX}
+\end{codeexample}
+|-| forces the angle on the side of |-| to be horizontal.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[s.,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[-s.,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[s.-,rd] \\
+                           & \zxZ{\beta}\\
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/ss\@nil%
+  \extractkey/zx/wires definition/ss.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/.ss=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/sIs.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/.sIs=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/ss.I-=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/I.ss-=angle (default 30)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |ss| is similar to |s| except that we go from top to bottom instead of from left to right. The position of |.| says if the node is wire is going bottom right (|ss.|) or bottom left (|.ss|).
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[ss,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[ss.,rd] \\
+                           & \zxZ{\beta}\\
+                           & \zxX{\beta} \ar[.ss,dl] \\
+    \zxZ{\alpha}\\
+                           & \zxX{\beta} \ar[.ss=40,dl] \\
+    \zxZ{\alpha}\\
+  \end{ZX}
+\end{codeexample}
+|I| forces the angle above (if in between the two |s|) or below (if on the same side as |.|) to be vertical.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[ss,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[sIs.,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[ss.I,rd] \\
+                           & \zxZ{\beta}\\
+                           & \zxX{\beta} \ar[.sIs,dl] \\
+    \zxZ{\alpha}\\
+                           & \zxX{\beta} \ar[I.ss,dl] \\
+    \zxZ{\alpha}\\
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/3 dots=text (default =)\@nil%
+  \extractkey/zx/wires definition/3 vdots=text (default =)\@nil%
+  \makeatother
+  \pgfmanualbody
+  The styles put in the middle of the wire (without drawing the wire) $\dots$ (for |3 dots|) or $\vdots$ (for |3 vdots|). The dots are scaled according to |\zxScaleDots| and the text \meta{text} is written on the left. Use |&[\zxDotsRow]| and |\\[\zxDotsRow]| to properly adapt the spacing of columns and rows.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxZ{\alpha} \ar[r,o'] \ar[r,o.]
+               \ar[r,3 dots]
+               \ar[d,3 vdots={$n$\,}] &[\zxDotsCol] \zxFracX{\pi}{2}\\[\zxDotsRow]
+  \zxZ{\alpha} \rar             & \zxFracX{\pi}{2}
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/H\@nil%
+  \extractkey/zx/wires definition/Z\@nil%
+  \extractkey/zx/wires definition/X\@nil%
+  \makeatother
+  \pgfmanualbody
+  Adds a |H| (Hadamard), |Z| or |X| node (without phase) in the middle of the wire. Width of column or rows should be adapted accordingly using |\zxNameRowcolFlatnot| where |Name| is replaced by |H|, |S| (for ``spiders'', i.e.\ |X| or |Z|), |HS| (for both |H| and |S|) or |W|, |Rowcol| is either |Row| (for changing row sep) or |Col| (for changing column sep) and |Flatnot| is empty or |Flat| (if the wire is supposed to be a straight line as it requires more space). For instance:
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxZ{\alpha} \ar[d] \ar[r,o',H] \ar[r,o.,H] &[\zxHCol] \zxX{\beta}\\
+  \zxZ{\alpha}  \ar[d,-o,X] \ar[d,o-,Z]                        \\[\zxHSRow]
+  \zxX{\gamma}
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/wire centered\@nil%
+  \extractkey/zx/wires definition/wc\@nil%
+  \extractkey/zx/wires definition/wire centered start\@nil%
+  \extractkey/zx/wires definition/wcs\@nil%
+  \extractkey/zx/wires definition/wire centered end\@nil%
+  \extractkey/zx/wires definition/wce\@nil%
+  \makeatother
+  \pgfmanualbody
+  When the wires are drawn, they start from the border of the node. However, it can make strange results if nodes do not have the same size, or if we connect none nodes (we will get holes). It is therefore possible to force the wire to start at the center of the node (|wire centered start|, alias |wcs|), to end at the center of the node -|wire centered end|, alias |wce|) or both (|wire centered|, alias |wc|). See also |between node| to also increase looseness when connecting only wires.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxZ{} \ar[o',r] \ar[o.,r]       & \zxX{\alpha}\\
+  \zxZ{} \ar[o',r,wc] \ar[o.,r,wc] & \zxX{\alpha}
+\end{ZX}
+\end{codeexample}
+Without |wc| (note that because there is no node, we need to use |&[\zxWCol]| (for columns) and |\\[\zxWRow]| (for rows) to get nicer spacing):
+\begin{codeexample}[width=3cm]
+\zx{\zxNone{} \rar &[\zxWCol] \zxNone{} \rar &[\zxWCol] \zxNone{} }
+\end{codeexample}
+With |wc|:
+\begin{codeexample}[width=3cm]
+\zx{\zxNone{} \rar[wc] &[\zxWCol] \zxNone{} \rar[wc] &[\zxWCol] \zxNone{}}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{stylekey}{/zx/wires definition/l=looseness}
+  Shortcut for |looseness|, allows to quickly redefine looseness. Use with care (or redefine style directly). Note that you can also change yourself other values, like |in|, |out|\dots
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{} \ar[rd,s] \\
+                   & \zxX{}\\
+  \zxZ{} \ar[rd,s,l=3] \\
+                   & \zxX{}
+\end{ZX}
+\end{codeexample}
+\end{stylekey}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/between none\@nil%
+  \extractkey/zx/wires definition/bn\@nil%
+  \makeatother
+  \pgfmanualbody
+  When drawing wires only, the default looseness may not be good looking and holes may appear in the line. This style (whose alias is |bn|) should therefore be used when curved wires (except |C| which already has a good looseness, use |wire centered| instead) are connected together. In that case, also make sure to separate columns using |&[\zxWCol]| and row using |\\[\zxWRow]|.
+\begin{codeexample}[width=3cm]
+A swapped Bell pair is %
+\begin{ZX}
+  \zxNone{} \ar[C,d,wc] \ar[rd,s,bn] &[\zxWCol] \zxNone{} \\[\zxWRow]
+  \zxNone{}             \ar[ru,s,bn] &          \zxNone{}
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\section{Advanced styling}
+
+It is possible to arbitrarily customize the styling, create new styles\dots{} First, any option that can be given to a |tikz-cd| matrix can also be given to a |ZX| environment (we refer to the manual of |tikz-cd| for more details). Moreover, the user can also change the current style or add new style. While you should not use these styles directly (|\zxX| and |\zxFracX| will choose automatically the good style for you), you may want to use these styles to improve existing styles, or to create a |tikzit| style (make sure to load this library then in |*.tikzdefs|). We also encourage the advanced users too look at the code of the library.
+
+\begin{stylekey}{/zx/default style nodes}
+  This is where the default style must be loaded. By default, it simply loads the (nested) style packed with this library, |/zx/styles/rounded style|. You can change the style here if you would like to globally change a style.
+\end{stylekey}
+
+\begin{stylekey}{/zx/user overlay nodes}
+  If a user just wants to overlay some parts of the node styles, add your changes here.
+\begin{codeexample}[]
+  {\tikzset{
+      /zx/user overlay nodes/.style={
+        zxH/.append style={dashed,inner sep=2mm}
+      }}
+    \zx{\zxNone{} \rar & \zxH{} \rar & \zxNone{}}
+  }
+\end{codeexample}
+You can also change it on a per-diagram basis:
+\begin{codeexample}[]
+  \zx[text=yellow,/zx/user overlay nodes/.style={
+    zxSpiders/.append style={thick,draw=purple}}
+  ]{\zxX{} \rar & \zxX{\alpha} \rar & \zxFracZ-{\pi}{2}}
+\end{codeexample}
+The list of keys that can be changed will be given below in |/zx/styles/rounded style/*|.
+\end{stylekey}
+
+\begin{stylekey}{/zx/default style wires}
+  Default style for wires. Note that |/zx/wires definition/| is always loaded by default, and we don't add any other style for wires by default. But additional styles may use this functionality.
+\end{stylekey}
+
+\begin{stylekey}{/zx/user overlay wires}
+  The user can add here additional styles for wires.
+\begin{codeexample}[]
+\begin{ZX}[/zx/user overlay wires/.style={thick,->,C/.append style={dashed}}]
+  \zxNone{} \ar[d,C] \rar[] &[\zxWCol] \zxNone{}\\[\zxWRow]
+  \zxNone{} \rar[] & \zxNone{}
+\end{ZX}
+\end{codeexample}
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style}
+  This is the style loaded by default. It contains internally other (nested) styles that must be defined for any custom style.
+\end{stylekey}
+
+We present now all the properties that a new node style must have (and that can overlayed as explained above).
+\begin{stylekey}{/zx/styles/rounded style/zxAllNodes}
+  Style applied to all nodes.
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style/zxEmptyDiagram}
+  Style to draw an empty diagram.
+\end{stylekey}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/styles/rounded style/zxNone\@nil%
+  \extractkey/zx/styles/rounded style/zxNone+\@nil%
+  \extractkey/zx/styles/rounded style/zxNone-\@nil%
+  \extractkey/zx/styles/rounded style/zxNoneI\@nil%
+  \makeatother
+  \pgfmanualbody
+  Styles for None wires (no inner sep, useful to connect to wires). The |-|,|I|,|+| have additional horizontal, vertical, both spaces.
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/styles/rounded style/zxNoneDouble\@nil%
+  \extractkey/zx/styles/rounded style/zxNoneDouble+\@nil%
+  \extractkey/zx/styles/rounded style/zxNoneDouble-\@nil%
+  \extractkey/zx/styles/rounded style/zxNoneDoubleI\@nil%
+  \makeatother
+  \pgfmanualbody
+  Like |zxNone|, but with more space to fake two nodes on a single line (not very used).
+\end{pgfmanualentry}
+
+\begin{stylekey}{/zx/styles/rounded style/zxSpiders}
+  Style that apply to all circle spiders.
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style/zxNoPhase}
+  Style that apply to spiders without any angle inside. Used by |\zxX{}| when the argument is empty.
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style/zxNoPhaseSmall}
+  Like |zxNoPhase| but for spiders drawn in between wires.
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style/zxShort}
+  Spider with text but no inner space. Used notably to obtain nice fractions.
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style/zxLong}
+  Spider with potentially large text. Used by |\zxX{\alpha}| when the argument is not empty.
+\end{stylekey}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/styles/rounded style/zxNoPhaseZ\@nil%
+  \extractkey/zx/styles/rounded style/zxNoPhaseX\@nil%
+  \extractkey/zx/styles/rounded style/zxNoPhaseSmallZ\@nil%
+  \extractkey/zx/styles/rounded style/zxNoPhaseSmallX\@nil%
+  \extractkey/zx/styles/rounded style/zxShortZ\@nil%
+  \extractkey/zx/styles/rounded style/zxShortX\@nil%
+  \extractkey/zx/styles/rounded style/zxLongZ\@nil%
+  \extractkey/zx/styles/rounded style/zxLongX\@nil%
+  \makeatother
+  \pgfmanualbody
+  Like above styles, but with colors of |X| and |Z| spider added. The color can be changed globally by updating the |colorZxX| color. By default we use:
+  \begin{verse}
+    |\definecolor{colorZxZ}{RGB}{204,255,204}|\\
+    |\definecolor{colorZxX}{RGB}{255,136,136}|\\
+    |\definecolor{colorZxH}{RGB}{255,255,0}|
+  \end{verse}
+  as the second recommendation in \href{https://zxcalculus.com/accessibility.html}{\texttt{zxcalculus.com/accessibility.html}}.
+\end{pgfmanualentry}
+
+\begin{stylekey}{/zx/styles/rounded style/zxH}
+  Style for Hadamard spiders, used by |\zxH{}| and uses the color |colorZxH|.
+\end{stylekey}
+
+\begin{stylekey}{/zx/styles/rounded style/zxHSmall}
+  Like |zxH| but for Hadamard on wires, (see |H| style).
+\end{stylekey}
+
+\noindent We also define several spacing commands that can be redefined to your needs:
+\begin{pgfmanualentry}
+  \extractcommand\zxHCol{}\@@
+  \extractcommand\zxHRow{}\@@
+  \extractcommand\zxHColFlat{}\@@
+  \extractcommand\zxHRowFlat{}\@@
+  \extractcommand\zxSCol{}\@@
+  \extractcommand\zxSRow{}\@@
+  \extractcommand\zxSColFlat{}\@@
+  \extractcommand\zxSRowFlat{}\@@
+  \extractcommand\zxHSCol{}\@@
+  \extractcommand\zxHSRow{}\@@
+  \extractcommand\zxHSColFlat{}\@@
+  \extractcommand\zxHSRowFlat{}\@@
+  \extractcommand\zxWCol{}\@@
+  \extractcommand\zxWRow{}\@@
+  \extractcommand\zxDotsCol{}\@@
+  \extractcommand\zxDotsRow{}\@@
+  \pgfmanualbody
+  These are spaces, to use like |&[\zxHCol]| or |\\[\zxHRow]| in order to increase the default spacing of rows and columns depending on the style of the wire. |H| stands for Hadamard, |S| for Spiders, |W| for Wires only, |HS| for both Spiders and Hadamard, |Dots| for the 3 dots styles. And of course |Col| for columns, |Row| for rows.
+\end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \extractcommand\zxDefaultSoftAngleS{}\@@
+  \extractcommand\zxDefaultSoftAngleO{}\@@
+  \pgfmanualbody
+  Default opening angles of |S| and |o| wires. Defaults to respectively $30$ and $40$.
+\end{pgfmanualentry}
+
+\begin{command}{\zxMinus{}}
+  The minus sign used in fractions.
+\end{command}
+
+\section{Acknowledgement}
+
+I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users (sorry, I don't want to risk an incomplete list) that helped me to understand a bit more \LaTeX and \tikzname. I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
+
+\printindex
+
+\end{document}

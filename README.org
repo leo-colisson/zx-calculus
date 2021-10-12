@@ -1,0 +1,5 @@
+#+TITLE: Readme
+
+* ZX: a library to typeset ZX-calculus in LaTeX
+
+See the documentation in the [[https://github.com/leo-colisson/zx/doc/zx.pdf][doc/zx.pdf]] file.

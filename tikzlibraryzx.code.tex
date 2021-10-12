@@ -1,0 +1,566 @@
+% A tikzlibrary[libraryName].code.tex is loaded automatically by tikz when using
+% \usetikzlibrary{libraryName}. Therefore, you should just use
+% \usetikzlibrary{zx} to load this library. We also provide a package to
+% directly load this library using \usepackage{zx}.
+
+\RequirePackage{amssymb} % For short minus
+\RequirePackage{etoolbox}
+\RequirePackage{xparse} % For NewDocumentComments
+\RequirePackage{bm} % For bold math fonts
+
+\usetikzlibrary{cd,backgrounds,positioning,shapes}
+% Declare layers.
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{main}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% User modifiable variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define colors, can be redefine by user
+\definecolor{colorZxZ}{RGB}{204,255,204}
+\definecolor{colorZxX}{RGB}{255,136,136}
+\definecolor{colorZxH}{RGB}{255,255,0}
+
+%%% Some wires (the one having an intermediate H, X, or S gate) may need some additional space for
+%%% specific columns.
+%%% Use these spaces like &[\zxHCol] or \\[\zxHRow] in that case
+%% Defines the space to add for columns and rows containing a connection with Hadamard
+% This is for "curved" wires
+\newcommand{\zxHCol}{1mm}
+\newcommand{\zxHRow}{1mm}
+% This is for "flat" wires (usually takes more space)
+\newcommand{\zxHColFlat}{1.5mm}
+\newcommand{\zxHRowFlat}{1.5mm}
+%% Defines the space to add for columns and rows containing a connection with small X/Z
+\newcommand{\zxSCol}{1mm}
+\newcommand{\zxSRow}{1mm}
+\newcommand{\zxSColFlat}{1.5mm}
+\newcommand{\zxSRowFlat}{1.5mm}
+%% Defines the space to add for columns having both H and Spiders
+\newcommand{\zxHSCol}{1mm}
+\newcommand{\zxHSRow}{1mm}
+\newcommand{\zxHSColFlat}{1mm}
+\newcommand{\zxHSRowFlat}{1mm}
+%% Wires only: when adding only wires with empty nodes, the space between columns can be too small. Useful not to shrink swap gates...
+\newcommand{\zxWCol}{.55em}
+\newcommand{\zxWRow}{.55em}
+%% When vdots/dots are used in lines
+\newcommand{\zxDotsCol}{3mm}
+\newcommand{\zxDotsRow}{3mm}
+
+
+% Angles by default for s and o related arrows
+\def\zxDefaultSoftAngleS{30}
+\def\zxDefaultSoftAngleO{40}
+
+% Scale to use when scaling 3 dots
+\def\zxScaleDots{.7}
+
+% 0.4pt is default in tikz. Also used to ensure it has not been modified document wise by other libraries
+% (quantikz notably changes this parameter).
+\newcommand{\zxDefaultLineWidth}{0.4pt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Tikz styles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Styles. User should not modify "wires definition", but is free to change:
+% - "/zx/default style nodes/" to change completely the node style
+% - "/zx/user overlay nodes" to add stuff on current node style
+% - "/zx/default style wires" to change the wire style
+% - "/zx/user overlay wires/" to add stuff on wire style
+% The user is not supposed to use node styles directly (use \zxZ{}, \zxZ{\alpha+\beta}, \zxFrac-{\pi}{4}...)
+% but is free (and encouraged) to use the styles in "wires definition" like \ar[r,o'].
+\tikzset{
+  /zx/wires definition/.style={
+    %%% Basic default properties
+    draw,
+    -,
+    line width=\zxDefaultLineWidth,
+    %%% Useful shortcut (shorter lines means easy "align" of & symbols. Love M-x align in emacs btw.)
+    l/.style={looseness=##1},
+    looseness wires only/.style={% Looseness used for wires only.
+      looseness=1.2,
+    },
+    lw/.style={looseness wires only},
+    % Use this when you are drawing lines between none nodes only (like swap gates...)
+    between none/.style={
+      looseness wires only,
+      wire centered
+    },
+    bn/.style={
+      between none
+    },
+    % ------------------------------
+    % Practical stuff to draw lines easily:
+    % Prefer to use these are they can be easily customized for each style and shorter to type.
+    % Note that the letter is supposed to represent the shape of the link
+    % dots/dashes are used to specify the position of the arrow.
+    % Typically ' means top, . bottom, X- is right to X (or should arrive with angle 0),
+    % -X is left to X (or should leave with angle zero). These shapes are usually designed to
+    % work when the starting node is left most (or above of both nodes have the same column).
+    % But they may work both way for some of them.
+    % ------------------------------
+    %%% Cup/Cap
+    % Like a C shape. Useful for Bell states whose angles must be really marked.
+    C/.style={/tikz/in=180,/tikz/out=180,looseness=2},
+    % Like C, but symetric
+    C-/.style={/tikz/in=0,/tikz/out=0,looseness=2},
+    C'/.style={/tikz/in=90,/tikz/out=90,looseness=2},
+    C./.style={/tikz/in=-90,/tikz/out=-90,looseness=2},
+    % Similar to C, but with a softer angle. The '.- marker represents the portion of
+    % the circle (hence the o) to keep (top, bottom,left/right).
+    % Angle is customizable, for instance o'=50.
+    o'/.style={/tikz/out=##1,/tikz/in=180-##1},
+    o'/.default=\zxDefaultSoftAngleO,
+    o./.style={/tikz/out=-##1,/tikz/in=180+##1},
+    o./.default=\zxDefaultSoftAngleO,
+    -o/.style={/tikz/out=-90-##1,/tikz/in=90+##1},
+    -o/.default=\zxDefaultSoftAngleO,
+    o-/.style={/tikz/out=-90+##1,/tikz/in=90-##1},
+    o-/.default=\zxDefaultSoftAngleO,
+    % Similar to o, but can be used also for diagonal items.
+    % Why ()? Visualize fixing the top part and moving the bottom part.
+    (/.style={bend right},
+    )/.style={bend left},
+    % Links with a s-like shape.
+    s/.style={/tikz/out=0,/tikz/in=180,looseness=0.6},
+    % -s'.- shapes are like s, but with a soften (customizable like o) angle.
+    % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
+    s'/.style={/tikz/out=##1,/tikz/in=180+##1},
+    s'/.default=\zxDefaultSoftAngleS,
+    s./.style={/tikz/out=-##1,/tikz/in=180-##1},
+    s./.default=\zxDefaultSoftAngleS,
+    -s'/.style={/tikz/out=0,/tikz/in=180+##1},
+    -s'/.default=\zxDefaultSoftAngleS,
+    -s./.style={/tikz/out=0,/tikz/in=180-##1},
+    -s./.default=\zxDefaultSoftAngleS,
+    s'-/.style={/tikz/out=##1,/tikz/in=180},
+    s'-/.default=\zxDefaultSoftAngleS,
+    s.-/.style={/tikz/out=-##1,/tikz/in=180},
+    s.-/.default=\zxDefaultSoftAngleS,
+    % Links with a s-like shape... but read from top to bottom
+    ss/.style={/tikz/out=0-90,/tikz/in=180-90,looseness=0.6},
+    % -s'.- shapes are like s, but with a soften (customizable like o) angle.
+    % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
+    ss./.style={/tikz/out=##1-90,/tikz/in=180-90+##1},
+    ss./.default=\zxDefaultSoftAngleS,
+    .ss/.style={/tikz/out=-##1-90,/tikz/in=180-90-##1},
+    .ss/.default=\zxDefaultSoftAngleS,
+    sIs./.style={/tikz/out=0-90,/tikz/in=180-90+##1},
+    sIs./.default=\zxDefaultSoftAngleS,
+    .sIs/.style={/tikz/out=0-90,/tikz/in=180-90-##1},
+    .sIs/.default=\zxDefaultSoftAngleS,
+    ss.I/.style={/tikz/out=##1-90,/tikz/in=180-90},
+    ss.I/.default=\zxDefaultSoftAngleS,
+    I.ss/.style={/tikz/out=-##1-90,/tikz/in=180-90},
+    I.ss/.default=\zxDefaultSoftAngleS,
+    % No line but vdots/dots in between.
+    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdots$}" anchor=center},
+    3 vdots/.default={},
+    3 dots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\chdots$}" anchor=center},
+    3 dots/.default={},
+    % Add a Hadmard/Z/X (no phase) in the middle of the line. Practical to add small nodes without creating
+    % a new column/row. However, make sure the corresponding row/column is larger, using &[\zxHCol]
+    % for columns and \\[\zxHRow] for rows (for Z/X style, use zxSCol and sxSRow), if you have both spiders
+    % and Hadamard, use \zxHSCol and \zxHSRow.
+    H/.style={"" {zxHSmall,anchor=center}},
+    Z/.style={"" {zxNoPhaseSmallZ,anchor=center}},
+    X/.style={"" {zxNoPhaseSmallX,anchor=center}},
+    % Arrow will go out from the center of the shape instead of from the border. Useful
+    % when connecting nodes with different shapes, it will give back a symetric connection.
+    wire centered/.style={
+      on layer=background,
+      /tikz/commutative diagrams/start anchor=center,
+      /tikz/commutative diagrams/end anchor=center,
+    },
+    wire centered start/.style={
+      on layer=background,
+      /tikz/commutative diagrams/start anchor=center,
+    },
+    wire centered end/.style={
+      on layer=background,
+      /tikz/commutative diagrams/end anchor=center,
+    },
+    wc/.style={wire centered},
+    wcs/.style={wire centered start},
+    wce/.style={wire centered end},
+    wire not centered/.style={
+      /tikz/commutative diagrams/start anchor=,
+      /tikz/commutative diagrams/end anchor=,
+    },
+  },
+  /zx/styles/rounded style/.style={
+    %% Can be redefined by user
+    % Style for empty nodes
+    zxAllNodes/.style={
+      shape=rectangle, % Otherwise nodes are asymetrical rectangle, which is not practical in our case. Gives notably anchor "center" which is really centered compared to asymatrical rectangles
+      anchor=center,   % Center cells
+      line width=\zxDefaultLineWidth,
+      execute at begin node={\thinmuskip=0mu\medmuskip=0mu\thickmuskip=0mu}, % Reduce space around +/-...
+    },
+    % Use this to denote an empty diagram
+    zxEmptyDiagram/.style={
+      zxAllNodes,
+      draw,
+      dashed,
+      minimum size=4mm,
+    },
+    % Style to use when no node is drawn
+    zxNone/.style={
+      zxAllNodes,
+      inner sep=0mm,
+      outer sep=0mm
+    },
+    % Style to use when no node is drawn, but a bit of space is required not to make the diagram too small
+    zxNone+/.style={
+      zxAllNodes,
+      inner sep=1mm,
+      outer sep=0mm
+    },
+    % Like zxNone+, but without width (wold prefer |, but special car in |[]|...
+    zxNoneI/.style={
+      zxNone+,
+      inner xsep=0mm,
+    },
+    % Like zxNone+, but without height
+    zxNone-/.style={
+      zxNone+,
+      inner ysep=0mm,
+    },
+    % Style to use when no node is drawn, but a large space must be reserved (typically used to fake two
+    % nodes on a single line)
+    zxNoneDouble/.style={
+      zxAllNodes,
+      inner sep=0mm,
+      outer sep=0mm
+    },
+    % Style to use when no node is drawn, but a bit of space is required not to make the diagram too small
+    zxNoneDouble+/.style={
+      zxAllNodes,
+      inner sep=.6em,
+      outer sep=0mm
+    },
+    % Like zxNoneDouble+, but without width (wold prefer |, but special car in |[]|...
+    zxNoneDoubleI/.style={
+      zxNoneDouble+,
+      inner xsep=0mm,
+    },
+    % Like zxNoneDouble+, but without height
+    zxNoneDouble-/.style={
+      zxNoneDouble+,
+      inner ysep=0mm,
+    },
+    % Will be specific to all spiders
+    zxSpiders/.style={
+      draw=black,
+    },
+    % Will use this style when drawing a X/Z node without phase (not for end user directly)
+    zxNoPhase/.style={
+      zxAllNodes,
+      zxSpiders,
+      inner sep=0mm,
+      minimum size=2mm,
+      shape=circle,
+    },
+    % Used only in decoration of wires, to add small empty X/Z nodes.
+    zxNoPhaseSmall/.style={
+      zxNoPhase
+    },
+    % Style for nodes that are small enough to fit in a circle, like $\zxMinus \frac{\pi}{4}$
+    % zxShort/.style={anchor=center,minimum size=5mm, font={\footnotesize\boldmath}, shape=rectangle, rounded corners=2mm, inner sep=0.2mm, outer sep=-2mm, scale=0.8, draw=black},
+    zxShort/.style={
+      zxAllNodes,
+      zxSpiders,
+      minimum size=5mm,
+      font={\footnotesize\boldmath},
+      rounded rectangle,
+      inner sep=0.0mm,
+      scale=0.8,
+    }, % negative outer sep would draw lines from inside...
+    % Style for nodes that are bigger, like $\alpha+\beta$ or $(a\oplus b)\pi$
+    zxLong/.style={zxShort, inner xsep=1.2mm},
+    %%% Style that was supposed to chooses which style to apply depending on the input text
+    %%% Can't find how to do.
+    % zxChoose/.code={
+    %   %% To fix
+    % },
+    %%%%%%%%%%% Style defined depending on above ones. Feel free to redefine them yourself.
+    zxNoPhaseZ/.style={zxNoPhase,fill=colorZxZ},
+    zxNoPhaseX/.style={zxNoPhase,fill=colorZxX},
+    zxNoPhaseSmallZ/.style={zxNoPhaseSmall,fill=colorZxZ},
+    zxNoPhaseSmallX/.style={zxNoPhaseSmall,fill=colorZxX},
+    zxShortZ/.style={zxShort,fill=colorZxZ},
+    zxShortX/.style={zxShort,fill=colorZxX},
+    zxLongZ/.style={zxLong,fill=colorZxZ},
+    zxLongX/.style={zxLong,fill=colorZxX},
+    %%% Was supposed to automatically find the good style depending on content... Can't find how to do.
+    % Styles zxLong{X/Z} zxNoPhase{X/Z} are automatically selected by \zxZ{...} and \zxX{...} commands
+    % and zxShort is selected for fractions only like in \zxFracZ-{\pi}{4}
+    % zxZ/.style={zxChoose={##1},fill=colorZxZ},
+    % zxX/.style={zxChoose={##1},fill=colorZxX},
+    % For Hadamard
+    zxH/.style={
+      zxAllNodes,
+      outer sep=0pt,
+      fill=colorZxH,
+      draw,
+      inner sep=0.6mm,
+      minimum height=1.5mm,
+      minimum width=1.5mm,
+      shape=rectangle},
+    zxHSmall/.style={zxH},
+  },
+  % Default style. Can be changed by user
+  /zx/default style nodes/.style={
+    /zx/styles/rounded style
+  },
+  % User can put here any additional property
+  /zx/user overlay nodes/.style={
+  },
+  % Default wire style. Can be changed by user.
+  /zx/default style wires/.style={
+  },
+  % User can add stuff in this style to improve wire styles
+  /zx/user overlay wires/.style={
+  },
+  /zx/defaultEnv/.style={
+    column sep=tiny,
+    row sep=tiny,
+    % center on the math axis
+    baseline={([yshift=-axis_height]current bounding box.center)},
+    % Fix 1-row diagram baseline
+    1-row diagram/.style={%
+      /tikz/baseline={([yshift=-axis_height]current bounding box.center)}%
+    },
+    % Load (thanks ".search also") our own style
+    /tikz/every node/.style={%
+      /zx/default style nodes,
+      /zx/user overlay nodes,
+    },
+    every arrow/.style={%
+      /zx/wires definition,
+      /zx/default style wires,
+      /zx/user overlay wires,
+    },
+  },
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Helper functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Defines a "on layer=nameoflayer" style. TODO: check if better to move it in /zx/
+% https://tex.stackexchange.com/questions/20425/z-level-in-tikz/20426#20426
+\pgfkeys{%
+  /tikz/on layer/.code={
+    \def\tikz@path@do@at@end{\endpgfonlayer\endgroup\tikz@path@do@at@end}%
+    \pgfonlayer{#1}\begingroup%
+  }%
+}
+
+%%% Declare a symbol for a short minus (useful in fractions)
+\DeclareMathSymbol{\zxMinus}{\mathbin}{AMSa}{"39} % Requires amssymb
+
+%%% Create different kinds of dots...
+%% https://tex.stackexchange.com/questions/617959
+%% https://tex.stackexchange.com/questions/528774/excess-vertical-space-in-vdots/528775#528775
+\DeclareRobustCommand\cvdotsAboveBaseline{%
+  \vbox{\baselineskip4\p@ \lineskiplimit\z@%
+    \hbox{.}\hbox{.}\hbox{.}}
+}
+
+\DeclareRobustCommand{\cvdotsCenterMathline}{%
+  % vcenter is used to center the argument on the 'math axis', which is at half the height of an 'x', or about the position of a minus sign.
+  \vcenter{\cvdotsAboveBaseline}%
+}
+
+\DeclareRobustCommand{\cvdotsCenterBaseline}{%
+  \raisebox{-.5\height}{%
+    $\cvdotsAboveBaseline$%
+  }%
+}
+
+\DeclareRobustCommand{\chdots}{%
+  \raisebox{-.5\height}{%
+    \rotatebox{90}{% Maybe better options than rotatebox...
+      $\cvdotsAboveBaseline$%
+    }%
+  }%
+}
+
+\DeclareRobustCommand{\cvdots}{\cvdotsCenterMathline}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Practical macros to automatically choose appropriate style and arrows
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% /!\ Warning: you should add {} at the end of all macros (except arrows)!
+% Not using that may work for now, but it may break later...
+% TODO: define them only in \zx environment.
+
+% % Example: \leftManyDots{n}
+% Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
+% First optional argument is scale of text, second is scale of =.
+\NewExpandableDocumentCommand{\leftManyDots}{O{1}O{\zxScaleDots}m}{%
+  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdots$}} \ar[r,-s.,start anchor=north east] \ar[r,-s',start anchor=south east] \pgfmatrixnextcell%
+}
+
+% Useful to link two nodes and put a vdots in between.
+\NewExpandableDocumentCommand{\middleManyDots}{}{%
+  \ar[r,3 vdots] \ar[o',r] \ar[o.,r]%
+}
+
+% Like \leftManyDots but on the right. Do *not* create a new node, like in |[zxShortZ]| \alpha \rightManyDots{m}
+\NewExpandableDocumentCommand{\rightManyDots}{O{1}O{\zxScaleDots}m}{%
+  \ar[r,s'-,end anchor=north west] \ar[r,s.-,end anchor=south west] \pgfmatrixnextcell |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdots$}}\scalebox{#1}{\,$#3$}
+}
+
+% A swap on one line... Practical mostly to gain space. Must be used with large nodes tough...
+% \NewExpandableDocumentCommand{\OneLineSwap}{}{%
+%   \ar[r,s,start anchor=south,end anchor=north] \ar[r,s,start anchor=north,end anchor=south]
+% }
+
+
+\NewExpandableDocumentCommand{\zxLoop}{O{90}O{20}O{}m}{%
+  \ar[loop,in=#1-#2,out=#1+#2,looseness=8,min distance=3mm,#3]
+}
+
+\NewExpandableDocumentCommand{\zxLoopAboveDots}{O{20}O{}m}{%
+  \ar[loop,in=90-#1,out=90+#1,looseness=8,min distance=3mm,"\cvdots" {scale=.6,anchor=north,yshift=-0.4mm},#2]
+}
+
+% Usage: node without any style, but may have space. Default is no space, \zxNone+{} is both horizontal
+% and vertical, \zxNone-{} is only horizontal space, \zxNone|{} is only vertical space.
+\NewExpandableDocumentCommand{\zxNone}{t+t-t|O{}m}{
+  \IfBooleanTF{#1}{ % \zxNone+
+    |[zxNone+,#4]| #5%
+  }{
+    \IfBooleanTF{#2}{ % \zxNone-
+      |[zxNone-,#4]| #5%
+    }{
+      \IfBooleanTF{#3}{ % \zxNone
+        |[zxNoneI,#4]| #5%
+      }{% \zxNone
+        |[zxNone,#4]| #5%
+      }
+    }
+  }
+}
+
+% Cf \zxNone, but with larger space.
+\NewExpandableDocumentCommand{\zxNoneDouble}{t+t-t|O{}m}{
+  \IfBooleanTF{#1}{ % \zxNoneDouble+
+    |[zxNoneDouble+,#4]| #5%
+  }{
+    \IfBooleanTF{#2}{ % \zxNoneDouble-
+      |[zxNoneDouble-,#4]| #5%
+    }{
+      \IfBooleanTF{#3}{ % \zxNoneDouble
+        |[zxNoneDoubleI,#4]| #5%
+      }{% \zxNoneDouble
+        |[zxNoneDouble,#4]| #5%
+      }
+    }
+  }
+}
+
+
+\NewExpandableDocumentCommand{\zxX}{O{}m}{
+  \ifblank{#2}{
+    |[zxNoPhaseX,#1]| {}%
+  }{%
+    |[zxLongX,#1]| #2%
+  }%
+}
+
+\NewExpandableDocumentCommand{\zxZ}{O{}m}{
+  \ifblank{#2}{
+    |[zxNoPhaseZ,#1]| {}%
+  }{%
+    |[zxLongZ,#1]| #2%
+  }%
+}
+
+\NewExpandableDocumentCommand{\zxH}{O{}m}{
+  |[zxH,#1]| {}%
+}
+
+% Use like: \zxFracX{\pi}{4} for positive values or for negative \zxFracX-{\pi}{4}
+\NewExpandableDocumentCommand{\zxFracX}{t-mm}{
+  |[zxShortX]| \IfBooleanTF{#1}{\zxMinus}{}\frac{#2}{#3}%
+}
+
+% Use like: \zxFracZ{\pi}{4} for positive values or for negative \zxFracZ-{\pi}{4}
+\NewExpandableDocumentCommand{\zxFracZ}{t-mm}{
+  |[zxShortZ]| \IfBooleanTF{#1}{\zxMinus}{}\frac{#2}{#3}%
+}
+
+\NewExpandableDocumentCommand{\zxEmptyDiagram}{}{
+  |[zxEmptyDiagram]| {}%
+}
+
+% Quantikz has a bug which adds space automatically.
+% https://tex.stackexchange.com/questions/618330
+% Fixing that by copying the original (unpatched) functions, and reusing them later.
+% Warning: you must load this package **before** quantikz otherwise the fix will not work.
+\let\tikzcd@@originalCopyZx\tikzcd@
+\let\endtikzcd@originalCopyZx\endtikzcd
+
+%%%%% Main environment \begin{ZX}...\end{ZX}
+\NewDocumentEnvironment{ZX}{O{}}{%
+  \bgroup%
+  % Add a switch in case someone really wants the current tikzcd version:
+  \ifdefined\doNotPatchQuantikz% Do not patch tikzcd.
+  \else% Restore locally original tikzcd.
+    \let\tikzcd@\tikzcd@@originalCopyZx%
+    \let\endtikzcd\endtikzcd@originalCopyZx%
+  \fi%
+  \pgfsetlayers{background,main} % Layers are defined locally to avoid to disturb other drawings
+  \begin{tikzcd}[%
+    /zx/defaultEnv,%
+    #1]%
+  }{\end{tikzcd}\egroup}
+
+%%%%% Shortcut macro \zx{...} equivalent to \begin{ZX}...\end{ZX}
+\newcommand\zx{%
+  \begingroup% To avoid ampersand issues https://tex.stackexchange.com/a/611535/116348
+  \NewDocumentCommand{\tmpZX}{O{}+m}{%
+    \endgroup%
+    \begin{ZX}[##1]%
+      ##2%
+    \end{ZX}%
+  }%
+  \catcode`&=13%
+  \tmpZX%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Old code that tried to automatically find if zxShort or zxLong should be used...
+%%% Now using a special command for fractions (easier to code, and more customizable)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newsavebox\zx@box % Temporary box to compute height/width/depth
+
+\newlength{\zxMaxDepthPlusHeight}\setlength{\zxMaxDepthPlusHeight}{2em}
+\def\zxMaxRatio{1.3} % Ratio width/(height+depth)
+
+\NewExpandableDocumentCommand{\zxChooseStyle}{mmmm}{%
+  % #1=text,#2=empty style,#3=short style,#4=long style
+  \savebox\zx@box{#1}%
+  % Check if width is 0pt:
+  \ifdimcomp{\wd\zx@box}{=}{0pt}{% Return empty style if box is empty
+    #2%
+  }{% Else compute size of thext
+    % Check if height+depth < zxMaxDepthPlusHeight to see if short style applies
+    \ifdimcomp{\dimexpr\dp\zx@box+\ht\zx@box\relax}{<}{\zxMaxDepthPlusHeight}{%
+      % Check if width < ratio*(height+depth) to see if short style applies
+      \ifdimcomp{\wd\zx@box}{<}{\dimexpr \zxMaxRatio\ht\zx@box + \zxMaxRatio\dp\zx@box\relax}{%
+        #3% Short style is used
+      }{ % Else
+        #4% Long style is used
+      } %
+    }{
+      #4% Long style is used
+    }
+  }%
+}
