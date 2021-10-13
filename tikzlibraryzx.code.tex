@@ -5,13 +5,19 @@
 
 \RequirePackage{amssymb} % For short minus
 \RequirePackage{etoolbox}
+\RequirePackage{ifthen} % For conditions
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
 
 \usetikzlibrary{cd,backgrounds,positioning,shapes}
 % Declare layers.
-\pgfdeclarelayer{background}
+\pgfdeclarelayer{background} % Fox boxes using "fit" to group parts of the graph.
+\pgfdeclarelayer{edgelayer} % For edges that are explicitely defined "wc"
+\pgfdeclarelayer{nodelayer} % For nodes... in theory, this fails for now. https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd
 \pgfdeclarelayer{main}
+\pgfdeclarelayer{box} % For boxes using "fit" to fake multi-column boxes
+\pgfdeclarelayer{labellayer} % For labels... in theory, this fails for now. https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd
+\pgfdeclarelayer{foreground} % For the user, if they want to put anything really above everything.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% User modifiable variables
@@ -60,6 +66,19 @@
 % (quantikz notably changes this parameter).
 \newcommand{\zxDefaultLineWidth}{0.4pt}
 
+% For phase in content: How to convert sign ("-" for minus, nothing for "+", anything else should be inserted directly),
+% above fraction (no parens), below fraction (no parens), above fraction (with parens), below fraction (with parens)
+\NewExpandableDocumentCommand{\zxConvertToFracInContent}{mmmmm}{%
+  \ifthenelse{\equal{#1}{-}}{\zxMinus}{#1}\frac{#2}{#3}%
+}
+
+% For phase in label: How to convert sign ("-" for minus, nothing for "+", anything else should be inserted directly),
+% above fraction (no parens), below fraction (no parens), above fraction (with parens), below fraction (with parens)
+\NewExpandableDocumentCommand{\zxConvertToFracInLabel}{mmmmm}{%
+  \ifthenelse{\equal{#1}{-}}{\zxMinus}{#1}#4/#5%
+}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Tikz styles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,7 +97,7 @@
     -,
     line width=\zxDefaultLineWidth,
     %%% Useful shortcut (shorter lines means easy "align" of & symbols. Love M-x align in emacs btw.)
-    l/.style={looseness=##1},
+    ls/.style={looseness=##1},
     looseness wires only/.style={% Looseness used for wires only.
       looseness=1.2,
     },
@@ -170,16 +189,16 @@
     % Arrow will go out from the center of the shape instead of from the border. Useful
     % when connecting nodes with different shapes, it will give back a symetric connection.
     wire centered/.style={
-      on layer=background,
+      on layer=edgelayer,
       /tikz/commutative diagrams/start anchor=center,
       /tikz/commutative diagrams/end anchor=center,
     },
     wire centered start/.style={
-      on layer=background,
+      on layer=edgelayer,
       /tikz/commutative diagrams/start anchor=center,
     },
     wire centered end/.style={
-      on layer=background,
+      on layer=edgelayer,
       /tikz/commutative diagrams/end anchor=center,
     },
     wc/.style={wire centered},
@@ -280,12 +299,23 @@
     }, % negative outer sep would draw lines from inside...
     % Style for nodes that are bigger, like $\alpha+\beta$ or $(a\oplus b)\pi$
     zxLong/.style={zxShort, inner xsep=1.2mm},
-    %%% Style that was supposed to chooses which style to apply depending on the input text
-    %%% Can't find how to do.
-    % zxChoose/.code={
-    %   %% To fix
-    % },
-    %%%%%%%%%%% Style defined depending on above ones. Feel free to redefine them yourself.
+    %%% Styles of the label when |phase in label| is used
+    stylePhaseInLabel/.style={
+      font={\footnotesize\boldmath},
+      inner sep=2pt,
+      outer sep=0pt,
+      rounded rectangle,
+      % node on layer=labellayer, %% Fails in tikzcd: https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd
+    },
+    stylePhaseInLabelZ/.style={
+      stylePhaseInLabel,
+      fill=green!20!white
+    },
+    stylePhaseInLabelX/.style={
+      stylePhaseInLabel,
+      fill=red!20!white
+    },
+    %%%%%%%%%%% Style defined depending on above ones. Feel free to redefine.
     zxNoPhaseZ/.style={zxNoPhase,fill=colorZxZ},
     zxNoPhaseX/.style={zxNoPhase,fill=colorZxX},
     zxNoPhaseSmallZ/.style={zxNoPhaseSmall,fill=colorZxZ},
@@ -294,11 +324,159 @@
     zxShortX/.style={zxShort,fill=colorZxX},
     zxLongZ/.style={zxLong,fill=colorZxZ},
     zxLongX/.style={zxLong,fill=colorZxX},
+    %%%%%%%%%%%
+    %%% Instead of adding directly the style as the node's content (which would make
+    %%% impossible styles that adds the phase in a label outside of the node)
+    %%% add@Phase@Spider{,Z,X}={phase of the node} will be in charge of adding it.
+    add@Phase@Spider/.style n args={4}{ % add@Phase@Spider{emptyStyle}{NotEmptyStyle}{node content}
+      zx@emptyStyle/.style={##1},
+      zx@notEmptyStyle/.style={##2},
+      zx@labelStyle/.style={##3},
+      /zx/zx@content/.initial={##4},
+      phase in content,
+    },
+    add@Phase@Spider@Frac/.style n args={8}{ % add@Phase@Spider{emptyStyle}{NotEmptyStyle}{labelstyle}{sign}{above fraction (no parens)}{below fraction (no parens)}{above fraction (parens)}{below fraction (parens)}
+      zx@emptyStyle/.style={##1},
+      zx@notEmptyStyle/.style={##2},
+      zx@labelStyle/.style={##3},
+      % Useful to help "phase in content" to know if we are in Frac or not.
+      /zx/zx@isInFrac/.initial={true},
+      phase in content,
+    },
+    % #1 is the node content. Seems that storing it in /zx/zx@content is not enough because keys
+    % seems to be local to nodes and are not transfered to label.
+    zx@Execute@Very@End/.style n args={4}{
+      zx@commandToExecuteVeryEnd/.try={##1}{##2}{##3}{##4},
+    },
+    zx@Execute@Very@End/.default={}{}{}{},
+    %% zx@Execute@Very@End@Frac={emptystyle}{contentstyle}{labelstyle}{sign}{above frac (no parens)}{below frac (no parens)}{above frac (parens)}{below frac (parens)}
+    zx@Execute@Very@End@Frac/.style n args={8}{
+      zx@commandToExecuteVeryEndFrac/.try={##1}{##2}{##3}{##4}{##5}{##6}{##7}{##8},
+    },
+    zx@Execute@Very@End@Frac/.default={}{}{}{}{}{}{}{},
+    %% /!\ WARNING: the following styles "phase..." must be loaded by or *after* add@Phase@Spider...
+    %% To load it on the whole picture, prefer to do:
+    %% \zx[/zx/user post preparation labels/.style={phase in label}]{
+    %%   \zxZ{\alpha}
+    %% }
+    phase in content/.code={%
+      % Check if we are in a Frac or not
+      \ifthenelse{\equal{\pgfkeysvalueof{/zx/zx@isInFrac}}{true}}{%
+        %%% ### We are in a fraction node!
+        %% Modifies zx@commandToExecuteVeryEnd (which is executed at the very end by zx@Execute@Very@End)
+        %% in order to add the good style
+        \pgfkeysalso{
+          % zx@commandToExecuteVeryEndFrac{emptystyle}{contentstyle}{labelstyle}{sign}{above frac (no parens)}{below frac (no parens)}{above frac (parens)}{below frac (parens)}
+          zx@commandToExecuteVeryEndFrac/.style n args={8}{%
+            execute at begin node={\zxConvertToFracInContent{####4}{####5}{####6}{####7}{####8}},%
+          },%
+          % Adds the style:
+          zx@notEmptyStyle,
+        }%
+      }{ %%% ### We are NOT in a fraction node.
+        %% Modifies zx@commandToExecuteVeryEnd (which is executed at the very end by zx@Execute@Very@End)
+        %% in order to add the good style
+        \pgfkeysalso{
+          zx@commandToExecuteVeryEnd/.style n args={4}{%
+            execute at begin node={####4},% ####4 = content
+          }%
+        }%
+        % Checks if the content (stored by add@Phase@Spider in /zx/zx@content) is empty or not
+        \ifthenelse{\equal{\pgfkeysvalueof{/zx/zx@content}}{}}{%
+          \pgfkeysalso{%
+            zx@emptyStyle,%
+          }%
+        }{%
+          \pgfkeysalso{%
+            zx@notEmptyStyle,%
+          }%
+        }%
+      }%
+    },
+    phase in label/.code={
+      % Check if we are in a Frac or not
+      \ifthenelse{\equal{\pgfkeysvalueof{/zx/zx@isInFrac}}{true}}{%
+        %%% ### We are in a fraction node!
+        \pgfkeysalso{%
+          % zx@commandToExecuteVeryEndFrac{emptystyle}{contentstyle}{labelstyle}{sign}{above frac (no parens)}{below frac (no parens)}{above frac (parens)}{below frac (parens)}
+          zx@commandToExecuteVeryEndFrac/.code n args={8}{%
+            \pgfkeysalso{
+              label={[####3,##1] \zxConvertToFracInLabel{####4}{####5}{####6}{####7}{####8}},%
+            }%
+          },%
+          zx@emptyStyle,
+        }%
+      }{%
+        \pgfkeysalso{%
+          % ##1 is the argument of "phase in label", i.e. the style of the label
+          zx@commandToExecuteVeryEnd/.code n args={4}{% ####3: label style, ####4: content
+            % Checks if the content (stored by add@Phase@Spider in /zx/zx@content) is empty or not
+            \ifthenelse{\equal{####4}{}}{% Content is empty
+            }{% Content is not empty
+              \pgfkeysalso{
+                label={[####3,##1] ####4},%
+              }%
+            }%
+          },%
+          zx@emptyStyle,
+        }%
+      }%
+    },
+    pil/.style={phase in label=##1},
+    phase in label below/.style={
+      phase in label={label position=below,##1}
+    },
+    pilb/.style={phase in label below=##1},
+    phase in label above/.style={
+      phase in label={label position=above,##1}
+    },
+    pila/.style={phase in label above=##1},
+    phase in label right/.style={
+      phase in label={label position=right,##1}
+    },
+    pilr/.style={phase in label right=##1},
+    phase in label left/.style={
+      phase in label={label position=left,##1}
+    },
+    pill/.style={phase in label left=##1},
     %%% Was supposed to automatically find the good style depending on content... Can't find how to do.
-    % Styles zxLong{X/Z} zxNoPhase{X/Z} are automatically selected by \zxZ{...} and \zxX{...} commands
+    % Styles zxLong{X/Z} zxNoPhase{X/Z} are automatically selected by \zxZ2{...} and \zxX2{...} commands
     % and zxShort is selected for fractions only like in \zxFracZ-{\pi}{4}
     % zxZ/.style={zxChoose={##1},fill=colorZxZ},
     % zxX/.style={zxChoose={##1},fill=colorZxX},
+    %%% First argument is additional style. Second argument is content of node.
+    zxZ2/.style 2 args={
+      add@Phase@Spider={zxNoPhaseZ}{zxLongZ}{stylePhaseInLabelZ}{##2},
+      /zx/post preparation labels,
+      /zx/user post preparation labels,
+      %/zx/user overlay nodes,
+      ##1,
+      zx@Execute@Very@End={zxNoPhaseZ}{zxLongZ}{stylePhaseInLabelZ}{##2},
+    },
+    %% ##1: other styles, ##2: content
+    zxX2/.style 2 args={
+      add@Phase@Spider={zxNoPhaseX}{zxLongX}{stylePhaseInLabelX}{##2},
+      /zx/post preparation labels,
+      /zx/user post preparation labels,
+      ##1,
+      zx@Execute@Very@End={zxNoPhaseX}{zxLongX}{stylePhaseInLabelX}{##2},
+    },
+    %% These take 6 arguments: additional style, sign (string "-" for minus, nothing for "+",
+    %% otherwise inserted directly), above fraction (no parens), below fraction (no parens), above fraction (parens), below fraction (parens).
+    zxFracZ6/.style n args={6}{
+      add@Phase@Spider@Frac={zxNoPhaseZ}{zxShortZ}{stylePhaseInLabelZ}{##2}{##3}{##4}{##5}{##6},
+      /zx/post preparation labels,
+      /zx/user post preparation labels,
+      ##1,
+      zx@Execute@Very@End@Frac={zxNoPhaseZ}{zxShortZ}{stylePhaseInLabelZ}{##2}{##3}{##4}{##5}{##6},
+    },
+    zxFracX6/.style n args={6}{
+      add@Phase@Spider@Frac={zxNoPhaseX}{zxShortX}{stylePhaseInLabelX}{##2}{##3}{##4}{##5}{##6},
+      /zx/post preparation labels,
+      /zx/user post preparation labels,
+      ##1,
+      zx@Execute@Very@End@Frac={zxNoPhaseX}{zxShortX}{stylePhaseInLabelX}{##2}{##3}{##4}{##5}{##6},
+    },
     % For Hadamard
     zxH/.style={
       zxAllNodes,
@@ -317,6 +495,12 @@
   },
   % User can put here any additional property
   /zx/user overlay nodes/.style={
+  },
+  % Any additional property that needs to be loaded after add@Phase@Spider (by script, not by user).
+  /zx/post preparation labels/.style={
+  },
+  % User can put here any additional property that needs to be loaded after add@Phase@Spider
+  /zx/user post preparation labels/.style={
   },
   % Default wire style. Can be changed by user.
   /zx/default style wires/.style={
@@ -343,6 +527,44 @@
       /zx/default style wires,
       /zx/user overlay wires,
     },
+    %%% To be used only in \zx{...} environment.
+    %%% Exemple:
+    phase in content/.style={
+      /zx/post preparation labels/.append style={
+        phase in content,
+      }
+    },
+    phase in label/.style={
+      /zx/post preparation labels/.append style={
+        phase in label=##1,
+      }
+    },
+    phase in label above/.style={
+      /zx/post preparation labels/.append style={
+        phase in label above=##1,
+      }
+    },
+    phase in label below/.style={
+      /zx/post preparation labels/.append style={
+        phase in label below=##1,
+      }
+    },
+    phase in label right/.style={
+      /zx/post preparation labels/.append style={
+        phase in label right=##1,
+      }
+    },
+    phase in label left/.style={
+      /zx/post preparation labels/.append style={
+        phase in label left=##1,
+      }
+    },
+    % for "Phase In Label"
+    pil/.style={phase in label=##1},
+    pilb/.style={phase in label below=##1},
+    pila/.style={phase in label above=##1},
+    pilr/.style={phase in label right=##1},
+    pill/.style={phase in label left=##1},
   },
 }
 
@@ -350,14 +572,27 @@
 %%%% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 % Defines a "on layer=nameoflayer" style. TODO: check if better to move it in /zx/
 % https://tex.stackexchange.com/questions/20425/z-level-in-tikz/20426#20426
+% For path: on layer=namelayer, for nodes "node on layer=..."
+% /!\ node on layer fails in tikzcd: https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd
 \pgfkeys{%
   /tikz/on layer/.code={
-    \def\tikz@path@do@at@end{\endpgfonlayer\endgroup\tikz@path@do@at@end}%
-    \pgfonlayer{#1}\begingroup%
-  }%
+    \pgfonlayer{#1}\begingroup
+    \aftergroup\endpgfonlayer
+    \aftergroup\endgroup
+  },
+  /tikz/node on layer/.code={
+    \gdef\node@@on@layer{%
+      \setbox\tikz@tempbox=\hbox\bgroup\pgfonlayer{#1}\unhbox\tikz@tempbox\endpgfonlayer\egroup}
+    \aftergroup\node@on@layer
+  },
+  /tikz/end node on layer/.code={
+    \endpgfonlayer\endgroup\endgroup
+  }
 }
+\def\node@on@layer{\aftergroup\node@@on@layer}
 
 %%% Declare a symbol for a short minus (useful in fractions)
 \DeclareMathSymbol{\zxMinus}{\mathbin}{AMSa}{"39} % Requires amssymb
@@ -448,6 +683,23 @@
   }
 }
 
+% Usage: alias of \zxNone... To bad token can't be easily forwarded to another function.
+\NewExpandableDocumentCommand{\zxN}{t+t-t|O{}m}{
+  \IfBooleanTF{#1}{ % \zxNone+
+    |[zxNone+,#4]| #5%
+  }{
+    \IfBooleanTF{#2}{ % \zxNone-
+      |[zxNone-,#4]| #5%
+    }{
+      \IfBooleanTF{#3}{ % \zxNone
+        |[zxNoneI,#4]| #5%
+      }{% \zxNone
+        |[zxNone,#4]| #5%
+      }
+    }
+  }
+}
+
 % Cf \zxNone, but with larger space.
 \NewExpandableDocumentCommand{\zxNoneDouble}{t+t-t|O{}m}{
   \IfBooleanTF{#1}{ % \zxNoneDouble+
@@ -465,21 +717,16 @@
   }
 }
 
-
-\NewExpandableDocumentCommand{\zxX}{O{}m}{
-  \ifblank{#2}{
-    |[zxNoPhaseX,#1]| {}%
-  }{%
-    |[zxLongX,#1]| #2%
-  }%
+%% For maximum styling liberty, the content is given directly to the style.
+% It allows the style to put the phase in a label.
+\NewExpandableDocumentCommand{\zxZ}{O{}m}{
+  |[zxZ2={#1}{#2}]| %
 }
 
-\NewExpandableDocumentCommand{\zxZ}{O{}m}{
-  \ifblank{#2}{
-    |[zxNoPhaseZ,#1]| {}%
-  }{%
-    |[zxLongZ,#1]| #2%
-  }%
+%% For maximum styling liberty, the content is given directly to the style.
+%% It allows the style to put the phase in a label.
+\NewExpandableDocumentCommand{\zxX}{O{}m}{
+  |[zxX2={#1}{#2}]| %
 }
 
 \NewExpandableDocumentCommand{\zxH}{O{}m}{
@@ -487,13 +734,21 @@
 }
 
 % Use like: \zxFracX{\pi}{4} for positive values or for negative \zxFracX-{\pi}{4}
-\NewExpandableDocumentCommand{\zxFracX}{t-mm}{
-  |[zxShortX]| \IfBooleanTF{#1}{\zxMinus}{}\frac{#2}{#3}%
+\NewExpandableDocumentCommand{\zxFracZ}{O{}t-moom}{%
+  \IfNoValueTF{#5}{% 2 arguments like: \zxFracZ{\pi}{2}
+    |[zxFracZ6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#3}{#6}]| %
+  }{% 4 arguments like \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
+    |[zxFracZ6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#4}{#5}]| %
+  }%
 }
 
-% Use like: \zxFracZ{\pi}{4} for positive values or for negative \zxFracZ-{\pi}{4}
-\NewExpandableDocumentCommand{\zxFracZ}{t-mm}{
-  |[zxShortZ]| \IfBooleanTF{#1}{\zxMinus}{}\frac{#2}{#3}%
+% Use like: \zxFracX{\pi}{4} for positive values or for negative \zxFracX-{\pi}{4}
+\NewExpandableDocumentCommand{\zxFracX}{O{}t-moom}{%
+  \IfNoValueTF{#5}{% 2 arguments like: \zxFracZ{\pi}{2}
+    |[zxFracX6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#3}{#6}]| %
+  }{% 4 arguments like \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
+    |[zxFracX6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#4}{#5}]| %
+  }%
 }
 
 \NewExpandableDocumentCommand{\zxEmptyDiagram}{}{
@@ -516,7 +771,7 @@
     \let\tikzcd@\tikzcd@@originalCopyZx%
     \let\endtikzcd\endtikzcd@originalCopyZx%
   \fi%
-  \pgfsetlayers{background,main} % Layers are defined locally to avoid to disturb other drawings
+  \pgfsetlayers{background,edgelayer,nodelayer,main,box,labellayer,foreground} % Layers are defined locally to avoid to disturb other drawings
   \begin{tikzcd}[%
     /zx/defaultEnv,%
     #1]%

@@ -9,3 +9,5 @@
 *.out
 *.pdf
 *.zip
+*.toc
+*.synctex.gz

@@ -7,6 +7,7 @@
 \usepackage[margin=3cm]{geometry}
 \usepackage{calc}
 \usepackage{tikz}
+\usetikzlibrary{shadows,fit}
 % \usetikzlibrary fails because file is not in current directory, lazy to setup TEXINPUTS
 \makeatletter
   \input{../tikzlibraryzx.code.tex}
@@ -38,20 +39,27 @@
   {\href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}}
 \end{center}
 
+\tableofcontents
 
 \section{Introduction}
 
-This library (based on the great \tikzname{} and \tikzname-cd packages) allows you to typeset ZX-calculus directly in \LaTeX{}. It comes with a default---but customizable---style:
-
+This library (based on the great \tikzname{} and \tikzname-cd packages) allows you to typeset ZX-calculus directly in \LaTeX{}. It comes with a default---but highly customizable---style:
 \begin{codeexample}[]
   \begin{ZX}
-    \zxZ{\alpha} \arrow[r] & \zxFracX-{\pi}{4}\\
+    \zxZ{\alpha} \arrow[r] & \zxFracX-{\pi}{4}
+  \end{ZX}
+\end{codeexample}
+Even if this has not yet been tested a lot, you can also use a ``phase in label'' style, without really changing the code:
+\begin{codeexample}[]
+  \begin{ZX}[phase in label right]
+    \zxZ{\alpha} \arrow[d] \\
+    \zxFracX-{\pi}{4}
   \end{ZX}
 \end{codeexample}
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
-This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be changed later. The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
+This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy this library in your project forever! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
 
 \section{Installation}
 
@@ -68,7 +76,7 @@ or load \tikzname{} and then use:
    \index{Libraries!cd@\protect\texttt{cd}}%
    |\usetikzlibrary{cd}|%
 \end{verse}
-If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx}{\texttt{tikzlibraryzx.code.tex}} and \mylink{https://github.com/leo-colisson/zx}{\texttt{zx.sty}} and copy them at the root of your project.
+If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx/blob/main/tikzlibraryzx.code.tex}{\texttt{tikzlibraryzx.code.tex}} and \mylink{https://github.com/leo-colisson/zx/blob/main/zx.sty}{\texttt{zx.sty}} (right-click on ``Raw'' and ``Save link as'') and save them at the root of your project.
 
 \section{Usage}
 
@@ -104,31 +112,45 @@ The following commands are useful to create different kinds of nodes. Always add
 \end{codeexample}
 \end{command}
 
-\begin{command}{\zxNone\opt{+}\opt{-}\marg{text}}
-  Adds an empty node with |\zxNone{}|. Combine it with wires and the |wire centered| style for straight lines or |C|-like wires (alias |wc|, or you will get holes) or |between none| style (alias |bn|) for other curved lines. Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved. The \verb#-|+# decorations are used to add a bit of (respectively) horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
+
+\begin{pgfmanualentry}
+  \extractcommand\zxNone\opt{+}\opt{-}\marg{text}\@@
+  \extractcommand\zxN\opt{+}\opt{-}\marg{text}\@@
+  \pgfmanualbody
+  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). Combine it with wires and the |wire centered| style for straight lines or |C|-like wires (alias |wc|, or you will get holes) or |between none| style (alias |bn|) for other curved lines. Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved. The \verb#-|+# decorations are used to add a bit of (respectively) horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxNone{} \ar[C,d,wc] \ar[rd,s,bn] &[\zxWCol] \zxNone{}\\[\zxWRow]
   \zxNone{}             \ar[ru,s,bn] &          \zxNone{}
 \end{ZX}
 \end{codeexample}
-\end{command}
+\end{pgfmanualentry}
 
 
 \begin{command}{\zxNoneDouble\opt{+-}\marg{text}}
   Like |\zxNone|, but the spacing for \verb#+-|# is large enough to fake two lines in only one. Not extremely useful (or one needs to play with |start anchor=south,end anchor=north|).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxNoneDouble|{} \ar[r,s,start anchor=north,end anchor=south,l=1.2] \ar[r,s,start anchor=south,end anchor=north,l=1.2] &[\zxWCol] \zxNoneDouble|{}
+  \zxNoneDouble|{} \ar[r,s,start anchor=north,end anchor=south,ls=1.2] \ar[r,s,start anchor=south,end anchor=north,ls=1.2] &[\zxWCol] \zxNoneDouble|{}
 \end{ZX}
 \end{codeexample}
 \end{command}
 
-\begin{command}{\zxFracZ\opt{-}\marg{numerator}\marg{denominator}}
+\begin{command}{\zxFracZ\opt{-}\marg{numerator}\opt{\oarg{numerator with parens}\oarg{denominator with parens}}\marg{denominator}}
   Adds a Z node with a fraction, use the minus decorator to add a small minus in front (the default minus is very big).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxFracZ{\pi}{2} & \zxFracZ-{\pi}{2}
+\end{ZX}
+\end{codeexample}
+The optional arguments are useful when the numerator or the denominator need parens when they are written inline (in that case optional arguments must be specified): it will prove useful when using a style that writes the fraction inline, for instance the default style for labels:
+\begin{codeexample}[]
+Compare
+\begin{ZX}
+  \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
+\end{ZX} with %
+\begin{ZX}[phase in label right]
+  \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
 \end{ZX}
 \end{codeexample}
 \end{command}
@@ -225,6 +247,89 @@ The following commands are useful to create different kinds of nodes. Always add
 \end{ZX}
 \end{codeexample}
 
+\subsection{Phase in label style}
+
+We also provide styles to place the phase on a label next to an empty node (not yet very well tested):
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/styles rounded style/phase in content\@nil%
+  \extractkey/zx/styles rounded style/phase in label=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/pil=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/phase in label above=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/pila=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/phase in label below=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/pilb=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/phase in label right=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/pilr=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/phase in label left=style (default {})\@nil%
+  \extractkey/zx/styles rounded style/pill=style (default {})\@nil%
+  \makeatother
+  \pgfmanualbody
+  The above styles are useful to place a spider phase in a label outside the node. They can either be put on the style of a node to modify a single node at a time:
+\begin{codeexample}[]
+  \zx{\zxX[phase in label]{\alpha} \rar & \zxX{\alpha}}
+\end{codeexample}
+\noindent It can also be configured on a per-figure basis:
+\begin{codeexample}[]
+\zx[phase in label right]{
+  \zxZ{\alpha} \dar \\
+  \zxX{\alpha} \dar \\
+  \zxZ{}}
+\end{codeexample}
+\noindent or globally:
+\begin{codeexample}[]
+{
+  \tikzset{
+    /zx/user post preparation labels/.style={
+      phase in label={label position=-45, text=purple,fill=none}
+    }
+  }
+  \zx{
+    \zxFracX-{\pi}{2}
+  }
+}
+\end{codeexample}
+Note that we must use |user post preparation labels| and not |/zx/user overlay nodes| because this will be run after all the machinery for labels has been setup.
+
+  While |phase in content| forces the content of the node to be inside the node instead of inside a label (which is the default behavior), all other styles are special cases of |phase in label|. The \meta{style} parameter can be any style made for a tikz label:
+\begin{codeexample}[width=3cm]
+  \zx{
+    \zxX[phase in label={label position=45, text=purple}]{\alpha}
+  }
+\end{codeexample}
+
+For ease of use, the special cases of label position |above|, |below|, |right| and |left| have their respective shortcut style. The |pil*| versions are shortcuts of the longer style written above. For instance, |pilb| stands for |phase in label below|. Note also that by default labels will take some space, but it's possible to make them overlay without taking space using the |overlay| label style\dots{} however do it at your own risks as it can overlay the content around (also the text before and after):
+\begin{codeexample}[width=0pt]
+  \zx{
+    \zxZ[pilb]{\alpha+\beta} \rar & \zxX[pilb]{\gamma} \rar & \zxZ[pilb=overlay]{\gamma+\eta}
+  }
+\end{codeexample}
+The above also works for fractions:
+\begin{codeexample}[]
+\zx{\zxFracX[pilr]-{\pi}{2}}
+\end{codeexample}
+For fractions, you can configure how you want the label text to be displayed, either in a single line (default) or on two lines, like in nodes. The function |\zxConvertToFracInLabel| is in charge of that conversion, and can be changed to your needs to change this option document-wise. To use the same notation in both content and labels, you can do:
+\begin{codeexample}[width=0pt]
+  Compare
+  \begin{ZX}[phase in label right]
+    \zxFracZ{\pi}{2} \dar \\
+    \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
+  \end{ZX} with
+{\RenewExpandableDocumentCommand{\zxConvertToFracInLabel}{mmmmm}{
+    \zxConvertToFracInContent{#1}{#2}{#3}{#4}{#5}%
+  }
+  \begin{ZX}[phase in label right]
+    \zxFracZ{\pi}{2} \dar \\
+    \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
+  \end{ZX} (exact same code!)
+}
+\end{codeexample}
+Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are useful to put parens appropriately when the fraction is written inline.
+\end{pgfmanualentry}
+
+
 \subsection{Wires}
 
 \begin{pgfmanualentry}
@@ -269,6 +374,7 @@ The first one is equivalent to
 and the other ones work analogously.
 
 We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
+
 
 \begin{pgfmanualentry}
   \makeatletter
@@ -476,13 +582,13 @@ With |wc|:
 \end{codeexample}
 \end{pgfmanualentry}
 
-\begin{stylekey}{/zx/wires definition/l=looseness}
+\begin{stylekey}{/zx/wires definition/ls=looseness}
   Shortcut for |looseness|, allows to quickly redefine looseness. Use with care (or redefine style directly). Note that you can also change yourself other values, like |in|, |out|\dots
 \begin{codeexample}[]
 \begin{ZX}
   \zxZ{} \ar[rd,s] \\
                    & \zxX{}\\
-  \zxZ{} \ar[rd,s,l=3] \\
+  \zxZ{} \ar[rd,s,ls=3] \\
                    & \zxX{}
 \end{ZX}
 \end{codeexample}
@@ -507,10 +613,18 @@ A swapped Bell pair is %
 
 \section{Advanced styling}
 
-It is possible to arbitrarily customize the styling, create new styles\dots{} First, any option that can be given to a |tikz-cd| matrix can also be given to a |ZX| environment (we refer to the manual of |tikz-cd| for more details). Moreover, the user can also change the current style or add new style. While you should not use these styles directly (|\zxX| and |\zxFracX| will choose automatically the good style for you), you may want to use these styles to improve existing styles, or to create a |tikzit| style (make sure to load this library then in |*.tikzdefs|). We also encourage the advanced users too look at the code of the library.
+\subsection{Overlaying or creating styles}
+
+It is possible to arbitrarily customize the styling, create or update ZX or tikz styles\dots{} First, any option that can be given to a |tikz-cd| matrix can also be given to a |ZX| environment (we refer to the manual of |tikz-cd| for more details). We also provide overlays to quickly modify the ZX style.
 
 \begin{stylekey}{/zx/default style nodes}
   This is where the default style must be loaded. By default, it simply loads the (nested) style packed with this library, |/zx/styles/rounded style|. You can change the style here if you would like to globally change a style.
+
+  Note that a style must typically define at least |zxZ2|, |zxX2|, |zxFracZ6|, |zxFracX6|, |\zxH|, |zxHSmall|, |zxNoPhaseSmallZ|, |zxNoPhaseSmallX|, |zxNone{,+,-,I}|, |zxNoneDouble{,+,-,I}| and all the |phase in label*|, |pil*| styles (see code on how to define them). Because the above styles (notably |zxZ*| and |zxFrac*|) are slightly complex to define (this is needed in order to implement |phase in label|), it may be quite long to implement them all properly by yourself.
+
+  For that reason, it may be easier to load our default style and overlay only some of the styles we use (see example in |/zx/user overlay nodes| right after). You can check our code in |/zx/styles/rounded style| to see what you can redefine (intuitively, the styles like |my style name| should be callable by the end user, |myStyleName| may be redefined by users or used in tikzit, and |my@style@name| are styles that should not be touched by the user). The styles that have most interests are |zxNoPhase| (for Z and X nodes without any phase inside), |zxShort| (for Z and X nodes for fractions typically), |zxLong| (for other Z and X nodes) and |stylePhaseInLabel| (for labels when using |phase in label|). These basic styles are extended to add colors (just add |Z|/|X| after the name) like |zxNoPhaseZ|\dots{} You can change them, but if you just want to change the color, prefer to redefine |colorZxZ|/|colorZxZ| instead (note that this color does not change |stylePhaseInLabelZ/X|, so you are free to redefine these styles as well). All the above styles can however be called from inside a tikzit style, if you want to use tikzit internally (make sure to load this library then in |*.tikzdefs|).
+
+  Note however that you should avoid to call these styles from inside |\zx{...}| since |\zx*| and |\zxFrac*| are supposed to choose automatically the good style for you depending on the mode (fractions, labels in phase\dots{}). For more details, we encourage the advanced users too look at the code of the library, and examples for simple changes will be presented now.
 \end{stylekey}
 
 \begin{stylekey}{/zx/user overlay nodes}
@@ -633,6 +747,19 @@ We present now all the properties that a new node style must have (and that can 
   Like |zxH| but for Hadamard on wires, (see |H| style).
 \end{stylekey}
 
+\begin{pgfmanualentry}
+  \extractcommand\zxConvertToFracInContent\marg{sign}\marg{num no parens}\marg{denom no parens}\marg{nom parens}\marg{denom parens}\@@
+  \extractcommand\zxConvertToFracInLabel\@@
+  \pgfmanualbody
+  These functions are not meant to be used, but redefined using something like (we use |\zxMinus| as a shorter minus compared to $-$):
+\begin{verse}
+  |\RenewExpandableDocumentCommand{\zxConvertToFracInLabel}{mmmmm}{%|\\
+  |  \ifthenelse{\equal{#1}{-}}{\zxMinus}{#1}\frac{#2}{#3}%|\\
+  |}|
+\end{verse}
+This is used to change how the library does the conversion between |\zxFrac| and the actual written text (either in the node content or in the label depending on the function). The first argument is the sign (string |-| for minus, anything else must be written in place of the minus), the second and third argument are the numerator and denominator of the fraction when used in |\frac{}{}| while the last two arguments are the same except that they include the parens which should be added when using an inline version. For instance, one could get a call |\zxConvertToFracInLabel{-}{a+b}{c+d}{(a+b)}{(c+d)}|. See part on labels to see an example of use.
+\end{pgfmanualentry}
+
 \noindent We also define several spacing commands that can be redefined to your needs:
 \begin{pgfmanualentry}
   \extractcommand\zxHCol{}\@@
@@ -667,6 +794,74 @@ We present now all the properties that a new node style must have (and that can 
   The minus sign used in fractions.
 \end{command}
 
+\subsection{Further customization}
+
+You can further customize your drawings using any functionality from \tikzname{} and |tikz-cd| (but it is of course at your own risk). For instance, we can define our own style to create blocks:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+{ % \usetikzlibrary{shadows}
+  \tikzset{
+    my bloc/.style={
+      anchor=center,
+      inner sep=2pt,
+      inner xsep=.7em,
+      minimum height=3em,
+      draw,
+      thick,
+      fill=blue!10!white,
+      double copy shadow={opacity=.5},tape,
+    }
+  }
+  \zx{|[my bloc]| f \rar &[1mm] |[my bloc]| g \rar &[1mm] \zxZ{\alpha} \rar & \zxNone{}}
+}
+\end{codeexample}
+}
+Or we can use for instance |fit|, |alias|, |execute at end picture| and layers (the user can use |background| for things behind the drawing, |box| for special nodes above the drawings (like multi-column nodes, see below), and |foreground| which is even higher) to do something like that:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=3cm]
+% \usetikzlibrary{fit}
+\begin{ZX}[
+  execute at end picture={
+    \node[
+      inner sep=2pt,
+      node on layer=background, %% Ensure the node is behind the drawing
+      rounded corners,
+      draw=blue,
+      dashed,
+      fill=blue!50!white,
+      opacity=.5,
+      fit=(cnot1)(cnot2), %% position of the node, thanks fit library
+      "\textsc{cnot}" above %% Adds label, thanks quote library
+    ] {};
+  }
+  ]
+  \zxNone{} \rar & \zxZ[alias=cnot1]{} \dar \rar & \zxNone{}\\
+  \zxNone{} \rar & \zxX[alias=cnot2]{} \rar      & \zxNone{}\\
+\end{ZX}
+\end{codeexample}
+}
+This can also be used to fake multi-columns nodes (I need to check later if I can facilitate this kind of operation from the library directly):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=3cm]
+% \usetikzlibrary{fit}
+\tikzset{
+  my box/.style={inner sep=4pt, draw, thick, fill=white,anchor=center},
+}
+\begin{ZX}[
+  execute at end picture={
+    \node[
+      my box,
+      node on layer=box, %% Ensure the node is above the wires
+      fit=(f1)(f2), %% position of the node, thanks fit library
+      label={[node on layer=box]center:$f$},
+    ] {};
+  }
+  ]
+  \zxNoneDouble+[alias=f1]{} \rar &[1mm] |[my box]| g \rar & \zxNone{}\\
+  \zxNoneDouble+[alias=f2]{} \rar &[1mm] \zxZ{} \rar       & \zxNone{}\\
+\end{ZX}
+\end{codeexample}
+}
 \section{Acknowledgement}
 
 I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users (sorry, I don't want to risk an incomplete list) that helped me to understand a bit more \LaTeX and \tikzname. I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
