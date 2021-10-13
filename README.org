@@ -2,4 +2,4 @@
 
 * ZX: a library to typeset ZX-calculus in LaTeX
 
-See the documentation in the [[https://raw.githubusercontent.com/leo-colisson/zx/main/doc/zx.pdf][doc/zx.pdf]] file.
+See the documentation in the [[https://raw.githubusercontent.com/leo-colisson/zx/main/doc/zx-calculus.pdf][doc/zx-calculus.pdf]] file.
