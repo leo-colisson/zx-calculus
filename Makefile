@@ -1,5 +1,5 @@
-ctan_package: doc/zx.pdf tikzlibraryzx.code.tex zx.sty
-	zip zx.zip -j doc/zx.pdf tikzlibraryzx.code.tex zx.sty
+ctan_package: doc/zx-calculus.pdf tikzlibraryzx-calculus.code.tex zx-calculus.sty
+	zip zx.zip -j doc/zx-calculus.pdf tikzlibraryzx-calculus.code.tex zx-calculus.sty
 
-doc/zx.pdf: doc/zx.tex
-	cd doc && latexmk zx.tex
+doc/zx.pdf: doc/zx-calculus.tex
+	cd doc && latexmk zx-calculus.tex
