@@ -329,6 +329,16 @@ For fractions, you can configure how you want the label text to be displayed, ei
 Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are useful to put parens appropriately when the fraction is written inline.
 \end{pgfmanualentry}
 
+\begin{stylekey}{/tikz/every node/a=alias}
+  Shortcut to add an |alias| to a wire. Will be practical later when using names instead of direction to connect wires in order to improve readability and maintainability. This is added automatically in |/tikz/every node| style.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX[alias=A]{} & \zxZ[a=B]{\beta}
+    \ar[from=A,to=B]
+  \end{ZX}
+\end{codeexample}
+\end{stylekey}
+
 
 \subsection{Wires}
 
@@ -336,13 +346,13 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
   \extractcommand\arrow\opt{\oarg{options}}\@@
   \extractcommand\ar\opt{\oarg{options}}\@@
   \pgfmanualbody
-  These synonym commands (actually coming from |tikz-cd|) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down).
+  These synonym commands (actually coming from |tikz-cd|) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down). It's also possible to specify a node alias as a source or destination as shown below.
 \begin{codeexample}[]
 \zx{\zxZ{} \ar[r] & \zxX{}} = \zx{\zxX{} \arrow[rd] \\ & \zxZ{}}
 \end{codeexample}
   \meta{options} can also be used to add any additional style, either custom ones, or the ones defined in this library (this is recommended since it can be easily changed document-wise by simply changing the style). Multiple wires can be added in the same cell. Other shortcuts provided in |tikz-cd| like |\rar|\dots{} can be used.
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
-\begin{codeexample}[]
+\begin{codeexample}[width=0pt]
 \begin{ZX}
   \zxZ{\alpha} \arrow[d, C] % C = Bell-like wire
                \ar[r,H,o']  % o' = top part of circle
@@ -372,6 +382,41 @@ The first one is equivalent to
   |\arrow|{\oarg{options}}|{r}|
 \end{verse}
 and the other ones work analogously.
+
+Note that sometimes, it may be practical to properly organize big diagrams to increase readability. To that end, one surely wants to have a small and well indented matrix (emacs |M-x align| is very practical to indent matrices automatically). Unfortunately, adding wires inside the matrix can make the line really long and hard to read. Similarly, some nodes involving fractions or long expressions can also be quite long. It is however easy to increase readability (and maintainability) by moving the wires at the very end of the diagram, using |alias| (shortcut |a|) to connect nodes and |\def| to create shortcuts. Putting inside a macro with |\def| long node definitions can also be useful to keep small items in the matrix:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[row sep=1pt,
+  execute at begin picture={%
+    %%% Definition of long items (the goal is to have a small and readable matrix
+    % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+    \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+    \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+  }
+  ]
+  %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+                &              &                   &                 & \zxZ[a=toprightpi]{\pi} \\
+  \zxN[a=in1]{} & \zxX[a=X1]{} &                   &                 &  & \zxN[a=out1]{}       \\
+                &              & \zxZ[a=xmiddle]{} & \mypitwo{}      &  & \zxN[a=out2]{}       \\
+  \zxN[a=in2]{} & \Zpifour{}   &                   & \zxX[a=Xdown]{} &  & \zxN[a=out3]{}
+  %%% Arrows
+  % Column 1
+  \ar[from=in1,to=X1]
+  \ar[from=in2,to=Zpi4]
+  % Column 2
+  \ar[from=X1,to=xmiddle,(.]
+  \ar[from=X1,to=toprightpi,<',H]
+  \ar[from=Zpi4,to=xmiddle,(']
+  \ar[from=Zpi4,to=Xdown,o.]
+  % Column 3
+  \ar[from=xmiddle,to=Xdown,s.]
+  \ar[from=xmiddle,to=mypi2]
+  % Column 4
+  \ar[from=mypi2,to=toprightpi,(']
+  \ar[from=mypi2,to=out1,<']
+  \ar[from=mypi2,to=out2]
+  \ar[from=Xdown,to=out3]
+\end{ZX}
+\end{codeexample}
 
 We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
 

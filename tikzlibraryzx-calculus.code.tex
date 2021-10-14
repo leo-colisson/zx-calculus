@@ -155,17 +155,17 @@
     ('/.default=30,
     (./.style={bend right=##1},
     (./.default=30,
-    <'/.style={out=##1,in=180},
+    <'/.style={out=##1,in=180,looseness=0.65},
     <'/.default=\zxDefaultSoftAngleChevron,
-    <./.style={out=-##1,in=180},
+    <./.style={out=-##1,in=180,looseness=0.65},
     <./.default=\zxDefaultSoftAngleChevron,
-    ^./.style={out=-90+##1,in=90},
+    ^./.style={out=-90+##1,in=90,looseness=0.65},
     ^./.default=\zxDefaultSoftAngleChevron,
-    .^/.style={out=-90-##1,in=90},
+    .^/.style={out=-90-##1,in=90,looseness=0.65},
     .^/.default=\zxDefaultSoftAngleChevron,
-    'v/.style={out=90+##1,in=-90},
+    'v/.style={out=90+##1,in=-90,looseness=0.65},
     'v/.default=\zxDefaultSoftAngleChevron,
-    v'/.style={out=90-##1,in=-90},
+    v'/.style={out=90-##1,in=-90,looseness=0.65},
     v'/.default=\zxDefaultSoftAngleChevron,
     % Links with a s-like shape.
     s/.style={/tikz/out=0,/tikz/in=180,looseness=0.6},
@@ -543,6 +543,7 @@
     },
     % Load (thanks ".search also") our own style
     /tikz/every node/.style={%
+      a/.style={alias=####1}, % For quickly adding alias
       /zx/default style nodes,
       /zx/user overlay nodes,
     },
