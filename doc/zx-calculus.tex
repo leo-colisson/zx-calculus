@@ -35,8 +35,8 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Version 1.0 \qquad October 12, 2021}\\[2mm]
-  {\href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}}
+  {Version 1.0 \qquad October 12, 2021}\\[3mm]
+  {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
 \tableofcontents
@@ -59,7 +59,7 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
-This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx}{\texttt{github.com/leo-colisson/zx}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy this library in your project forever! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
+This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy this library in your project forever! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
 
 \section{Installation}
 
@@ -76,7 +76,7 @@ or load \tikzname{} and then use:
    \index{Libraries!cd@\protect\texttt{cd}}%
    |\usetikzlibrary{cd}|%
 \end{verse}
-If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx/blob/main/tikzlibraryzx-calculus.code.tex}{\texttt{tikzlibraryzx-calculus.code.tex}} and \mylink{https://github.com/leo-colisson/zx/blob/main/zx-calculus.sty}{\texttt{zx-calculus.sty}} (right-click on ``Raw'' and ``Save link as'') and save them at the root of your project.
+If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/tikzlibraryzx-calculus.code.tex}{\texttt{tikzlibraryzx-calculus.code.tex}} and \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/zx-calculus.sty}{\texttt{zx-calculus.sty}} (right-click on ``Raw'' and ``Save link as'') and save them at the root of your project.
 
 \section{Usage}
 
