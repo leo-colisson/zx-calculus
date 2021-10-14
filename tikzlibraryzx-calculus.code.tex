@@ -64,6 +64,7 @@
 % Angles by default for s and o related arrows
 \def\zxDefaultSoftAngleS{30}
 \def\zxDefaultSoftAngleO{40}
+\def\zxDefaultSoftAngleChevron{60}
 
 % Scale to use when scaling 3 dots
 \def\zxScaleDots{.7}
@@ -146,8 +147,26 @@
     o-/.default=\zxDefaultSoftAngleO,
     % Similar to o, but can be used also for diagonal items.
     % Why ()? Visualize fixing the top part and moving the bottom part.
-    (/.style={bend right},
-    )/.style={bend left},
+    (/.style={bend right=##1},
+    (/.default=30,
+    )/.style={bend left=##1},
+    )/.default=30,
+    ('/.style={bend left=##1},
+    ('/.default=30,
+    (./.style={bend right=##1},
+    (./.default=30,
+    <'/.style={out=##1,in=180},
+    <'/.default=\zxDefaultSoftAngleChevron,
+    <./.style={out=-##1,in=180},
+    <./.default=\zxDefaultSoftAngleChevron,
+    ^./.style={out=-90+##1,in=90},
+    ^./.default=\zxDefaultSoftAngleChevron,
+    .^/.style={out=-90-##1,in=90},
+    .^/.default=\zxDefaultSoftAngleChevron,
+    'v/.style={out=90+##1,in=-90},
+    'v/.default=\zxDefaultSoftAngleChevron,
+    v'/.style={out=90-##1,in=-90},
+    v'/.default=\zxDefaultSoftAngleChevron,
     % Links with a s-like shape.
     s/.style={/tikz/out=0,/tikz/in=180,looseness=0.6},
     % -s'.- shapes are like s, but with a soften (customizable like o) angle.
@@ -293,12 +312,11 @@
       zxNoPhase
     },
     % Style for nodes that are small enough to fit in a circle, like $\zxMinus \frac{\pi}{4}$
-    % zxShort/.style={anchor=center,minimum size=5mm, font={\footnotesize\boldmath}, shape=rectangle, rounded corners=2mm, inner sep=0.2mm, outer sep=-2mm, scale=0.8, draw=black},
     zxShort/.style={
       zxAllNodes,
       zxSpiders,
       minimum size=5mm,
-      font={\footnotesize\boldmath},
+      font={\fontsize{8}{10}\selectfont\boldmath},
       rounded rectangle,
       inner sep=0.0mm,
       scale=0.8,
@@ -307,7 +325,7 @@
     zxLong/.style={zxShort, inner xsep=1.2mm},
     %%% Styles of the label when |phase in label| is used
     stylePhaseInLabel/.style={
-      font={\footnotesize\boldmath},
+      font={\fontsize{8}{10}\selectfont\boldmath},
       inner sep=2pt,
       outer sep=0pt,
       rounded rectangle,

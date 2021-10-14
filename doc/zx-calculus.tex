@@ -425,17 +425,28 @@ We give now a list of wire styles provided in this library (|/zx/wires definitio
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/(\@nil%
-  \extractkey/zx/wires definition/)\@nil%
+  \extractkey/zx/wires definition/(=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/)=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/('=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/('=angle (default 30)\@nil%
   \makeatother
   \pgfmanualbody
-  Curved wire, similar to |o| but can be used for diagonal items. The |(| and |)| symbols must be imagined as if the starting point was on top of the parens, and the ending point at the bottom.
+  Curved wire, similar to |o| but can be used for diagonal items. The angle is, like in |bend right|, the opening angle from the line which links the two nodes. For the first two commands, the |(| and |)| symbols must be imagined as if the starting point was on top of the parens, and the ending point at the bottom.
 \begin{codeexample}[width=3cm]
   \begin{ZX}
     \zxX{} \ar[rd,(] \ar[rd,),red]\\
     & \zxZ{}
   \end{ZX}.
 \end{codeexample}
+Then, |('|=|(| and |(.|=|)|; this notation is, I think, more intuitive when linking nodes from left to right. |('| is used when going to top right and |(.| when going to bottom right.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxN{}                       & \zxX{}\\
+  \zxZ{} \ar[ru,('] \ar[rd,(.] & \\
+                               & \zxX{}
+\end{ZX}
+\end{codeexample}
+When the nodes are too far appart, the default angle of |30| may produce strange results as it will go above (for |('|) the vertical line. Either choose a shorter angle, or see |<'| instead.
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -515,6 +526,42 @@ We give now a list of wire styles provided in this library (|/zx/wires definitio
                            & \zxX{\beta} \ar[I.ss,dl] \\
     \zxZ{\alpha}\\
   \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/<'=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/<.=angle (default 60)\@nil%
+  %\extractkey/zx/wires definition/^.=angle (default 60)\@nil%
+  %\extractkey/zx/wires definition/.^=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/'v=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/v'=angle (default 60)\@nil%
+  \makeatother
+  \pgfmanualbody
+  These keys are a bit like |('| or |(.| but the arrival angle is vertical (or horizontal for the |^| (up-down) and |v| (down-up) versions). As before, the position of the decorator |.|,|'| denote the direction of the wire.
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxN{}                         & & \zxZ{}\\
+  \zxX{} \ar[rru,<'] \ar[rrd,<.] & \\
+  \zxN{}                         & & \zxZ{}\\
+\end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxN{} & \zxFracX{\pi}{2} \ar[ddl,.^] \ar[ddr,^.] & \\
+         &                                & \\
+  \zxZ{} &                                & \zxX{}
+\end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxZ{} &                                & \zxX{}\\
+         &                                & \\
+  \zxN{} & \zxX{} \ar[uul,'v] \ar[uur,v'] &
+\end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
 
@@ -786,8 +833,9 @@ This is used to change how the library does the conversion between |\zxFrac| and
 \begin{pgfmanualentry}
   \extractcommand\zxDefaultSoftAngleS{}\@@
   \extractcommand\zxDefaultSoftAngleO{}\@@
+  \extractcommand\zxDefaultSoftAngleChevron{}\@@
   \pgfmanualbody
-  Default opening angles of |S| and |o| wires. Defaults to respectively $30$ and $40$.
+  Default opening angles of |S|, |o| and |v|/|<| wires. Defaults to respectively $30$, $40$ and $45$.
 \end{pgfmanualentry}
 
 \begin{command}{\zxMinus{}}
@@ -796,7 +844,17 @@ This is used to change how the library does the conversion between |\zxFrac| and
 
 \subsection{Further customization}
 
-You can further customize your drawings using any functionality from \tikzname{} and |tikz-cd| (but it is of course at your own risk). For instance, we can define our own style to create blocks:
+You can further customize your drawings using any functionality from \tikzname{} and |tikz-cd| (but it is of course at your own risk). For instance, we can change the separation between rows and/or columns for a whole picture using:
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[row sep=1mm]
+                &                                         &                        & & \zxZ{\pi} \\
+    \zxN{} \rar & \zxX{} \ar[rd,(.] \ar[urrr,(',H]        &                        & &  & \zxN{} \\
+                &                                         & \zxZ{} \ar[rd,s.] \rar &
+       \zxFracX{\pi}{2} \ar[uur,('] \ar[rru,<'] \ar[rr] &  & \zxN{} \\
+    \zxN{} \rar & \zxFracZ-{\pi}{4} \ar[ru,('] \ar[rr,o.] &            & \zxX{} \ar[rr] &  & \zxN{}
+  \end{ZX}
+\end{codeexample}
+Or we can define our own style to create blocks:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 { % \usetikzlibrary{shadows}
@@ -816,7 +874,7 @@ You can further customize your drawings using any functionality from \tikzname{}
 }
 \end{codeexample}
 }
-Or we can use for instance |fit|, |alias|, |execute at end picture| and layers (the user can use |background| for things behind the drawing, |box| for special nodes above the drawings (like multi-column nodes, see below), and |foreground| which is even higher) to do something like that:
+We can also use for instance |fit|, |alias|, |execute at end picture| and layers (the user can use |background| for things behind the drawing, |box| for special nodes above the drawings (like multi-column nodes, see below), and |foreground| which is even higher) to do something like that:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=3cm]
 % \usetikzlibrary{fit}
