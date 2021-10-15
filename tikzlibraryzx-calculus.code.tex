@@ -15,7 +15,7 @@
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
 
-\usetikzlibrary{cd,backgrounds,positioning,shapes}
+\usetikzlibrary{cd,backgrounds,positioning,shapes,calc}
 % Declare layers.
 \pgfdeclarelayer{background} % Fox boxes using "fit" to group parts of the graph.
 \pgfdeclarelayer{edgelayer} % For edges that are explicitely defined "wc"
@@ -63,6 +63,7 @@
 
 % Angles by default for s and o related arrows
 \def\zxDefaultSoftAngleS{30}
+\def\zxDefaultSoftAngleN{60}
 \def\zxDefaultSoftAngleO{40}
 \def\zxDefaultSoftAngleChevron{60}
 
@@ -128,12 +129,74 @@
     % But they may work both way for some of them.
     % ------------------------------
     %%% Cup/Cap
-    % Like a C shape. Useful for Bell states whose angles must be really marked.
-    C/.style={/tikz/in=180,/tikz/out=180,looseness=2},
+    % Like a C shape (with without a perfect half circle). Useful maybe when perfect circles are too big.
+    % If only tex was a functional language... https://tex.stackexchange.com/questions/618955
+    C@generic/.style n args={8}{ % min/max, angle1, angle2, anchor, \x or \y, \y or \x, where to move,radius code (for circle should be "radius=\n3")
+      to path={
+        \pgfextra{ %% <- we will use def... so need to "exit" a few seconds pgf
+          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          \ifPgfpointOrNode{\tikztostart}{%
+            \def\StartPoint{\tikztostart}%
+          }{%
+            \def\StartPoint{\tikztostart.##4}%
+          }%
+          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          \ifPgfpointOrNode{\tikztotarget}{%
+            \def\TargetPoint{\tikztotarget}%
+          }{%
+            \def\TargetPoint{\tikztotarget.##4}%
+          }%
+        }%
+        (\StartPoint) % <- the path starts at StartPoint
+        %%% Get x coordinate of left-most point
+        let \p1=(\StartPoint),
+        \p2=(\TargetPoint),
+        \n1={##1(##51,##52)}, % coordinate of the most left part (when ##1=min and ##5=\x: ##52 goes to \x2)
+        \n3={abs(##61-##62)/2} % Radius of circle
+        in % Warning: no comma after last line before in
+        %%%% We go on the left if needed (we check that we do move, otherwise we break the arrows tip if
+        %%%% we stay on place
+        %%%% First go to the left if needed
+        \pgfextra{%
+          %% We check if we are moving or not (required to preserve arrow tip direction)
+          \pgfmathapproxequalto{##51}{\n1}%
+        }%
+        \ifpgfmathcomparison\else -- ##7\fi
+        %%%% Version 1:
+        \pgfextra{
+          \pgfmathparse{
+            ifthenelse(##61<##62, % if end angle < angle, draw clockwis
+            "arc[start angle=##3,end angle=##2,##8]",%
+            "arc[start angle=##2,end angle=##3,##8]"%
+            )%
+          }
+        }
+        \pgfmathresult
+        \pgfextra{%
+          %% We check if we are moving or not (required to preserve arrow tip direction)
+          \pgfmathapproxequalto{##52}{\n1}%
+        }%
+        \ifpgfmathcomparison\else -- (\TargetPoint)\fi
+        \tikztonodes % All to path finishes with that to deal with futur nodes I think
+      }
+    },
+    %%
+    C/.style={C@generic={min}{90}{180+90}{west}{\x}{\y}{(\n1,\y1)}{y radius=\n3, x radius=##1*\n3}},
+    C/.default=1,
+    % Like C, but rotated
+    C-/.style={C@generic={max}{90}{-90}{east}{\x}{\y}{(\n1,\y1)}{y radius=\n3, x radius=##1*\n3}},
+    C-/.default=1,
+    C'/.style={C@generic={max}{0}{180}{north}{\y}{\x}{(\x1,\n1)}{x radius=\n3, y radius=##1*\n3}},
+    C'/.default=1,
+    C./.style={C@generic={min}{0}{-180}{south}{\y}{\x}{(\x1,\n1)}{x radius=\n3, y radius=##1*\n3}},
+    C./.default=1,
+    % Like a C shape (with without a perfect half circle). This was the old definition of C...
+    % Hopefully not useful anymore.
+    c/.style={/tikz/in=180,/tikz/out=180,looseness=2},
     % Like C, but symetric
-    C-/.style={/tikz/in=0,/tikz/out=0,looseness=2},
-    C'/.style={/tikz/in=90,/tikz/out=90,looseness=2},
-    C./.style={/tikz/in=-90,/tikz/out=-90,looseness=2},
+    c-/.style={/tikz/in=0,/tikz/out=0,looseness=2},
+    c'/.style={/tikz/in=90,/tikz/out=90,looseness=2},
+    c./.style={/tikz/in=-90,/tikz/out=-90,looseness=2},
     % Similar to C, but with a softer angle. The '.- marker represents the portion of
     % the circle (hence the o) to keep (top, bottom,left/right).
     % Angle is customizable, for instance o'=50.
@@ -159,6 +222,10 @@
     <'/.default=\zxDefaultSoftAngleChevron,
     <./.style={out=-##1,in=180,looseness=0.65},
     <./.default=\zxDefaultSoftAngleChevron,
+    '>/.style={out=0,in=180-##1,looseness=0.65},
+    '>/.default=\zxDefaultSoftAngleChevron,
+    .>/.style={out=0,in=180+##1,looseness=0.65},
+    .>/.default=\zxDefaultSoftAngleChevron,
     ^./.style={out=-90+##1,in=90,looseness=0.65},
     ^./.default=\zxDefaultSoftAngleChevron,
     .^/.style={out=-90-##1,in=90,looseness=0.65},
@@ -199,6 +266,19 @@
     ss.I/.default=\zxDefaultSoftAngleS,
     I.ss/.style={/tikz/out=-##1-90,/tikz/in=180-90},
     I.ss/.default=\zxDefaultSoftAngleS,
+    %%%% Links with a N-shape, i.e. like s shape, but symetric against the diagonal. Equivalently, it's a soft 's' shape with a much wider angle (>45).
+    N'/.style={/tikz/out=##1,/tikz/in=180+##1},
+    N'/.default=\zxDefaultSoftAngleN,
+    N./.style={/tikz/out=-##1,/tikz/in=180-##1},
+    N./.default=\zxDefaultSoftAngleN,
+    -N'/.style={/tikz/out=0,/tikz/in=180+##1},
+    -N'/.default=\zxDefaultSoftAngleN,
+    -N./.style={/tikz/out=0,/tikz/in=180-##1},
+    -N./.default=\zxDefaultSoftAngleN,
+    N'-/.style={/tikz/out=##1,/tikz/in=180},
+    N'-/.default=\zxDefaultSoftAngleN,
+    N.-/.style={/tikz/out=-##1,/tikz/in=180},
+    N.-/.default=\zxDefaultSoftAngleN,
     % No line but vdots/dots in between.
     3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdots$}" anchor=center},
     3 vdots/.default={},
@@ -253,8 +333,7 @@
     % Style to use when no node is drawn
     zxNone/.style={
       zxAllNodes,
-      inner sep=0mm,
-      outer sep=0mm
+      shape=coordinate, % A coordinate has just a center. Nothing more.
     },
     % Style to use when no node is drawn, but a bit of space is required not to make the diagram too small
     zxNone+/.style={
@@ -273,11 +352,9 @@
       inner ysep=0mm,
     },
     % Style to use when no node is drawn, but a large space must be reserved (typically used to fake two
-    % nodes on a single line)
+    % nodes on a single line) (for +I- versions)
     zxNoneDouble/.style={
-      zxAllNodes,
-      inner sep=0mm,
-      outer sep=0mm
+      shape=coordinate
     },
     % Style to use when no node is drawn, but a bit of space is required not to make the diagram too small
     zxNoneDouble+/.style={
@@ -543,7 +620,17 @@
     },
     % Load (thanks ".search also") our own style
     /tikz/every node/.style={%
-      a/.style={alias=####1}, % For quickly adding alias
+      % For quickly adding alias, and displaying this alias in debug mode.
+      a/.code={%
+        \pgfkeysalso{%
+          alias=####1,%
+        }%
+        \ifdefined\zxDebugMode%
+          \pgfkeysalso{%
+            label={[inner sep=0pt,overlay,red,font={\fontsize{5}{6}}]-45:\scalebox{.5}{####1}}
+          }%
+        \fi%
+      },
       /zx/default style nodes,
       /zx/user overlay nodes,
     },
@@ -621,6 +708,18 @@
 
 %%% Declare a symbol for a short minus (useful in fractions)
 \DeclareMathSymbol{\zxMinus}{\mathbin}{AMSa}{"39} % Requires amssymb
+
+%%% Checks if a function is a point or a node.
+%%% Not sure if best solution (needed to dig into source of TeX), but can't find anything better in manual
+%%% https://tex.stackexchange.com/questions/6189553
+\def\ifPgfpointOrNode#1#2#3{%
+  \pgfutil@ifundefined{pgf@sh@ns@#1}{%
+    #2%
+  }{%
+    #3%
+  }%
+}
+
 
 %%% Create different kinds of dots...
 %% https://tex.stackexchange.com/questions/617959

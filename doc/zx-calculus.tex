@@ -20,6 +20,7 @@
 \newcommand{\mylink}[2]{\href{#1}{#2}\footnote{\url{#1}}}
 \usepackage{verbatim}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Documentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,7 +30,7 @@
 \begin{center}
   \vspace*{1em} % Thanks tikzcd
   \tikz\node[scale=1.2]{%
-    \color{gray}\Huge\ttfamily \char`\{\raisebox{.09em}{\textcolor{red!75!black}{zx}}\char`\}};
+    \color{gray}\Huge\ttfamily \char`\{\raisebox{.09em}{\textcolor{red!75!black}{zx-calculus}}\char`\}};
 
   \vspace{0.5em}
   {\Large\bfseries ZX-calculus with \tikzname}
@@ -57,6 +58,7 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
   \end{ZX}
 \end{codeexample}
 
+
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
 This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy this library in your project forever! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
@@ -66,15 +68,15 @@ This library is quite young, so feel free to propose improvements or report issu
 If your CTAN distribution is recent enough, you can directly insert in your file:
 % verse indents stuff, index adds to the index of command at the end of the file, || is a shortcut of \verb||
 \begin{verse}
-  \index{zx@\protect\texttt{zx} package}%
-  \index{Packages and files!zx@\protect\texttt{tikz-cd}}%
-  |\usepackage{zx}|%
+  \index{zx@\protect\texttt{zx-calculus} package}%
+  \index{Packages and files!zx-calculus@\protect\texttt{zx-calculus}}%
+  |\usepackage{zx-calculus}|%
 \end{verse}
 or load \tikzname{} and then use:
 \begin{verse}%
-   \index{cd@\protect\texttt{cd} library}%
-   \index{Libraries!cd@\protect\texttt{cd}}%
-   |\usetikzlibrary{cd}|%
+   \index{cd@\protect\texttt{zx-calculus} library}%
+   \index{Libraries!cd@\protect\texttt{zx-calculus}}%
+   |\usetikzlibrary{zx-calculus}|%
 \end{verse}
 If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/tikzlibraryzx-calculus.code.tex}{\texttt{tikzlibraryzx-calculus.code.tex}} and \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/zx-calculus.sty}{\texttt{zx-calculus.sty}} (right-click on ``Raw'' and ``Save link as'') and save them at the root of your project.
 
@@ -117,11 +119,11 @@ The following commands are useful to create different kinds of nodes. Always add
   \extractcommand\zxNone\opt{+}\opt{-}\marg{text}\@@
   \extractcommand\zxN\opt{+}\opt{-}\marg{text}\@@
   \pgfmanualbody
-  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). Combine it with wires and the |wire centered| style for straight lines or |C|-like wires (alias |wc|, or you will get holes) or |between none| style (alias |bn|) for other curved lines. Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved. The \verb#-|+# decorations are used to add a bit of (respectively) horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
+  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). |\zxNone| is just a coordinate, but |\zxNone-{}| and \verb#\zxNone|{}# are actually nodes with |inner sep=0| along one direction. For that reason, they still have a tiny height or width (impossible to remove as far as I know). If you don't want to get holes when connecting multiple wires to them, it is therefore necessary to use the |wire centered| style for straight lines or |C|-like wires (alias |wc|), or |between none| style (alias |bn|) for other curved lines. Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved. The \verb#-|+# decorations are used to add a bit of (respectively) horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxNone{} \ar[C,d,wc] \ar[rd,s,bn] &[\zxWCol] \zxNone{}\\[\zxWRow]
-  \zxNone{}             \ar[ru,s,bn] &          \zxNone{}
+  \zxNone{} \ar[C,d] \ar[rd,s,bn] &[\zxWCol] \zxNone{}\\[\zxWRow]
+  \zxNone{}          \ar[ru,s,bn] &          \zxNone{}
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
@@ -329,13 +331,24 @@ For fractions, you can configure how you want the label text to be displayed, ei
 Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are useful to put parens appropriately when the fraction is written inline.
 \end{pgfmanualentry}
 
+\begin{command}{\zxDebugMode{}}
+  If this macro is defined, debug mode is active. See below how it can be useful.
+\end{command}
 \begin{stylekey}{/tikz/every node/a=alias}
-  Shortcut to add an |alias| to a wire. Will be practical later when using names instead of direction to connect wires in order to improve readability and maintainability. This is added automatically in |/tikz/every node| style.
+  Shortcut to add an |alias| to a wire, and in debug mode it also displays the alias of the nodes next to it (very practical to quickly add wires as we will see later). To enable debug mode, just type |\def\zxDebugMode{}| before your drawing, potentially in a group like |{\def\zxDebugMode{} your diagram...}| if you want to apply it to a single diagram.
+
+  This will be very practical later when using names instead of direction to connect wires in order to improve readability and maintainability. This is added automatically in |/tikz/every node| style.
 \begin{codeexample}[width=3cm]
   \begin{ZX}
     \zxX[alias=A]{} & \zxZ[a=B]{\beta}
     \ar[from=A,to=B]
   \end{ZX}
+  {\def\zxDebugMode{} %% Enable debug mode for next diagram%
+    \begin{ZX}
+      \zxX[a=A]{} & \zxZ[a=B]{\beta}
+      \ar[from=A,to=B]
+    \end{ZX}
+  }
 \end{codeexample}
 \end{stylekey}
 
@@ -383,7 +396,7 @@ The first one is equivalent to
 \end{verse}
 and the other ones work analogously.
 
-Note that sometimes, it may be practical to properly organize big diagrams to increase readability. To that end, one surely wants to have a small and well indented matrix (emacs |M-x align| is very practical to indent matrices automatically). Unfortunately, adding wires inside the matrix can make the line really long and hard to read. Similarly, some nodes involving fractions or long expressions can also be quite long. It is however easy to increase readability (and maintainability) by moving the wires at the very end of the diagram, using |alias| (shortcut |a|) to connect nodes and |\def| to create shortcuts. Putting inside a macro with |\def| long node definitions can also be useful to keep small items in the matrix:
+Note that sometimes, it may be practical to properly organize big diagrams to increase readability. To that end, one surely wants to have a small and well indented matrix (emacs |M-x align-current| is very practical to indent matrices automatically). Unfortunately, adding wires inside the matrix can make the line really long and hard to read. Similarly, some nodes involving fractions or long expressions can also be quite long. It is however easy to increase readability (and maintainability) by moving the wires at the very end of the diagram, using |alias| (shortcut |a|) to connect nodes and |\def| to create shortcuts. Putting inside a macro with |\def| long node definitions can also be useful to keep small items in the matrix:
 \begin{codeexample}[width=0pt]
 \begin{ZX}[row sep=1pt,
   execute at begin picture={%
@@ -393,7 +406,8 @@ Note that sometimes, it may be practical to properly organize big diagrams to in
     \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
   }
   ]
-  %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+  %%% Matrix: in emacs "M-x align-current" is practical to automatically format it.
+  %%% a is for 'alias'... but also provides a debug mode, see below.
                 &              &                   &                 & \zxZ[a=toprightpi]{\pi} \\
   \zxN[a=in1]{} & \zxX[a=X1]{} &                   &                 &  & \zxN[a=out1]{}       \\
                 &              & \zxZ[a=xmiddle]{} & \mypitwo{}      &  & \zxN[a=out2]{}       \\
@@ -417,6 +431,43 @@ Note that sometimes, it may be practical to properly organize big diagrams to in
   \ar[from=Xdown,to=out3]
 \end{ZX}
 \end{codeexample}
+In that setting, it is often useful to enable the debug mode via |\def\zxDebugMode{}| as explained above to quickly visualize the alias given to each node (note that debug mode works with |a=| but not with |alias=|). For instance, it was easy to rewrite the above diagram by moving nodes in the matrix and arrows after checking their name on the produced pdf:
+\begin{codeexample}[width=0pt]
+{
+  \def\zxDebugMode{}%%%%
+  \begin{ZX}[row sep=1pt,
+    execute at begin picture={%
+      %%% Definition of long items (the goal is to have a small and readable matrix
+      % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+      \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+      \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+    }
+    ]
+    %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+    & \zxN[a=n]{}  & \zxZ[a=xmiddle]{}       &            & \zxN[a=out1]{} \\
+    \zxN[a=in1]{} & \Zpifour{}   & \zxX[a=Xdown]{}         & \mypitwo{} &                \\
+    &              &                         &            & \zxN[a=out2]{} \\
+    \zxN[a=in2]{} & \zxX[a=X1]{} & \zxZ[a=toprightpi]{\pi} &            & \zxN[a=out3]{}
+    %%% Arrows
+    % Column 1
+    \ar[from=in1,to=X1,s]
+    \ar[from=in2,to=Zpi4,.>]
+    % Column 2
+    \ar[from=X1,to=xmiddle,N'=70]
+    \ar[from=X1,to=toprightpi,H]
+    \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
+    \ar[from=Zpi4,to=Xdown]
+    % Column 3
+    \ar[from=xmiddle,to=Xdown,C-]
+    \ar[from=xmiddle,to=mypi2,)]
+    % Column 4
+    \ar[from=mypi2,to=toprightpi,(']
+    \ar[from=mypi2,to=out1,<']
+    \ar[from=mypi2,to=out2,<.]
+    \ar[from=Xdown,to=out3,<.]
+  \end{ZX}
+}
+\end{codeexample}
 
 We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
 
@@ -424,10 +475,10 @@ We give now a list of wire styles provided in this library (|/zx/wires definitio
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/C\@nil%
-  \extractkey/zx/wires definition/C.\@nil%
-  \extractkey/zx/wires definition/C'\@nil%
-  \extractkey/zx/wires definition/C-\@nil%
+  \extractkey/zx/wires definition/C=radius ratio (default 1)\@nil%
+  \extractkey/zx/wires definition/C.=radius ratio (default 1)\@nil%
+  \extractkey/zx/wires definition/C'=radius ratio (default 1)\@nil%
+  \extractkey/zx/wires definition/C-=radius ratio (default 1)\@nil%
   \makeatother
   \pgfmanualbody
   Bell-like wires with an arrival at ``right angle'', |C| represents the shape of the wire, while |.| (bottom), |'| (top) and |-| (side) represent (visually) its position. Combine with |wire centered| (|wc|) to avoid holes when connecting multiple wires.
@@ -440,7 +491,30 @@ We give now a list of wire styles provided in this library (|/zx/wires definitio
     \zxZ{} \ar[r,C.]           & \zxX{}
   \end{ZX}.
 \end{codeexample}
+Note that this style is actually connecting the nodes using a perfect circle (it is \emph{not} based on |curve to|), and therefore should \emph{not} be used together with |in|, |out|, |looseness|\dots{} It has the advantage of connecting nicely nodes which are not aligned or with different shapes:
+\begin{codeexample}[]
+  \begin{ZX}
+    \zxX{\alpha} \ar[dr,C]\\
+    & \zxNone{}
+  \end{ZX}
+\end{codeexample}
+The \meta{radius ratio} parameter can be used to turn the circle into an ellipse using this ratio between both axis:
+\begin{codeexample}[]
+  \begin{ZX}
+    \zxX{\alpha}
+      \ar[dr,C=0.5,red]
+      \ar[dr,C,green]
+      \ar[dr,C=2,blue]
+      \ar[dr,C=3,purple]\\
+                        & \zxNone{}
+  \end{ZX}
+  \begin{ZX}
+    \zxX{} \ar[d,C=2] \ar[r,C'=2]  & \zxZ{} \ar[d,C-=2,H]\\
+    \zxZ{} \ar[r,C.=2]           & \zxX{}
+  \end{ZX}.
+\end{codeexample}
 \end{pgfmanualentry}
+
 
 \begin{pgfmanualentry}
   \makeatletter
@@ -970,5 +1044,6 @@ This can also be used to fake multi-columns nodes (I need to check later if I ca
 I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users (sorry, I don't want to risk an incomplete list) that helped me to understand a bit more \LaTeX and \tikzname. I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
 
 \printindex
+
 
 \end{document}
