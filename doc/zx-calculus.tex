@@ -337,10 +337,10 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
 \begin{stylekey}{/tikz/every node/a=alias}
   Shortcut to add an |alias| to a wire, and in debug mode it also displays the alias of the nodes next to it (very practical to quickly add wires as we will see later). To enable debug mode, just type |\def\zxDebugMode{}| before your drawing, potentially in a group like |{\def\zxDebugMode{} your diagram...}| if you want to apply it to a single diagram.
 
-  This will be very practical later when using names instead of direction to connect wires in order to improve readability and maintainability. This is added automatically in |/tikz/every node| style.
+  This will be very practical later when using names instead of directions to connect wires (this can improve readability and maintainability). This is added automatically in |/tikz/every node| style. Note that debug mode is effective only for |a| and not |alias|.
 \begin{codeexample}[width=3cm]
   \begin{ZX}
-    \zxX[alias=A]{} & \zxZ[a=B]{\beta}
+    \zxX[a=A]{} & \zxZ[a=B]{\beta}
     \ar[from=A,to=B]
   \end{ZX}
   {\def\zxDebugMode{} %% Enable debug mode for next diagram%
@@ -431,7 +431,7 @@ Note that sometimes, it may be practical to properly organize big diagrams to in
   \ar[from=Xdown,to=out3]
 \end{ZX}
 \end{codeexample}
-In that setting, it is often useful to enable the debug mode via |\def\zxDebugMode{}| as explained above to quickly visualize the alias given to each node (note that debug mode works with |a=| but not with |alias=|). For instance, it was easy to rewrite the above diagram by moving nodes in the matrix and arrows after checking their name on the produced pdf:
+In that setting, it is often useful to enable the debug mode via |\def\zxDebugMode{}| as explained above to quickly visualize the alias given to each node (note that debug mode works with |a=| but not with |alias=|). For instance, it was easy to rewrite the above diagram by moving nodes in the matrix and arrows after checking their name on the produced pdf (NB: you can increase |column sep| and |row sep| temporarily to make the debug information more visible):
 \begin{codeexample}[width=0pt]
 {
   \def\zxDebugMode{}%%%%
