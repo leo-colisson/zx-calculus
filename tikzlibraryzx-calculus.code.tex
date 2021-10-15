@@ -615,9 +615,10 @@
     % center on the math axis
     baseline={([yshift=-axis_height]current bounding box.center)},
     % Fix 1-row diagram baseline
-    1-row diagram/.style={%
-      /tikz/baseline={([yshift=-axis_height]current bounding box.center)}%
-    },
+    % By default, 1-row diagrams have a different baseline... This package does not want a special case for 1-row diagrams.
+    1-row diagram/.style={},
+    %% usage: math baseline=wantedBaseline, where you have somewhere \zxX[a=wantedBaseline]{\beta}
+    math baseline/.style={baseline={([yshift=-axis_height]##1)}},
     % Load (thanks ".search also") our own style
     /tikz/every node/.style={%
       % For quickly adding alias, and displaying this alias in debug mode.

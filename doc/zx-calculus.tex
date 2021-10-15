@@ -36,7 +36,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Version 2021/10/15}\\[3mm]
+  {Version 2021/10/15.2}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -349,6 +349,29 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
       \ar[from=A,to=B]
     \end{ZX}
   }
+\end{codeexample}
+\end{stylekey}
+
+\begin{stylekey}{/zx/defaultEnv/math baseline=node alias}
+  You can easily change the default baseline which defaults to:
+  \begin{verse}
+    |baseline={([yshift=-axis_height]current bounding box.center)}|
+  \end{verse}
+  (|axis_height| is the distance to use to center equations on the ``mathematical axis'') by using this in the \meta{options} field of |\zx[options]{...}|. However, this can be a bit long to write, so |math baseline=yourAlias| is a shorcut to |baseline={([yshift=-axis_height]yourAlias)}|:
+\begin{codeexample}[width=0pt]
+Compare $\begin{ZX}
+    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+    & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
+  \end{ZX}
+  = \begin{ZX}
+    \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
+  \end{ZX}$ with $\begin{ZX}[math baseline=wantedBaseline]
+    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+    & \zxX[a=wantedBaseline]{\beta} \zxLoopAboveDots{} \rightManyDots{m}
+  \end{ZX}
+  = \begin{ZX}
+    \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
+  \end{ZX}$
 \end{codeexample}
 \end{stylekey}
 
