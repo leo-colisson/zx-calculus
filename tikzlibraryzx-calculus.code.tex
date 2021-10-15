@@ -86,6 +86,10 @@
   \ifthenelse{\equal{#1}{-}}{\zxMinus}{#1}#4/#5%
 }
 
+% Minus sign to use in \zxZ-{\alpha}
+%\NewExpandableDocumentCommand{\zxMinusInShort}{}{-}
+\NewExpandableDocumentCommand{\zxMinusInShort}{}{-}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Tikz styles
@@ -388,7 +392,7 @@
     zxNoPhaseSmall/.style={
       zxNoPhase
     },
-    % Style for nodes that are small enough to fit in a circle, like $\zxMinus \frac{\pi}{4}$
+    % Style for nodes that are small enough to fit in a circle, like $\zxMinus \frac{\pi}{4}$ or $- \alpha$
     zxShort/.style={
       zxAllNodes,
       zxSpiders,
@@ -429,11 +433,13 @@
     %%% Instead of adding directly the style as the node's content (which would make
     %%% impossible styles that adds the phase in a label outside of the node)
     %%% add@Phase@Spider{,Z,X}={phase of the node} will be in charge of adding it.
-    add@Phase@Spider/.style n args={4}{ % add@Phase@Spider{emptyStyle}{NotEmptyStyle}{node content}
+    % add@Phase@Spider{emptyStyle}{ShortStyle}{LongStyle}{label style}{node content}
+    add@Phase@Spider/.style n args={5}{ %
       zx@emptyStyle/.style={##1},
-      zx@notEmptyStyle/.style={##2},
-      zx@labelStyle/.style={##3},
-      /zx/zx@content/.initial={##4},
+      zx@shortStyle/.style={##2},
+      zx@notEmptyStyle/.style={##3},
+      zx@labelStyle/.style={##4},
+      /zx/zx@content/.initial={##5},
       phase in content,
     },
     add@Phase@Spider@Frac/.style n args={8}{ % add@Phase@Spider{emptyStyle}{NotEmptyStyle}{labelstyle}{sign}{above fraction (no parens)}{below fraction (no parens)}{above fraction (parens)}{below fraction (parens)}
@@ -446,8 +452,8 @@
     },
     % #1 is the node content. Seems that storing it in /zx/zx@content is not enough because keys
     % seems to be local to nodes and are not transfered to label.
-    zx@Execute@Very@End/.style n args={4}{
-      zx@commandToExecuteVeryEnd/.try={##1}{##2}{##3}{##4},
+    zx@Execute@Very@End/.style n args={5}{
+      zx@commandToExecuteVeryEnd/.try={##1}{##2}{##3}{##4}{##5},
     },
     zx@Execute@Very@End/.default={}{}{}{},
     %% zx@Execute@Very@End@Frac={emptystyle}{contentstyle}{labelstyle}{sign}{above frac (no parens)}{below frac (no parens)}{above frac (parens)}{below frac (parens)}
@@ -478,8 +484,8 @@
         %% Modifies zx@commandToExecuteVeryEnd (which is executed at the very end by zx@Execute@Very@End)
         %% in order to add the good style
         \pgfkeysalso{
-          zx@commandToExecuteVeryEnd/.style n args={4}{%
-            execute at begin node={####4},% ####4 = content
+          zx@commandToExecuteVeryEnd/.style n args={5}{%
+            execute at begin node={####5},% ####4 = content
           }%
         }%
         % Checks if the content (stored by add@Phase@Spider in /zx/zx@content) is empty or not
@@ -487,9 +493,15 @@
           \pgfkeysalso{%
             zx@emptyStyle,%
           }%
-        }{%
-          \pgfkeysalso{%
-            zx@notEmptyStyle,%
+        }{% We check if we need to force "short mode" (zxShort instead of zxLong)
+          \ifthenelse{\equal{\pgfkeysvalueof{/zx/zx@shortModeForced}}{true}}{%
+            \pgfkeysalso{%
+              zx@shortStyle,%
+            }%
+          }{% Otherwise, just use the default style.
+            \pgfkeysalso{%
+              zx@notEmptyStyle,%
+            }%
           }%
         }%
       }%
@@ -510,12 +522,12 @@
       }{%
         \pgfkeysalso{%
           % ##1 is the argument of "phase in label", i.e. the style of the label
-          zx@commandToExecuteVeryEnd/.code n args={4}{% ####3: label style, ####4: content
+          zx@commandToExecuteVeryEnd/.code n args={5}{% ####4: label style, ####5: content
             % Checks if the content (stored by add@Phase@Spider in /zx/zx@content) is empty or not
-            \ifthenelse{\equal{####4}{}}{% Content is empty
+            \ifthenelse{\equal{####5}{}}{% Content is empty
             }{% Content is not empty
               \pgfkeysalso{
-                label={[####3,##1] ####4},%
+                label={[####4,##1] ####5},%
               }%
             }%
           },%
@@ -541,26 +553,70 @@
     },
     pill/.style={phase in label left=##1},
     %%% Was supposed to automatically find the good style depending on content... Can't find how to do.
-    % Styles zxLong{X/Z} zxNoPhase{X/Z} are automatically selected by \zxZ2{...} and \zxX2{...} commands
+    % Styles zxLong{X/Z} zxNoPhase{X/Z} are automatically selected by \zxZ4{...} and \zxX4{...} commands
     % and zxShort is selected for fractions only like in \zxFracZ-{\pi}{4}
     % zxZ/.style={zxChoose={##1},fill=colorZxZ},
     % zxX/.style={zxChoose={##1},fill=colorZxX},
-    %%% First argument is additional style. Second argument is content of node.
-    zxZ2/.style 2 args={
-      add@Phase@Spider={zxNoPhaseZ}{zxLongZ}{stylePhaseInLabelZ}{##2},
-      /zx/post preparation labels,
-      /zx/user post preparation labels,
-      %/zx/user overlay nodes,
-      ##1,
-      zx@Execute@Very@End={zxNoPhaseZ}{zxLongZ}{stylePhaseInLabelZ}{##2},
+    %%% First argument is additional style.
+    %%% Second argument is the minus mode: "-" for minus sign, which forces short mode.
+    %%% Third argument is "*" for forced short mode.
+    %%% 4th argument is content of node.
+    zx@spider/.code n args={8}{
+      %% ##1: zxnophase style
+      %% ##2: zxshort style
+      %% ##3: zxlong style
+      %% ##4: label style
+      %% user provided:
+      %% ##5: additional tikz options
+      %% ##6: minus "-" or empty, like "-alpha"
+      %% ##7: star "*" or empty, to force short mode
+      %% ##8: content
+      %%% The argument is a minus. Like \zxZ-{\alpha}, goal is to typeset "-\alpha" in short mode.
+      \ifthenelse{\equal{##6}{-}}{% It's a minus!
+        \pgfkeysalso{% We update the content to "-content"
+          /zx/zx@shortModeForced/.initial={true},%
+        }%
+      }{}%
+      \ifthenelse{\equal{##7}{*}}{% We force short mode!
+        \pgfkeysalso{%
+          /zx/zx@shortModeForced/.initial={true},%
+        }%
+      }{}%
+      %  It's a minus, and LaTeX is... grrrr. How to get a cleaner code? Tried def/let, not working.
+      \ifthenelse{\equal{##6}{-}}{%
+        \pgfkeysalso{%
+          add@Phase@Spider={##1}{##2}{##3}{##4}{\zxMinusInShort##8},%
+        }%
+      }{%
+        \pgfkeysalso{%
+          add@Phase@Spider={##1}{##2}{##3}{##4}{##8},%
+        }%
+      }%
+      \pgfkeysalso{%
+        /zx/post preparation labels,
+        /zx/user post preparation labels,
+        % /zx/user overlay nodes,
+        ##5,
+      }%
+      \ifthenelse{\equal{##6}{-}}{% It's a minus, and LaTeX is... grrrr
+        \pgfkeysalso{%
+          zx@Execute@Very@End={##1}{##2}{##3}{##4}{\zxMinusInShort##8},%
+        }%
+      }{%
+        \pgfkeysalso{%
+          zx@Execute@Very@End={##1}{##2}{##3}{##4}{##8},%
+        }%
+      }%
     },
-    %% ##1: other styles, ##2: content
-    zxX2/.style 2 args={
-      add@Phase@Spider={zxNoPhaseX}{zxLongX}{stylePhaseInLabelX}{##2},
-      /zx/post preparation labels,
-      /zx/user post preparation labels,
-      ##1,
-      zx@Execute@Very@End={zxNoPhaseX}{zxLongX}{stylePhaseInLabelX}{##2},
+    %% ##1: additional tikz options
+    %% ##2: minus "-" or empty, like "-alpha"
+    %% ##3: star "*" or empty, to force short mode
+    %% ##4: content
+    zxZ4/.style n args={4}{
+      zx@spider={zxNoPhaseZ}{zxShortZ}{zxLongZ}{stylePhaseInLabelZ}{##1}{##2}{##3}{##4}
+    },
+    zxX4/.style n args={4}{
+      zx@spider={zxNoPhaseX}{zxShortX}{zxLongX}{stylePhaseInLabelX}{##1}{##2}{##3}{##4}
     },
     %% These take 6 arguments: additional style, sign (string "-" for minus, nothing for "+",
     %% otherwise inserted directly), above fraction (no parens), below fraction (no parens), above fraction (parens), below fraction (parens).
@@ -844,14 +900,14 @@
 
 %% For maximum styling liberty, the content is given directly to the style.
 % It allows the style to put the phase in a label.
-\NewExpandableDocumentCommand{\zxZ}{O{}m}{
-  |[zxZ2={#1}{#2}]| %
+\NewExpandableDocumentCommand{\zxZ}{O{}t*t-m}{
+  |[zxZ4={#1}{\IfBooleanTF{#3}{-}{}}{\IfBooleanTF{#2}{*}{}}{#4}]| %
 }
 
 %% For maximum styling liberty, the content is given directly to the style.
 %% It allows the style to put the phase in a label.
-\NewExpandableDocumentCommand{\zxX}{O{}m}{
-  |[zxX2={#1}{#2}]| %
+\NewExpandableDocumentCommand{\zxX}{O{}t*t-m}{
+  |[zxX4={#1}{\IfBooleanTF{#3}{-}{}}{\IfBooleanTF{#2}{*}{}}{#4}]| %
 }
 
 \NewExpandableDocumentCommand{\zxH}{O{}m}{

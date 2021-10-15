@@ -167,20 +167,35 @@ Compare
 \end{command}
 
 
-\begin{command}{\zxZ\opt{\oarg{other styles}}\marg{text}}
-  Adds a Z node.
+\begin{command}{\zxZ\opt{\oarg{other styles}\oarg{*}\oarg{-}}\marg{text}}
+  Adds a Z node. \meta{other styles} are optional \tikzname{} arguments (the same as the one provided to |tikz-cd|) They should be use with care, and if possible moved to the style directly to keep a consistent look across the paper.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxZ{} & \zxZ{\alpha} & \zxZ{\alpha + \beta} & \zxZ[text=red]{(a \oplus b)\pi}
 \end{ZX}
 \end{codeexample}
+The optional |-| optional argument is to add a minus sign (customizable, see |\zxMinusInShort|) in front of a very short expression and try to keep a circular shape. This is recommended notably for single letter expressions.
+\begin{codeexample}[width=3cm]
+  Compare \zx{\zxZ{-\alpha}} with \zx{\zxZ-{\alpha}}. Labels:
+  \zx[pila]{\zxZ{-\alpha}} vs \zx[pila]{\zxZ-{\alpha}}.
+\end{codeexample}
+The |*| optional argument is to force a condensed style, no matter what is the text inside. You should use it very rarely (otherwise, change style directly).
+\begin{codeexample}[width=3cm]
+  Compare \zx{\zxZ{-\alpha} \rar & \zxZ{\alpha+\beta}}
+  with \zx{\zxZ*{-\alpha} \rar & \zxZ*{\alpha+\beta}}.
+  Labels:
+  \zx[pila]{\zxZ{-\alpha} \rar & \zxZ{\alpha+\beta}}
+  vs \zx[pila]{\zxZ*{-\alpha} \rar & \zxZ*{\alpha+\beta}}.
+\end{codeexample}
 \end{command}
 
-\begin{command}{\zxX\opt{\oarg{other styles}}\marg{text}}
-  Adds an X node.
+
+\begin{command}{\zxX\opt{\oarg{other styles}\oarg{*}\oarg{-}}\marg{text}}
+  Adds an X node, like for the Z node.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxX{} & \zxX{\alpha} & \zxX{\alpha + \beta} & \zxX[text=green]{(a \oplus b)\pi}
+  \zxX{} & \zxX{\alpha} & \zxX-{\alpha} & \zxX{\alpha + \beta}
+  & \zxX[text=green]{(a \oplus b)\pi}
 \end{ZX}
 \end{codeexample}
 \end{command}
@@ -359,22 +374,34 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
   \end{verse}
   (|axis_height| is the distance to use to center equations on the ``mathematical axis'') by using this in the \meta{options} field of |\zx[options]{...}|. However, this can be a bit long to write, so |math baseline=yourAlias| is a shorcut to |baseline={([yshift=-axis_height]yourAlias)}|:
 \begin{codeexample}[width=0pt]
-Compare $\begin{ZX}
+  Compare $\begin{ZX}
     \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
     & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
   \end{ZX}
-  = \begin{ZX}
-    \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
-  \end{ZX}$ with $\begin{ZX}[math baseline=wantedBaseline]
+  = {\def\zxDefaultSoftAngleS{20} % useful to make the angle in \leftManyDots{} nicer.
+    \begin{ZX}
+      \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
+    \end{ZX}}$ with $\begin{ZX}[math baseline=wantedBaseline]
     \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+    %% See here --v the node chosen as the baseline
     & \zxX[a=wantedBaseline]{\beta} \zxLoopAboveDots{} \rightManyDots{m}
   \end{ZX}
-  = \begin{ZX}
-    \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
-  \end{ZX}$
+  = {\def\zxDefaultSoftAngleS{20} % useful to make the angle in \leftManyDots{} nicer.
+    \begin{ZX}
+      \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
+    \end{ZX}}$
+\end{codeexample}
+Also, if you find your diagram a bit ``too high'', check that you did not forget to remove a trailing |\\| at the end of the last line:
+\begin{codeexample}[width=3cm]
+  Compare $\begin{ZX}
+    \zxZ{} \rar[o'] \rar[o.]      & \zxX{}\\
+    \zxZ{} \rar[o'] \rar[o.] \rar & \zxX{}\\ %% <--- remove last |\\|
+  \end{ZX} = \zx{\zxEmptyDiagram}$ with $\begin{ZX}
+    \zxZ{} \rar[o'] \rar[o.]      & \zxX{}\\
+    \zxZ{} \rar[o'] \rar[o.] \rar & \zxX{}
+  \end{ZX}  = \zx{\zxEmptyDiagram}$
 \end{codeexample}
 \end{stylekey}
-
 
 \subsection{Wires}
 
@@ -800,6 +827,7 @@ A swapped Bell pair is %
 \end{codeexample}
 \end{pgfmanualentry}
 
+
 \section{Advanced styling}
 
 \subsection{Overlaying or creating styles}
@@ -809,7 +837,7 @@ It is possible to arbitrarily customize the styling, create or update ZX or tikz
 \begin{stylekey}{/zx/default style nodes}
   This is where the default style must be loaded. By default, it simply loads the (nested) style packed with this library, |/zx/styles/rounded style|. You can change the style here if you would like to globally change a style.
 
-  Note that a style must typically define at least |zxZ2|, |zxX2|, |zxFracZ6|, |zxFracX6|, |\zxH|, |zxHSmall|, |zxNoPhaseSmallZ|, |zxNoPhaseSmallX|, |zxNone{,+,-,I}|, |zxNoneDouble{,+,-,I}| and all the |phase in label*|, |pil*| styles (see code on how to define them). Because the above styles (notably |zxZ*| and |zxFrac*|) are slightly complex to define (this is needed in order to implement |phase in label|), it may be quite long to implement them all properly by yourself.
+  Note that a style must typically define at least |zxZ4|, |zxX4|, |zxFracZ6|, |zxFracX6|, |\zxH|, |zxHSmall|, |zxNoPhaseSmallZ|, |zxNoPhaseSmallX|, |zxNone{,+,-,I}|, |zxNoneDouble{,+,-,I}| and all the |phase in label*|, |pil*| styles (see code on how to define them). Because the above styles (notably |zxZ*| and |zxFrac*|) are slightly complex to define (this is needed in order to implement |phase in label|, |-| versions\dots{}), it may be quite long to implement them all properly by yourself.
 
   For that reason, it may be easier to load our default style and overlay only some of the styles we use (see example in |/zx/user overlay nodes| right after). You can check our code in |/zx/styles/rounded style| to see what you can redefine (intuitively, the styles like |my style name| should be callable by the end user, |myStyleName| may be redefined by users or used in tikzit, and |my@style@name| are styles that should not be touched by the user). The styles that have most interests are |zxNoPhase| (for Z and X nodes without any phase inside), |zxShort| (for Z and X nodes for fractions typically), |zxLong| (for other Z and X nodes) and |stylePhaseInLabel| (for labels when using |phase in label|). These basic styles are extended to add colors (just add |Z|/|X| after the name) like |zxNoPhaseZ|\dots{} You can change them, but if you just want to change the color, prefer to redefine |colorZxZ|/|colorZxZ| instead (note that this color does not change |stylePhaseInLabelZ/X|, so you are free to redefine these styles as well). All the above styles can however be called from inside a tikzit style, if you want to use tikzit internally (make sure to load this library then in |*.tikzdefs|).
 
@@ -948,6 +976,18 @@ We present now all the properties that a new node style must have (and that can 
 \end{verse}
 This is used to change how the library does the conversion between |\zxFrac| and the actual written text (either in the node content or in the label depending on the function). The first argument is the sign (string |-| for minus, anything else must be written in place of the minus), the second and third argument are the numerator and denominator of the fraction when used in |\frac{}{}| while the last two arguments are the same except that they include the parens which should be added when using an inline version. For instance, one could get a call |\zxConvertToFracInLabel{-}{a+b}{c+d}{(a+b)}{(c+d)}|. See part on labels to see an example of use.
 \end{pgfmanualentry}
+
+\begin{command}{\zxMinusInShort}
+  Sign used in |\zxZ-{\alpha}| and |\zxX-{\alpha}|-like patterns. You can redefine it, for instance:
+\begin{codeexample}[]
+Compare {\def\zxMinusInShort{-}
+  \zx{\zxZ-{\alpha}}
+} and
+{\def\zxMinusInShort{\zxMinus}
+  \zx{\zxZ-{\alpha}}
+}
+\end{codeexample}
+\end{command}
 
 \noindent We also define several spacing commands that can be redefined to your needs:
 \begin{pgfmanualentry}
