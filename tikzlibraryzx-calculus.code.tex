@@ -56,6 +56,9 @@
 %% Wires only: when adding only wires with empty nodes, the space between columns can be too small. Useful not to shrink swap gates...
 \newcommand{\zxWCol}{.55em}
 \newcommand{\zxWRow}{.55em}
+%% When adding two lines with only empty nodes, it can create quite a large space. Use this to reduce it
+\newcommand{\zxNoneCol}{.5mm}
+\newcommand{\zxNoneRow}{.5mm}
 %% When vdots/dots are used in lines
 \newcommand{\zxDotsCol}{3mm}
 \newcommand{\zxDotsRow}{3mm}
@@ -63,6 +66,19 @@
 
 % Angles by default for s and o related arrows
 \def\zxDefaultSoftAngleS{30}
+\def\zxDefaultSoftAngleN{60}
+\def\zxDefaultSoftAngleO{40}
+\def\zxDefaultSoftAngleChevron{60}
+
+% Angles by default for s and o related arrows
+\def\zxDefaultSoftAngleS{30}
+\def\zxDefaultSoftAngleN{60}
+\def\zxDefaultSoftAngleO{40}
+\def\zxDefaultSoftAngleChevron{60}
+
+% Angles by default for s and o related arrows
+\def\zxDefaultStraightO{.2}
+\def\zxDefaultLO{.4}
 \def\zxDefaultSoftAngleN{60}
 \def\zxDefaultSoftAngleO{40}
 \def\zxDefaultSoftAngleChevron{60}
@@ -90,10 +106,95 @@
 %\NewExpandableDocumentCommand{\zxMinusInShort}{}{-}
 \NewExpandableDocumentCommand{\zxMinusInShort}{}{-}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Adding anchors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% We add anchors "fake center {north, south, east, west}" to the nodes. The wires will leave from these anchors (except in IO mode) depending on the direction. If the anchor does not exist, center is picked.
+% https://tex.stackexchange.com/questions/14769/add-more-anchors-to-standard-tikz-nodes
+\def\zx@pgfaddtoshape#1#2{%
+  \begingroup
+  \def\pgf@sm@shape@name{#1}%
+  \let\anchor\pgf@sh@anchor
+  #2%
+  \endgroup
+}
+\def\zx@useanchor#1#2{\csname pgf@anchor@#1@#2\endcsname}
+\zx@pgfaddtoshape{rounded rectangle}{
+  \anchor{fake center east}{%
+    \zx@useanchor{rounded rectangle}{north east}%
+    \pgf@yc=.5\pgf@y% final y = 0.5*this y + 0.5*other y.
+    \zx@useanchor{rounded rectangle}{south east}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@yc%
+  }%
+  \anchor{fake center west}{%
+    \zx@useanchor{rounded rectangle}{north west}%
+    \pgf@yc=.5\pgf@y% final y = 0.5*this y + 0.5*other y.
+    \zx@useanchor{rounded rectangle}{south west}%
+    \pgf@y=.5\pgf@y%
+    \advance\pgf@y by \pgf@yc%
+  }%
+  \anchor{fake center north}{%
+    \zx@useanchor{rounded rectangle}{center}%
+  }%
+  \anchor{fake center south}{%
+    \zx@useanchor{rounded rectangle}{center}%
+  }%
+}
+
+\zx@pgfaddtoshape{circle}{
+  \anchor{fake center east}{%
+    \zx@useanchor{circle}{center}
+  }%
+  \anchor{fake center west}{%
+    \zx@useanchor{circle}{center}
+  }%
+  \anchor{fake center north}{%
+    \zx@useanchor{circle}{center}
+  }%
+  \anchor{fake center south}{%
+    \zx@useanchor{circle}{center}
+  }%
+}
+
+\zx@pgfaddtoshape{rectangle}{
+  \anchor{fake center east}{%
+    \zx@useanchor{rectangle}{center}
+  }%
+  \anchor{fake center west}{%
+    \zx@useanchor{rectangle}{center}
+  }%
+  \anchor{fake center north}{%
+    \zx@useanchor{rectangle}{center}
+  }%
+  \anchor{fake center south}{%
+    \zx@useanchor{rectangle}{center}
+  }%
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Tikz styles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% For arguments later:
+\tikzset{
+  /zx/args/-andL/.cd,
+  1-/.initial=\zxDefaultStraightO, %.2 by default
+  2-/.initial=\zxDefaultStraightO,
+  -/.style={
+    1-=#1,
+    2-=#1,
+  },
+  1L/.initial=\zxDefaultLO, % .4 by default
+  2L/.initial=\zxDefaultLO,
+  L/.style={
+    1L=#1,
+    2L=#1,
+  },
+}
+
 
 % Styles. User should not modify "wires definition", but is free to change:
 % - "/zx/default style nodes/" to change completely the node style
@@ -184,7 +285,15 @@
         \tikztonodes % All to path finishes with that to deal with futur nodes I think
       }
     },
-    %%
+    % At the first version, styles were defined using in=... out=... looseness=... However
+    % it gives sometimes bad results (like the curve goes forward at some points) when nodes are
+    % too close or too far appart. However, it may still be useful, so now we define the old
+    % styles, that you can use them using \ar[r,IO,C].
+    % NB: for the newest styles, we add new anchors to the nodes depending on the direction.
+    % I also wanted to add more complicated ways to configqure the starting point (i.e. start at the boundary
+    % and not behind the node), but seems like it's hard (impossible?) to do with matrices...
+    % The reason is that the intersection library seems to fail with matrices.
+    % If you know how to solve that, you can help here: https://tex.stackexchange.com/questions/619274
     C/.style={C@generic={min}{90}{180+90}{west}{\x}{\y}{(\n1,\y1)}{y radius=\n3, x radius=##1*\n3}},
     C/.default=1,
     % Like C, but rotated
@@ -194,33 +303,221 @@
     C'/.default=1,
     C./.style={C@generic={min}{0}{-180}{south}{\y}{\x}{(\x1,\n1)}{x radius=\n3, y radius=##1*\n3}},
     C./.default=1,
-    % Like a C shape (with without a perfect half circle). This was the old definition of C...
-    % Hopefully not useful anymore.
-    c/.style={/tikz/in=180,/tikz/out=180,looseness=2},
-    % Like C, but symetric
-    c-/.style={/tikz/in=0,/tikz/out=0,looseness=2},
-    c'/.style={/tikz/in=90,/tikz/out=90,looseness=2},
-    c./.style={/tikz/in=-90,/tikz/out=-90,looseness=2},
+    C/.style={/tikz/in=180,/tikz/out=180,looseness=2},
+    %%% bezier{px1}{py1}{px2}{py2} creates a bezier curve where px1/py1 are the
+    %%% coordinates of the first control (in "percentage" 0<px1<1, between start and end point) and px2/py2
+    %%% are the coordinates in % of the second control point
+    %%% bezier@general is used to construct also x/y versions, 5 and 6'th argument are \x or \y.
+    bezier@general/.style n args={6}{
+      %on layer=edgelayer,
+      to path={
+        %%% First, check that inputs/outputs are points.
+        \pgfextra{% <- Type latex code inside path
+          %% Setup the startup node. This code can be changed by styles
+          \pgfkeys{/zx/tmp/zx@setup@start@node/.try}
+          \pgfkeys{/zx/tmp/zx@setup@end@node/.try}
+          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          \ifPgfpointOrNode{\tikztostart}{%
+            \def\StartPoint{\tikztostart}%
+          }{%
+            \def\StartPoint{\tikztostart.center}%
+          }%
+          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          \ifPgfpointOrNode{\tikztotarget}{%
+            \def\TargetPoint{\tikztotarget}%
+          }{%
+            \def\TargetPoint{\tikztotarget.center}%
+          }%
+        }%
+        let
+        \p1=(\StartPoint),
+        \p2=(\TargetPoint), %% ##5 = \x or \y, so ##51 = \x1 or \y1.
+        \p{control1}=(\x1-##51*##1+##52*##1, \y1-##61*##2+##62*##2),
+        \p{control2}=(\x1-##51*##3+##52*##3, \y1-##61*##4+##62*##4) in
+        (\StartPoint) .. controls (\p{control1}) and (\p{control2}) .. (\TargetPoint) \tikztonodes
+      },
+    },
+    bezier/.style n args={4}{
+      bezier@general={##1}{##2}{##3}{##4}{\x}{\y}
+    },
+    % Like bezier, all proportions are relative to x distance
+    bezier x/.style n args={4}{
+      bezier@general={##1}{##2}{##3}{##4}{\x}{\x}
+    },
+    % Like bezier, all proportions are relative to y distance
+    bezier y/.style n args={4}{
+      bezier@general={##1}{##2}{##3}{##4}{\y}{\y}
+    },
+    % Directions: configure start/end points
+    /zx/utils/change@tikz@fake@center/.code 2 args={ % ##1: \tikztostart or \tikztotarget, ##2: north...
+      \ifPgfpointOrNode{##1}{}{% This is a node, not a point:
+        \ifAnchorExists{##1}{fake center ##2}{%
+          \pgfpointanchor{##1}{fake center ##2}%
+        }{%
+          \pgfpointanchor{##1}{center}%
+        }%
+        \edef##1{\the\pgf@x,\the\pgf@y}%
+      }
+    },
+    start fake center east/.style={%
+      /zx/tmp/zx@setup@start@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztostart}{east},
+      }
+    },
+    start fake center west/.style={%
+      /zx/tmp/zx@setup@start@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztostart}{west},
+      }
+    },
+    start fake center north/.style={%
+      /zx/tmp/zx@setup@start@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztostart}{north},
+      }
+    },
+    start fake center south/.style={%
+      /zx/tmp/zx@setup@start@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztostart}{south},
+      }
+    },
+    start real center/.style={
+      /zx/tmp/zx@setup@start@node/.style={
+      }
+    },
+    end fake center east/.style={%
+      /zx/tmp/zx@setup@end@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztotarget}{east},
+      }
+    },
+    end fake center west/.style={%
+      /zx/tmp/zx@setup@end@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztotarget}{west},
+      }
+    },
+    end fake center north/.style={%
+      /zx/tmp/zx@setup@end@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztotarget}{north},
+      }
+    },
+    end fake center south/.style={%
+      /zx/tmp/zx@setup@end@node/.style={
+        /zx/utils/change@tikz@fake@center={\tikztotarget}{south},
+      }
+    },
+    end real center/.style={
+      /zx/tmp/zx@setup@end@node/.style={
+      }
+    },
+    left to right/.style={
+      start fake center east,
+      end fake center west
+    },
+    right to left/.style={
+      start fake center west,
+      end fake center east
+    },
+    up to down/.style={
+      start fake center south,
+      end fake center north
+    },
+    down to up/.style={
+      start fake center north,
+      end fake center south
+    },
+    no fake center/.style={
+      start real center,
+      end real center,
+      start anchor=,
+      end anchor=,
+    },
+    %% Forced versions are versions which do not nicely fallback to center if shape does not
+    %% have "fake center XXX". This is used mostly for wires based on in/out (our function b.
+    %% Not sure how to have a code which always fallback to center if shape does not.
+    %% All shapes used in the default style should work with force left to right.
+    force left to right/.style={
+      start anchor=fake center east,
+      end anchor=fake center west
+    },
+    force right to left/.style={
+      start anchor=fake center west,
+      end fake center east
+    },
+    force up to down/.style={
+      start anchor=fake center south,
+      end fake center north
+    },
+    force down to up/.style={
+      start anchor=fake center north,
+      end fake center south
+    },
     % Similar to C, but with a softer angle. The '.- marker represents the portion of
     % the circle (hence the o) to keep (top, bottom,left/right).
     % Angle is customizable, for instance o'=50.
-    o'/.style={/tikz/out=##1,/tikz/in=180-##1},
-    o'/.default=\zxDefaultSoftAngleO,
-    o./.style={/tikz/out=-##1,/tikz/in=180+##1},
-    o./.default=\zxDefaultSoftAngleO,
-    -o/.style={/tikz/out=-90-##1,/tikz/in=90+##1},
-    -o/.default=\zxDefaultSoftAngleO,
-    o-/.style={/tikz/out=-90+##1,/tikz/in=90-##1},
-    o-/.default=\zxDefaultSoftAngleO,
-    % Similar to o, but can be used also for diagonal items.
-    % Why ()? Visualize fixing the top part and moving the bottom part.
-    (/.style={bend right=##1},
+    %%% Actually, it may not be super useful to define it via bezier since it's used only
+    %%% horizontally and vertically... Anyway.
+    o'/.code={%
+      \pgfkeys{%
+        /zx/args/-andL/.cd,
+        ##1,
+        %% 2- --> 1 - (2-)
+        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+      }%
+      \pgfkeysalso{
+        left to right,
+        bezier x={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
+      }%
+    },
+    o./.code={%
+      \pgfkeys{%
+        /zx/args/-andL/.cd,
+        ##1,
+        %% 2- --> 1 - (2-)
+        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+      }%
+      \pgfkeysalso{
+        left to right,
+        bezier x={\pgfkeysvalueof{/zx/args/-andL/1-}}{-\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{-\pgfkeysvalueof{/zx/args/-andL/2L}},
+      }%
+    },
+    -o/.code={%
+      \pgfkeys{%
+        /zx/args/-andL/.cd,
+        ##1,
+        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+      }%
+      \pgfkeysalso{
+        %up to down,
+        bezier y={0.4}{0.2}{0.4}{0.8},
+        bezier y={\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}{\pgfkeysvalueof{/zx/args/-andL/2-}},
+      }%
+    },
+    o-/.code={%
+      \pgfkeys{%
+        /zx/args/-andL/.cd,
+        ##1,
+        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+      }%
+      \pgfkeysalso{
+        %up to down,
+        bezier y={0.4}{0.2}{0.4}{0.8},
+        bezier y={-\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/1-}}{-\pgfkeysvalueof{/zx/args/-andL/2L}}{\pgfkeysvalueof{/zx/args/-andL/2-}},
+      }%
+    },
+    % Similar to o, but can be used also for diagonal items. Combine it with
+    % The dot versions are made for "left to right", and the others for up to down (possible to change)
+    (/.style={
+      start anchor=fake center west,
+      bend right=##1},
     (/.default=30,
-    )/.style={bend left=##1},
+    )/.style={
+      bend left=##1},
     )/.default=30,
-    ('/.style={bend left=##1},
+    ('/.style={
+      bend left=##1
+    },
     ('/.default=30,
-    (./.style={bend right=##1},
+    (./.style={
+      bend right=##1
+    },
     (./.default=30,
     <'/.style={out=##1,in=180,looseness=0.65},
     <'/.default=\zxDefaultSoftAngleChevron,
@@ -283,6 +580,99 @@
     N'-/.default=\zxDefaultSoftAngleN,
     N.-/.style={/tikz/out=-##1,/tikz/in=180},
     N.-/.default=\zxDefaultSoftAngleN,
+    % At the first version, styles were defined using in=... out=... looseness=... However
+    % it gives sometimes bad results (like the curve goes forward at some points) when nodes are
+    % too close or too far appart. However, it may still be useful, so now we define the old
+    % styles, that you can use them using \ar[r,IO,C].
+    IO/.style={
+      C/.style={/tikz/in=180,/tikz/out=180,looseness=2},
+      % Like C, but symetric
+      C-/.style={/tikz/in=0,/tikz/out=0,looseness=2},
+      C'/.style={/tikz/in=90,/tikz/out=90,looseness=2},
+      C./.style={/tikz/in=-90,/tikz/out=-90,looseness=2},
+      % Similar to C, but with a softer angle. The '.- marker represents the portion of
+      % the circle (hence the o) to keep (top, bottom,left/right).
+      % Angle is customizable, for instance o'=50.
+      o'/.style={/tikz/out=####1,/tikz/in=180-####1},
+      o'/.default=\zxDefaultSoftAngleO,
+      o./.style={/tikz/out=-####1,/tikz/in=180+####1},
+      o./.default=\zxDefaultSoftAngleO,
+      -o/.style={/tikz/out=-90-####1,/tikz/in=90+####1},
+      -o/.default=\zxDefaultSoftAngleO,
+      o-/.style={/tikz/out=-90+####1,/tikz/in=90-####1},
+      o-/.default=\zxDefaultSoftAngleO,
+      % Similar to o, but can be used also for diagonal items.
+      % Why ()? Visualize fixing the top part and moving the bottom part.
+      (/.style={bend right=####1},
+      (/.default=30,
+      )/.style={bend left=####1},
+      )/.default=30,
+      ('/.style={bend left=####1},
+      ('/.default=30,
+      (./.style={bend right=####1},
+      (./.default=30,
+      <'/.style={out=####1,in=180,looseness=0.65},
+      <'/.default=\zxDefaultSoftAngleChevron,
+      <./.style={out=-####1,in=180,looseness=0.65},
+      <./.default=\zxDefaultSoftAngleChevron,
+      '>/.style={out=0,in=180-####1,looseness=0.65},
+      '>/.default=\zxDefaultSoftAngleChevron,
+      .>/.style={out=0,in=180+####1,looseness=0.65},
+      .>/.default=\zxDefaultSoftAngleChevron,
+      ^./.style={out=-90+####1,in=90,looseness=0.65},
+      ^./.default=\zxDefaultSoftAngleChevron,
+      .^/.style={out=-90-####1,in=90,looseness=0.65},
+      .^/.default=\zxDefaultSoftAngleChevron,
+      'v/.style={out=90+####1,in=-90,looseness=0.65},
+      'v/.default=\zxDefaultSoftAngleChevron,
+      v'/.style={out=90-####1,in=-90,looseness=0.65},
+      v'/.default=\zxDefaultSoftAngleChevron,
+      % Links with a s-like shape.
+      s/.style={/tikz/out=0,/tikz/in=180,looseness=0.6},
+      % -s'.- shapes are like s, but with a soften (customizable like o) angle.
+      % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
+      s'/.style={/tikz/out=####1,/tikz/in=180+####1},
+      s'/.default=\zxDefaultSoftAngleS,
+      s./.style={/tikz/out=-####1,/tikz/in=180-####1},
+      s./.default=\zxDefaultSoftAngleS,
+      -s'/.style={/tikz/out=0,/tikz/in=180+####1},
+      -s'/.default=\zxDefaultSoftAngleS,
+      -s./.style={/tikz/out=0,/tikz/in=180-####1},
+      -s./.default=\zxDefaultSoftAngleS,
+      s'-/.style={/tikz/out=####1,/tikz/in=180},
+      s'-/.default=\zxDefaultSoftAngleS,
+      s.-/.style={/tikz/out=-####1,/tikz/in=180},
+      s.-/.default=\zxDefaultSoftAngleS,
+      % Links with a s-like shape... but read from top to bottom
+      ss/.style={/tikz/out=0-90,/tikz/in=180-90,looseness=0.6},
+      % -s'.- shapes are like s, but with a soften (customizable like o) angle.
+      % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
+      ss./.style={/tikz/out=####1-90,/tikz/in=180-90+####1},
+      ss./.default=\zxDefaultSoftAngleS,
+      .ss/.style={/tikz/out=-####1-90,/tikz/in=180-90-####1},
+      .ss/.default=\zxDefaultSoftAngleS,
+      sIs./.style={/tikz/out=0-90,/tikz/in=180-90+####1},
+      sIs./.default=\zxDefaultSoftAngleS,
+      .sIs/.style={/tikz/out=0-90,/tikz/in=180-90-####1},
+      .sIs/.default=\zxDefaultSoftAngleS,
+      ss.I/.style={/tikz/out=####1-90,/tikz/in=180-90},
+      ss.I/.default=\zxDefaultSoftAngleS,
+      I.ss/.style={/tikz/out=-####1-90,/tikz/in=180-90},
+      I.ss/.default=\zxDefaultSoftAngleS,
+      %%%% Links with a N-shape, i.e. like s shape, but symetric against the diagonal. Equivalently, it's a soft 's' shape with a much wider angle (>45).
+      N'/.style={/tikz/out=####1,/tikz/in=180+####1},
+      N'/.default=\zxDefaultSoftAngleN,
+      N./.style={/tikz/out=-####1,/tikz/in=180-####1},
+      N./.default=\zxDefaultSoftAngleN,
+      -N'/.style={/tikz/out=0,/tikz/in=180+####1},
+      -N'/.default=\zxDefaultSoftAngleN,
+      -N./.style={/tikz/out=0,/tikz/in=180-####1},
+      -N./.default=\zxDefaultSoftAngleN,
+      N'-/.style={/tikz/out=####1,/tikz/in=180},
+      N'-/.default=\zxDefaultSoftAngleN,
+      N.-/.style={/tikz/out=-####1,/tikz/in=180},
+      N.-/.default=\zxDefaultSoftAngleN,
+    },
     % No line but vdots/dots in between.
     3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdots$}" anchor=center},
     3 vdots/.default={},
@@ -777,6 +1167,23 @@
   }%
 }
 
+% shape anchor name if exists if not. Works, while doing \pgfutil@ifundefined{pgf@anchor@\shapenode{}@#2} fails.
+% I guess it has to do with the way macro are expanded...
+\def\ifAnchorExistsFromShape#1#2#3#4{
+  \pgfutil@ifundefined{pgf@anchor@#1@#2}{%
+    #4%
+  }{%
+    #3%
+  }%
+}
+
+% node name, anchor name, if exists, if not.
+\def\ifAnchorExists#1#2#3#4{%
+  %%% First we extract the shape of the node:
+  \edef\pgf@node@name{#1}%
+  \edef\shapenode{\csname pgf@sh@ns@\pgf@node@name\endcsname}%
+  \ifAnchorExistsFromShape{\shapenode}{#2}{#3}{#4}
+}
 
 %%% Create different kinds of dots...
 %% https://tex.stackexchange.com/questions/617959
