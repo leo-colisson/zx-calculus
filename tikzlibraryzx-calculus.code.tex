@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2021/10/15
+%%% Version: 2021/10/19
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,6 +28,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% User modifiable variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Define colors, can be redefine by user
 \definecolor{colorZxZ}{RGB}{204,255,204}
 \definecolor{colorZxX}{RGB}{255,136,136}
@@ -54,8 +55,11 @@
 \newcommand{\zxHSColFlat}{1mm}
 \newcommand{\zxHSRowFlat}{1mm}
 %% Wires only: when adding only wires with empty nodes, the space between columns can be too small. Useful not to shrink swap gates...
-\newcommand{\zxWCol}{.55em}
-\newcommand{\zxWRow}{.55em}
+\newcommand{\zxWCol}{2mm}
+\newcommand{\zxWRow}{2mm}
+%% Same as zxWCol, but when a single empty node is connected to a non-empty node.
+\newcommand{\zxwCol}{1mm}
+\newcommand{\zxwRow}{1mm}
 %% When adding two lines with only empty nodes, it can create quite a large space. Use this to reduce it
 \newcommand{\zxNoneCol}{.5mm}
 \newcommand{\zxNoneRow}{.5mm}
@@ -76,12 +80,25 @@
 \def\zxDefaultSoftAngleO{40}
 \def\zxDefaultSoftAngleChevron{60}
 
-% Angles by default for s and o related arrows
-\def\zxDefaultStraightO{.2}
-\def\zxDefaultLO{.4}
+% Angles by default for s and o related arrows (in/out version)
 \def\zxDefaultSoftAngleN{60}
 \def\zxDefaultSoftAngleO{40}
 \def\zxDefaultSoftAngleChevron{60}
+
+% Styles for O,N,... (new bezier version)
+\tikzset{
+  /zx/args/-andL/.cd,
+  defaultO/.style={-=.2,L=.4},
+  defaultN/.style={-=.2,L=.8},
+  defaultN-/.style={1-=.4,1L=0},
+  defaultNN/.style={},
+  defaultNIN/.style={1-=0,1L=.6},
+  defaultS/.style={-=.8,L=0},
+  defaultS'/.style={-=.8,L=.2},
+  default-S/.style={1-=.8,1L=0},
+  defaultSIS/.style={1-=0,1L=.8},
+}
+
 
 % Scale to use when scaling 3 dots
 \def\zxScaleDots{.7}
@@ -143,6 +160,21 @@
   }%
 }
 
+\zx@pgfaddtoshape{coordinate}{
+  \anchor{fake center east}{%
+    \zx@useanchor{coordinate}{center}
+  }%
+  \anchor{fake center west}{%
+    \zx@useanchor{coordinate}{center}
+  }%
+  \anchor{fake center north}{%
+    \zx@useanchor{coordinate}{center}
+  }%
+  \anchor{fake center south}{%
+    \zx@useanchor{coordinate}{center}
+  }%
+}
+
 \zx@pgfaddtoshape{circle}{
   \anchor{fake center east}{%
     \zx@useanchor{circle}{center}
@@ -181,20 +213,41 @@
 %%% For arguments later:
 \tikzset{
   /zx/args/-andL/.cd,
-  1-/.initial=\zxDefaultStraightO, %.2 by default
-  2-/.initial=\zxDefaultStraightO,
+  % - is "towards the point", or "x value",
+  % L is "perpendicular to the line going towards the point" (L is for the perpendicular shape), or "y value".
+  1-/.initial=.5, % random value, defaultO... will change that.
+  2-/.initial=.5,
   -/.style={
     1-=#1,
     2-=#1,
   },
-  1L/.initial=\zxDefaultLO, % .4 by default
-  2L/.initial=\zxDefaultLO,
+  1L/.initial=.5,
+  2L/.initial=.5,
   L/.style={
     1L=#1,
     2L=#1,
   },
+  symmetry-L/.code={% 1- <-> 1L, 2- <-> 2L
+    \edef\zx@tmpone{\pgfkeysvalueof{/zx/args/-andL/1-}}%
+    \edef\zx@tmptwo{\pgfkeysvalueof{/zx/args/-andL/2-}}%
+    \pgfkeysalso{%
+      1-/.evaluated=\pgfkeysvalueof{/zx/args/-andL/1L},
+      2-/.evaluated=\pgfkeysvalueof{/zx/args/-andL/2L},
+      1L/.evaluated=\zx@tmpone,
+      2L/.evaluated=\zx@tmptwo,
+    }%
+  },
+  symmetry/.code={% 1- <-> 2-, 1L <-> 2L
+    \edef\zx@tmpone{\pgfkeysvalueof{/zx/args/-andL/1-}}%
+    \edef\zx@tmptwo{\pgfkeysvalueof{/zx/args/-andL/1L}}%
+    \pgfkeysalso{
+      1-/.evaluated=\pgfkeysvalueof{/zx/args/-andL/2-},
+      1L/.evaluated=\pgfkeysvalueof{/zx/args/-andL/2L},
+      2-/.evaluated=\zx@tmpone,
+      2L/.evaluated=\zx@tmptwo,
+    }%
+  },
 }
-
 
 % Styles. User should not modify "wires definition", but is free to change:
 % - "/zx/default style nodes/" to change completely the node style
@@ -303,13 +356,12 @@
     C'/.default=1,
     C./.style={C@generic={min}{0}{-180}{south}{\y}{\x}{(\x1,\n1)}{x radius=\n3, y radius=##1*\n3}},
     C./.default=1,
-    C/.style={/tikz/in=180,/tikz/out=180,looseness=2},
     %%% bezier{px1}{py1}{px2}{py2} creates a bezier curve where px1/py1 are the
     %%% coordinates of the first control (in "percentage" 0<px1<1, between start and end point) and px2/py2
     %%% are the coordinates in % of the second control point
     %%% bezier@general is used to construct also x/y versions, 5 and 6'th argument are \x or \y.
     bezier@general/.style n args={6}{
-      %on layer=edgelayer,
+      on layer=edgelayer,
       to path={
         %%% First, check that inputs/outputs are points.
         \pgfextra{% <- Type latex code inside path
@@ -434,18 +486,22 @@
     %% Not sure how to have a code which always fallback to center if shape does not.
     %% All shapes used in the default style should work with force left to right.
     force left to right/.style={
+      on layer=edgelayer,
       start anchor=fake center east,
       end anchor=fake center west
     },
     force right to left/.style={
+      on layer=edgelayer,
       start anchor=fake center west,
       end fake center east
     },
     force up to down/.style={
+      on layer=edgelayer,
       start anchor=fake center south,
       end fake center north
     },
     force down to up/.style={
+      on layer=edgelayer,
       start anchor=fake center north,
       end fake center south
     },
@@ -457,6 +513,7 @@
     o'/.code={%
       \pgfkeys{%
         /zx/args/-andL/.cd,
+        defaultO,
         ##1,
         %% 2- --> 1 - (2-)
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
@@ -469,6 +526,7 @@
     o./.code={%
       \pgfkeys{%
         /zx/args/-andL/.cd,
+        defaultO,
         ##1,
         %% 2- --> 1 - (2-)
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
@@ -481,6 +539,7 @@
     -o/.code={%
       \pgfkeys{%
         /zx/args/-andL/.cd,
+        defaultO,
         ##1,
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
       }%
@@ -493,6 +552,7 @@
     o-/.code={%
       \pgfkeys{%
         /zx/args/-andL/.cd,
+        defaultO,
         ##1,
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
       }%
@@ -503,13 +563,15 @@
       }%
     },
     % Similar to o, but can be used also for diagonal items. Combine it with
-    % The dot versions are made for "left to right", and the others for up to down (possible to change)
+    % The dot versions are mode logic in "left to right", and the others for up to down (possible to change)
+    % Can combine with "force left to right"...
     (/.style={
-      start anchor=fake center west,
-      bend right=##1},
+      bend right=##1,
+    },
     (/.default=30,
     )/.style={
-      bend left=##1},
+      bend left=##1,
+    },
     )/.default=30,
     ('/.style={
       bend left=##1
@@ -519,67 +581,105 @@
       bend right=##1
     },
     (./.default=30,
-    <'/.style={out=##1,in=180,looseness=0.65},
-    <'/.default=\zxDefaultSoftAngleChevron,
-    <./.style={out=-##1,in=180,looseness=0.65},
-    <./.default=\zxDefaultSoftAngleChevron,
-    '>/.style={out=0,in=180-##1,looseness=0.65},
-    '>/.default=\zxDefaultSoftAngleChevron,
-    .>/.style={out=0,in=180+##1,looseness=0.65},
-    .>/.default=\zxDefaultSoftAngleChevron,
-    ^./.style={out=-90+##1,in=90,looseness=0.65},
-    ^./.default=\zxDefaultSoftAngleChevron,
-    .^/.style={out=-90-##1,in=90,looseness=0.65},
-    .^/.default=\zxDefaultSoftAngleChevron,
-    'v/.style={out=90+##1,in=-90,looseness=0.65},
-    'v/.default=\zxDefaultSoftAngleChevron,
-    v'/.style={out=90-##1,in=-90,looseness=0.65},
-    v'/.default=\zxDefaultSoftAngleChevron,
-    % Links with a s-like shape.
-    s/.style={/tikz/out=0,/tikz/in=180,looseness=0.6},
-    % -s'.- shapes are like s, but with a soften (customizable like o) angle.
-    % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
-    s'/.style={/tikz/out=##1,/tikz/in=180+##1},
-    s'/.default=\zxDefaultSoftAngleS,
-    s./.style={/tikz/out=-##1,/tikz/in=180-##1},
-    s./.default=\zxDefaultSoftAngleS,
-    -s'/.style={/tikz/out=0,/tikz/in=180+##1},
-    -s'/.default=\zxDefaultSoftAngleS,
-    -s./.style={/tikz/out=0,/tikz/in=180-##1},
-    -s./.default=\zxDefaultSoftAngleS,
-    s'-/.style={/tikz/out=##1,/tikz/in=180},
-    s'-/.default=\zxDefaultSoftAngleS,
-    s.-/.style={/tikz/out=-##1,/tikz/in=180},
-    s.-/.default=\zxDefaultSoftAngleS,
-    % Links with a s-like shape... but read from top to bottom
-    ss/.style={/tikz/out=0-90,/tikz/in=180-90,looseness=0.6},
-    % -s'.- shapes are like s, but with a soften (customizable like o) angle.
-    % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
-    ss./.style={/tikz/out=##1-90,/tikz/in=180-90+##1},
-    ss./.default=\zxDefaultSoftAngleS,
-    .ss/.style={/tikz/out=-##1-90,/tikz/in=180-90-##1},
-    .ss/.default=\zxDefaultSoftAngleS,
-    sIs./.style={/tikz/out=0-90,/tikz/in=180-90+##1},
-    sIs./.default=\zxDefaultSoftAngleS,
-    .sIs/.style={/tikz/out=0-90,/tikz/in=180-90-##1},
-    .sIs/.default=\zxDefaultSoftAngleS,
-    ss.I/.style={/tikz/out=##1-90,/tikz/in=180-90},
-    ss.I/.default=\zxDefaultSoftAngleS,
-    I.ss/.style={/tikz/out=-##1-90,/tikz/in=180-90},
-    I.ss/.default=\zxDefaultSoftAngleS,
     %%%% Links with a N-shape, i.e. like s shape, but symetric against the diagonal. Equivalently, it's a soft 's' shape with a much wider angle (>45).
-    N'/.style={/tikz/out=##1,/tikz/in=180+##1},
-    N'/.default=\zxDefaultSoftAngleN,
-    N./.style={/tikz/out=-##1,/tikz/in=180-##1},
-    N./.default=\zxDefaultSoftAngleN,
-    -N'/.style={/tikz/out=0,/tikz/in=180+##1},
-    -N'/.default=\zxDefaultSoftAngleN,
-    -N./.style={/tikz/out=0,/tikz/in=180-##1},
-    -N./.default=\zxDefaultSoftAngleN,
-    N'-/.style={/tikz/out=##1,/tikz/in=180},
-    N'-/.default=\zxDefaultSoftAngleN,
-    N.-/.style={/tikz/out=-##1,/tikz/in=180},
-    N.-/.default=\zxDefaultSoftAngleN,
+    N/.code={
+      \pgfkeys{%
+        /zx/args/-andL/.cd,
+        defaultN,
+        ##1,
+        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+        /zx/args/-andL/2L/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2L},
+      }%
+      \pgfkeysalso{
+        left to right,
+        bezier={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
+      }%
+    },
+    % With this model, we don't need differences between N' and N. so we can also call it N.
+    % But keep other notations to allow easy style change (to use IO again for instance).
+    N'/.style={N={##1}},
+    N./.style={N={##1}},
+    -N/.style={N={defaultN-,##1}},
+    -N'/.style={-N={##1}},
+    -N./.style={-N={##1}},
+    N-/.style={-N'={symmetry,##1}},
+    N'-/.style={N-={##1}},
+    N.-/.style={N-={##1}},
+    %% Up to down version
+    NN/.style={N'={symmetry-L,defaultNN,##1},up to down},
+    NN./.style={NN={##1}},
+    .NN/.style={NN={##1}},
+    NIN/.style={NN={defaultNIN,##1}},
+    INN/.style={NIN={symmetry,##1}},
+    NNI/.style={INN={##1}},
+    %%% <' is basically like -N' (historically < was first), we just put an anchor on the east/....
+    <'/.style={N-={##1},end anchor=west},
+    <./.style={N-={##1},end anchor=west},
+    % Don't use <>^ alone char as style name, it could be useful later for other shortcuts
+    % (replacement directions)
+    '>/.style={-N={##1},start anchor=east},
+    .>/.style={-N={##1},start anchor=east},
+    ^./.style={NNI={##1},end anchor=north},
+    .^/.style={INN={##1},end anchor=north},
+    'v/.style={INN={symmetry,##1}, start anchor=south},
+    v'/.style={NNI={symmetry,##1}, start anchor=south},
+    %%%% Links with a s-like shape.
+    s/.code={
+      \pgfkeys{%
+        /zx/args/-andL/.cd,
+        defaultS,
+        ##1,
+        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+        /zx/args/-andL/2L/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2L},
+      }%
+      \pgfkeysalso{
+        left to right,
+        bezier={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
+      }%
+    },
+    % like S, but with anchor east and west
+    S/.style={
+      s={##1}, start anchor=east, end anchor=west
+    },
+    % -s'.- shapes are like s, but with a soften (customizable like o) angle.
+    % The '. say if you are going up or down, and - forces a sharp angle (- is flat) on the side of the -
+    s'/.style={s={defaultS',##1}},
+    s./.style={s'={##1}},
+    -s/.style={s'={default-S,##1}},
+    -s'/.style={-s={##1}},  % To fit with s' notation
+    -s./.style={-s={##1}},
+    s-/.style={-s'={symmetry,##1}},
+    s'-/.style={s-={##1}},
+    s.-/.style={s-={##1}},
+    % Anchor more marked
+    S/.style={s={##1}, start anchor=east, end anchor=west,},
+    -S/.style={-s'={##1},start anchor=east},
+    -S'/.style={-S={##1}},
+    -S./.style={-S={##1}},
+    S-/.style={s'-={##1},end anchor=west},
+    S'-/.style={S-={##1}},
+    S.-/.style={S-={##1}},
+    %%%% Doubling = up to down.
+    % Links with a s-like shape... but read from top to bottom
+    ss/.style={s={symmetry-L,##1},up to down},
+    SS/.style={ss={##1}, start anchor=south, end anchor=north},
+    % -s'.- shapes are like s, but with a soften (customizable like o) angle.
+    % The '. say if you are going up or down, and 'I' forces a sharp angle (I is flat) on the side of the I
+    ss./.style={s.={symmetry-L,##1},up to down},
+    .ss/.style={ss.={##1}},
+    sIs/.style={ss={defaultSIS,##1}},
+    sIs./.style={ss.={defaultSIS,##1}},
+    .sIs/.style={sIs.={##1}},
+    Iss/.style={sIs={symmetry,##1}},
+    ssI/.style={Iss={##1}},
+    ss.I/.style={sIs.={symmetry,##1}},
+    I.ss/.style={ss.I={##1}},
+    SIS/.style={sIs={##1},start anchor=south},
+    .SIS/.style={.sIs={##1},start anchor=south},
+    ISS/.style={ssI={##1},end anchor=north},
+    SS.I/.style={ss.I={##1},end anchor=north},
+    I.SS/.style={SS.I={##1}},
+    SSI/.style={ISS={##1}},
     % At the first version, styles were defined using in=... out=... looseness=... However
     % it gives sometimes bad results (like the curve goes forward at some points) when nodes are
     % too close or too far appart. However, it may still be useful, so now we define the old
@@ -1226,7 +1326,7 @@
 % Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
 % First optional argument is scale of text, second is scale of =.
 \NewExpandableDocumentCommand{\leftManyDots}{O{1}O{\zxScaleDots}m}{%
-  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdots$}} \ar[r,-s.,start anchor=north east] \ar[r,-s',start anchor=south east] \pgfmatrixnextcell%
+  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdots$}} \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
 }
 
 % Useful to link two nodes and put a vdots in between.
@@ -1236,7 +1336,7 @@
 
 % Like \leftManyDots but on the right. Do *not* create a new node, like in |[zxShortZ]| \alpha \rightManyDots{m}
 \NewExpandableDocumentCommand{\rightManyDots}{O{1}O{\zxScaleDots}m}{%
-  \ar[r,s'-,end anchor=north west] \ar[r,s.-,end anchor=south west] \pgfmatrixnextcell |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdots$}}\scalebox{#1}{\,$#3$}
+  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdots$}}\scalebox{#1}{\,$#3$}
 }
 
 % A swap on one line... Practical mostly to gain space. Must be used with large nodes tough...

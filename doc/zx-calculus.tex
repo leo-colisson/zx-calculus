@@ -4,6 +4,7 @@
 %%% Packages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\usepackage{amsmath}
 \usepackage[margin=3cm]{geometry}
 \usepackage{calc}
 \usepackage{tikz}
@@ -19,7 +20,7 @@
 \usepackage[hidelinks]{hyperref}
 \newcommand{\mylink}[2]{\href{#1}{#2}\footnote{\url{#1}}}
 \usepackage{verbatim}
-
+\usepackage{cleveref}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Documentation
@@ -36,7 +37,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Version 2021/10/15.2}\\[3mm]
+  {Version 2021/10/19}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -61,7 +62,7 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
-This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy this library in your project forever! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
+This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy the two files of this library in your project forever (see installation)! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
 
 \section{Installation}
 
@@ -79,6 +80,221 @@ or load \tikzname{} and then use:
    |\usetikzlibrary{zx-calculus}|%
 \end{verse}
 If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/tikzlibraryzx-calculus.code.tex}{\texttt{tikzlibraryzx-calculus.code.tex}} and \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/zx-calculus.sty}{\texttt{zx-calculus.sty}} (right-click on ``Raw'' and ``Save link as'') and save them at the root of your project.
+
+\section{Quickstart}
+
+You can create a diagram either with |\zx[options]{matrix}| or with:
+\begin{verse}
+  |\begin{ZX}[options]|\\
+    |  matrix|\\
+  |\end{ZX}|
+\end{verse}
+The matrix is composed of columns separated by |&| and rows separated by |\\|. This matrix is basically a \tikzname{} matrix of nodes (even better, a |tikz-cd| matrix, so you can use all the machinary of |tikz-cd|), so cells can be created using \verb#|tikz style| content#. However, the users does not usually need to use this syntax since many nodes like |\zxZ{spider phase}| have been created for them (including |\zxN{}| which is an empty node):
+
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxZ{} & \zxZ{\alpha} & \zxZ-{\alpha} & \zxZ{\alpha+\beta} & \zxFracZ{\pi}{2} & \zxFracZ-{\pi}{2}\\
+  \zxX{} & \zxX{\alpha} & \zxX-{\alpha} & \zxX{\alpha+\beta} & \zxFracX{\pi}{2} & \zxFracX-{\pi}{2}\\
+  \zxN{} & \zxH{}
+\end{ZX}
+\end{codeexample}
+
+Note that if a node has no argument like |\zxN|, you should still end it like |\zxN{}| to make sure you code will be backward compatible and will behave correctly.
+
+To link the nodes, you should use |\arrow[options]| (|\ar[options]| for short) at the end of a cell (you can put many arrows). The options can contain a direction, made of a string of |r| (for ``right''), |l| (for ``left''), |d| (for `down''), |u| (for ``up'') letters. That way, |\ar[rrd]| would be an arrow going right, right, and down:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{} \ar[rrd] & \zxX{}\\
+                  &        & \zxX-{\alpha}
+\end{ZX}
+\end{codeexample}
+See how the alignment of your matrix helps reading it: in emacs |M-x align| is your friend. You may also encounter some shortcuts, like |\rar| instead of |\ar[r]|. Since straight lines are boring, we created many styles that you can just add in the options. For instance, a measured Bell-pair can be created using the |C| style (note also how the |*| argument forces the node to be tighter):
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ*{a \pi} \ar[d,C]\\
+  \zxZ*{b \pi}
+\end{ZX}
+\end{codeexample}
+The name of the style usually tries to graphically represent the shape of a node (here it looks like a |C|). We also introduce many other styles, like |N| for wires that arrive and leave at wide angle (yeah, the |N| is the best letter I could find to fit that shape):
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{}                           & \zxZ{\beta}\\
+  \zxZ{\alpha} \ar[ru,N] \ar[rd,N] &\\
+                                   & \zxZ{\gamma}
+\end{ZX}
+\end{codeexample}
+Or |s| for wires that arrive and leave at sharp angles (the |\zxN{}| is used because it seems that the first cell of a matrix can't be empty):
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{}                           & \zxZ{\beta}\\
+  \zxZ{\alpha} \ar[ru,s] \ar[rd,s] &\\
+                                   & \zxZ{\gamma}
+\end{ZX}
+\end{codeexample}
+You have then different variations of a style depending on the shape and/or direction of it. For instance, if we want the arrival of the |N| wire to be flat, use |N-|:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{\alpha} \ar[rd,N-] \\
+                         & \zxZ{\beta}
+\end{ZX}
+\end{codeexample}
+Similarly |o'| is a style for wires that have the shape of the top part of the circle, and comes with variations depending on the part of the circle that must be kept:
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxZ{\alpha} \ar[r,o',green] \ar[r,o.,red] \ar[d,o-,blue] \ar[d,-o,purple] & \zxZ{\beta}\\
+  \zxZ{\beta}
+\end{ZX}
+\end{codeexample}
+Note that the position of the embellishments (|'|, |-|, |.|\dots{}) tries to graphically represent the shape of the node. That way |-o| means ``take the left part (position of |-|) or the circle |o|''. Applied to |C|, this gives:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxX{} \ar[d,C] \ar[r,C']  & \zxZ{} \ar[d,C-]\\
+  \zxZ{} \ar[r,C.]           & \zxX{}
+\end{ZX}
+\end{codeexample}
+
+You also have styles which automatically add another node in between, for instance |H| adds a Hadamard node in the middle of the node:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{\alpha} \ar[r,o',H] \ar[r,o.,H] &[\zxHCol] \zxZ{\beta}
+\end{ZX}
+\end{codeexample}
+Note that we used also |&[\zxHCol]| instead of |&| (on the first line). This is useful to add an extra space between the columns to have a nicer look. The same apply for rows (see the |*Row| instead of |*Col|):
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{\alpha} \ar[d,-o,Z] \ar[d,o-,X] \\[\zxSRow]
+  \zxX{\beta}
+\end{ZX}
+\end{codeexample}
+The reason for this is that it is hard to always get exactly the good spacing by default (for instance here \tikzname{} has no idea that a |H| node will be inserted when it starts to build the diagram), and sometimes the spacing needs some adjustments. However, while you could manually tweak this space using something like |&[1mm]| (it adds |1mm| to the column space), it is better to use some pre-configured spaced that can be (re)-configured document-wise to keep a uniform spacing. You could define your own spacing, but we already provide a list for the most important spacings. They all start with |zx|, then you find the type of space: |H| for Hadamard, |S| for spiders, |W| when you connect only |\zxNone| nodes (otherwise the diagram will be too shrinked), |w| when one side of the row contains only |\zxNone|\dots{} and then you find |Col| (for columns spacing) or |Row| (for rows spacing). For instance we can use the |\zxNone| style (|\zxN| for short) style and the above spacing to obtain this:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{} \rar &[\zxwCol] \zxH{} \rar &[\zxwCol] \zxN{}
+\end{ZX}
+\end{codeexample}
+\noindent or that:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{} \ar[d,C] \ar[dr,s] &[\zxWCol] \zxN{} \\[\zxWRow]
+  \zxN{} \ar[ru,s]          &          \zxN{} \\
+\end{ZX}
+\end{codeexample}
+
+When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that:
+\begin{codeexample}[]
+  $\zx[math baseline=myZ]{
+    \zxX{}\\
+    \zxZ[a=myZ]{}
+  }
+  = \zx{\zxX{} & \zxZ{}}$
+\end{codeexample}
+
+We also provide easy methods like |phase in label right| to change the labelling of a note (per-node, per-picture or document wise) to move the phase in a label automatically:
+\begin{codeexample}[]
+  \begin{ZX}[phase in label right]
+    \zxZ{\alpha} \arrow[d] \\
+    \zxFracX-{\pi}{4}
+  \end{ZX}
+\end{codeexample}
+
+Now you should know enough to start your first diagrams. The rest of the documentation will go through all the styles, customizations and features, including the one needed to obtain:
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
+      & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
+\end{ZX}
+\end{codeexample}
+\noindent You will also see some tricks (notably based on alias) to create clear bigger diagrams, like this debug mode which turns
+\begin{ZX}[row sep=1pt,
+  execute at begin picture={%
+    %%% Definition of long items (the goal is to have a small and readable matrix
+    % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+    \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+    \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+  }
+  ]
+  %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+  & \zxN[a=n]{}  & \zxZ[a=xmiddle]{}       &            & \zxN[a=out1]{} \\
+  \zxN[a=in1]{} & \Zpifour{}   & \zxX[a=Xdown]{}         & \mypitwo{} &                \\
+  &              &                         &            & \zxN[a=out2]{} \\
+  \zxN[a=in2]{} & \zxX[a=X1]{} & \zxZ[a=toprightpi]{\pi} &            & \zxN[a=out3]{}
+  %%% Arrows
+  % Column 1
+  \ar[from=in1,to=X1,s]
+  \ar[from=in2,to=Zpi4,.>]
+  % Column 2
+  \ar[from=X1,to=xmiddle,N']
+  \ar[from=X1,to=toprightpi,H]
+  \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
+  \ar[from=Zpi4,to=Xdown]
+  % Column 3
+  \ar[from=xmiddle,to=Xdown,C-]
+  \ar[from=xmiddle,to=mypi2,)]
+  % Column 4
+  \ar[from=mypi2,to=toprightpi,(']
+  \ar[from=mypi2,to=out1,<']
+  \ar[from=mypi2,to=out2,<.]
+  \ar[from=Xdown,to=out3,<.]
+\end{ZX} into %
+{%
+  \def\zxDebugMode{}%%%%
+  \begin{ZX}[row sep=1pt,
+    execute at begin picture={%
+      %%% Definition of long items (the goal is to have a small and readable matrix
+      % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+      \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+      \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+    }
+    ]
+    %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+    & \zxN[a=n]{}  & \zxZ[a=xmiddle]{}       &            & \zxN[a=out1]{} \\
+    \zxN[a=in1]{} & \Zpifour{}   & \zxX[a=Xdown]{}         & \mypitwo{} &                \\
+    &              &                         &            & \zxN[a=out2]{} \\
+    \zxN[a=in2]{} & \zxX[a=X1]{} & \zxZ[a=toprightpi]{\pi} &            & \zxN[a=out3]{}
+    %%% Arrows
+    % Column 1
+    \ar[from=in1,to=X1,s]
+    \ar[from=in2,to=Zpi4,.>]
+    % Column 2
+    \ar[from=X1,to=xmiddle,N']
+    \ar[from=X1,to=toprightpi,H]
+    \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
+    \ar[from=Zpi4,to=Xdown]
+    % Column 3
+    \ar[from=xmiddle,to=Xdown,C-]
+    \ar[from=xmiddle,to=mypi2,)]
+    % Column 4
+    \ar[from=mypi2,to=toprightpi,(']
+    \ar[from=mypi2,to=out1,<']
+    \ar[from=mypi2,to=out2,<.]
+    \ar[from=Xdown,to=out3,<.]
+  \end{ZX}
+} \ (of course it only helps during the construction).\\
+
+You will also see how you can customize the styles, and how you can easily extand this library to get any custom diagram:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+{ % \usetikzlibrary{shadows}
+  \tikzset{
+    my bloc/.style={
+      anchor=center,
+      inner sep=2pt,
+      inner xsep=.7em,
+      minimum height=3em,
+      draw,
+      thick,
+      fill=blue!10!white,
+      double copy shadow={opacity=.5},tape,
+    }
+  }
+  \zx{|[my bloc]| f \rar &[1mm] |[my bloc]| g \rar &[1mm] \zxZ{\alpha} \rar & \zxNone{}}
+}
+\end{codeexample}
+}
+
+If you have some questions, suggestions, or bugs, please report them on \texttt{\url{https://github.com/leo-colisson/zx-calculus/issues}}.
+
+\textbf{Tip}: if you are unsure of the definition of a style in an example, just click on it, a link will point to its definition.
 
 \section{Usage}
 
@@ -119,21 +335,53 @@ The following commands are useful to create different kinds of nodes. Always add
   \extractcommand\zxNone\opt{+}\opt{-}\marg{text}\@@
   \extractcommand\zxN\opt{+}\opt{-}\marg{text}\@@
   \pgfmanualbody
-  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). |\zxNone| is just a coordinate, but |\zxNone-{}| and \verb#\zxNone|{}# are actually nodes with |inner sep=0| along one direction. For that reason, they still have a tiny height or width (impossible to remove as far as I know). If you don't want to get holes when connecting multiple wires to them, it is therefore necessary to use the |wire centered| style for straight lines or |C|-like wires (alias |wc|), or |between none| style (alias |bn|) for other curved lines. Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved. The \verb#-|+# decorations are used to add a bit of (respectively) horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
+  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). The \verb#-|+# decorations are used to add a bit of horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
+
+  |\zxNone| is just a coordinate (when possible this node should be preferred over the other versions), but |\zxNone-{}| and \verb#\zxNone|{}# are actually nodes with |inner sep=0| along one direction. For that reason, they still have a tiny height or width (impossible to remove as far as I know). If you don't want to get holes when connecting multiple wires to them, it is therefore necessary to use the |wire centered| style (alias |wc|) (if you are using the |IO| mode, see also the |between none| style).
+
+  Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxNone{} \ar[C,d] \ar[rd,s,bn] &[\zxWCol] \zxNone{}\\[\zxWRow]
-  \zxNone{}          \ar[ru,s,bn] &          \zxNone{}
+  \zxNone{} \ar[C,d] \ar[rd,s] &[\zxWCol] \zxNone{}\\[\zxWRow]
+  \zxNone{}          \ar[ru,s] &          \zxNone{}
+\end{ZX}
+\end{codeexample}
+Use |&[\zxwCol]| (on the first line) and/or |\\[\zxwRow]| when a single None node is connected to the wire to add appropriate spacing (this spacing can of course be redefined to your preferences):
+\begin{codeexample}[]
+Compare \begin{ZX}
+  \zxN{} \rar & \zxZ{} \rar & \zxN{}
+\end{ZX} with \begin{ZX}
+  \zxN{} \rar &[\zxwCol] \zxZ{} \rar &[\zxwCol] \zxN{}
+\end{ZX}
+\end{codeexample}
+Note also that when the top left cell is empty, you can get an error at the compilation (no idea why) |Single ampersand used with wrong catcode|. To prevent that, you can add a none node at this position:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{}         &[\zxwCol] \zxN{} \ar[d]\\[\zxwRow]
+  \zxNone{} \rar & \zxZ{}
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
-
+You may also get this error when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|:
+\begin{codeexample}[vbox]
+\begin{align}
+  \begin{ZX}[ampersand replacement=\&]
+    \zxN{} \rar \&[\zxwCol] \zxN{}
+  \end{ZX}
+  &= \begin{ZX}[ampersand replacement=\&]
+    \zxN{} \rar \&[\zxwCol] \zxZ{} \rar \&[\zxwCol] \zxN{}
+  \end{ZX}\\
+  &= \begin{ZX}[ampersand replacement=\&]
+    \zxN{} \rar \&[\zxwCol] \zxX{} \rar \&[\zxwCol] \zxN{}
+  \end{ZX}
+\end{align}
+\end{codeexample}
 
 \begin{command}{\zxNoneDouble\opt{+-}\marg{text}}
   Like |\zxNone|, but the spacing for \verb#+-|# is large enough to fake two lines in only one. Not extremely useful (or one needs to play with |start anchor=south,end anchor=north|).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxNoneDouble|{} \ar[r,s,start anchor=north,end anchor=south,ls=1.2] \ar[r,s,start anchor=south,end anchor=north,ls=1.2] &[\zxWCol] \zxNoneDouble|{}
+  \zxNoneDouble|{} \ar[r,s,start anchor=north,end anchor=south] \ar[r,s,start anchor=south,end anchor=north] &[\zxWCol] \zxNoneDouble|{}
 \end{ZX}
 \end{codeexample}
 \end{command}
@@ -166,8 +414,7 @@ Compare
 \end{codeexample}
 \end{command}
 
-
-\begin{command}{\zxZ\opt{\oarg{other styles}\oarg{*}\oarg{-}}\marg{text}}
+\begin{command}{\zxZ\opt{\oarg{other styles}*-}\marg{text}}
   Adds a Z node. \meta{other styles} are optional \tikzname{} arguments (the same as the one provided to |tikz-cd|) They should be use with care, and if possible moved to the style directly to keep a consistent look across the paper.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
@@ -179,7 +426,11 @@ The optional |-| optional argument is to add a minus sign (customizable, see |\z
   Compare \zx{\zxZ{-\alpha}} with \zx{\zxZ-{\alpha}}. Labels:
   \zx[pila]{\zxZ{-\alpha}} vs \zx[pila]{\zxZ-{\alpha}}.
 \end{codeexample}
-The |*| optional argument is to force a condensed style, no matter what is the text inside. You should use it very rarely (otherwise, change style directly).
+The |*| optional argument is to force a condensed style, no matter what is the text inside. This can be practical \emph{sometimes}:
+\begin{codeexample}[width=3cm]
+  Compare \zx{\zxN{} \rar & \zxZ{a\pi}} with \zx{\zxN{} \rar & \zxZ*{a\pi}}.
+\end{codeexample}
+\noindent but you should use it as rarely as possible (otherwise, change the style directly). See that it does not always give nice results:
 \begin{codeexample}[width=3cm]
   Compare \zx{\zxZ{-\alpha} \rar & \zxZ{\alpha+\beta}}
   with \zx{\zxZ*{-\alpha} \rar & \zxZ*{\alpha+\beta}}.
@@ -190,7 +441,7 @@ The |*| optional argument is to force a condensed style, no matter what is the t
 \end{command}
 
 
-\begin{command}{\zxX\opt{\oarg{other styles}\oarg{*}\oarg{-}}\marg{text}}
+\begin{command}{\zxX\opt{\oarg{other styles}*-}\marg{text}}
   Adds an X node, like for the Z node.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
@@ -212,7 +463,7 @@ The |*| optional argument is to force a condensed style, no matter what is the t
 
 
 \begin{command}{\leftManyDots\opt{\oarg{text scale}\oarg{dots scale}}\marg{text}}
-  Shortcut to add a dots and a text next to it. It automatically adds the new column, see more examples below.
+  Shortcut to add a dots and a text next to it. It automatically adds the new column, see more examples below. Internally, it uses |3 dots| to place the dots, and can be reproduced using the other nodes around. Note that this node automatically adds a new cell, so you should \emph{not} use |&|.
 \begin{codeexample}[]
 \begin{ZX}
   \leftManyDots{n} \zxX{\alpha}
@@ -259,7 +510,7 @@ The |*| optional argument is to force a condensed style, no matter what is the t
 \noindent The previous commands can be useful to create this figure:
 \begin{codeexample}[width=0pt]% Forces code/example on two lines.
 \begin{ZX}
-  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
       & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
 \end{ZX}
 \end{codeexample}
@@ -375,14 +626,14 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
   (|axis_height| is the distance to use to center equations on the ``mathematical axis'') by using this in the \meta{options} field of |\zx[options]{...}|. However, this can be a bit long to write, so |math baseline=yourAlias| is a shorcut to |baseline={([yshift=-axis_height]yourAlias)}|:
 \begin{codeexample}[width=0pt]
   Compare $\begin{ZX}
-    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
     & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
   \end{ZX}
   = {\def\zxDefaultSoftAngleS{20} % useful to make the angle in \leftManyDots{} nicer.
     \begin{ZX}
       \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
     \end{ZX}}$ with $\begin{ZX}[math baseline=wantedBaseline]
-    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'=60]
+    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
     %% See here --v the node chosen as the baseline
     & \zxX[a=wantedBaseline]{\beta} \zxLoopAboveDots{} \rightManyDots{m}
   \end{ZX}
@@ -404,6 +655,8 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 \end{stylekey}
 
 \subsection{Wires}
+
+\subsubsection{Creating wires and debug mode}
 
 \begin{pgfmanualentry}
   \extractcommand\arrow\opt{\oarg{options}}\@@
@@ -446,7 +699,7 @@ The first one is equivalent to
 \end{verse}
 and the other ones work analogously.
 
-Note that sometimes, it may be practical to properly organize big diagrams to increase readability. To that end, one surely wants to have a small and well indented matrix (emacs |M-x align-current| is very practical to indent matrices automatically). Unfortunately, adding wires inside the matrix can make the line really long and hard to read. Similarly, some nodes involving fractions or long expressions can also be quite long. It is however easy to increase readability (and maintainability) by moving the wires at the very end of the diagram, using |alias| (shortcut |a|) to connect nodes and |\def| to create shortcuts. Putting inside a macro with |\def| long node definitions can also be useful to keep small items in the matrix:
+Note that sometimes, it may be practical to properly organize big diagrams to increase readability. To that end, one surely wants to have a small and well indented matrix (emacs |M-x align-current| or |M-x align| (for selected lines) commands are very practical to indent matrices automatically). Unfortunately, adding wires inside the matrix can make the line really long and hard to read. Similarly, some nodes involving fractions or long expressions can also be quite long. It is however easy to increase readability (and maintainability) by moving the wires at the very end of the diagram, using |a| (like |alias|, but with a debug mode) to connect nodes and |\def| to create shortcuts. Putting inside a macro with |\def| long node definitions can also be useful to keep small items in the matrix:
 \begin{codeexample}[width=0pt]
 \begin{ZX}[row sep=1pt,
   execute at begin picture={%
@@ -503,7 +756,7 @@ In that setting, it is often useful to enable the debug mode via |\def\zxDebugMo
     \ar[from=in1,to=X1,s]
     \ar[from=in2,to=Zpi4,.>]
     % Column 2
-    \ar[from=X1,to=xmiddle,N'=70]
+    \ar[from=X1,to=xmiddle,N']
     \ar[from=X1,to=toprightpi,H]
     \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
     \ar[from=Zpi4,to=Xdown]
@@ -519,8 +772,11 @@ In that setting, it is often useful to enable the debug mode via |\def\zxDebugMo
 }
 \end{codeexample}
 
-We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
+\subsubsection{Wire styles (new generation)}
 
+We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed (ahah, I do my best with what ASCII provides) to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
+
+Note that the first version of that library (which appeared one week before this new version\dots{} hopefully backward compatibility won't be too much of a problem) was using |in=| and |out=| to create these styles. However, it turns out to be not very reliable since the shape of the wire was changing (sometimes importantly) depending on the position of the nodes. This new version should be more reliable, but the older styles are still available by using |IO, nameOfWirestyle| (read more in \cref{subsub:IOwires}).
 
 \begin{pgfmanualentry}
   \makeatletter
@@ -531,9 +787,9 @@ We give now a list of wire styles provided in this library (|/zx/wires definitio
   \extractkey/zx/wires definition/C-=radius ratio (default 1)\@nil%
   \makeatother
   \pgfmanualbody
-  Bell-like wires with an arrival at ``right angle'', |C| represents the shape of the wire, while |.| (bottom), |'| (top) and |-| (side) represent (visually) its position. Combine with |wire centered| (|wc|) to avoid holes when connecting multiple wires.
+  Bell-like wires with an arrival at ``right angle'', |C| represents the shape of the wire, while |.| (bottom), |'| (top) and |-| (side) represent (visually) its position. Combine with |wire centered| (|wc|) to avoid holes when connecting multiple wires (not required with |\zxNone|).
 \begin{codeexample}[]
-  Bell pair \zx{\zxNone{} \ar[d,C,wc] \\[\zxWRow]
+  Bell pair \zx{\zxNone{} \ar[d,C] \\[\zxWRow]
                 \zxNone{}}
   and funny graph
   \begin{ZX}
@@ -541,7 +797,7 @@ We give now a list of wire styles provided in this library (|/zx/wires definitio
     \zxZ{} \ar[r,C.]           & \zxX{}
   \end{ZX}.
 \end{codeexample}
-Note that this style is actually connecting the nodes using a perfect circle (it is \emph{not} based on |curve to|), and therefore should \emph{not} be used together with |in|, |out|, |looseness|\dots{} It has the advantage of connecting nicely nodes which are not aligned or with different shapes:
+Note that this style is actually connecting the nodes using a perfect circle (it is \emph{not} based on |curve to|), and therefore should \emph{not} be used together with |in|, |out|, |looseness|\dots{} (this is the case also for most other styles except the ones in |IO|). It has the advantage of connecting nicely nodes which are not aligned or with different shapes:
 \begin{codeexample}[]
   \begin{ZX}
     \zxX{\alpha} \ar[dr,C]\\
@@ -615,22 +871,80 @@ Then, |('|=|(| and |(.|=|)|; this notation is, I think, more intuitive when link
                                & \zxX{}
 \end{ZX}
 \end{codeexample}
-When the nodes are too far appart, the default angle of |30| may produce strange results as it will go above (for |('|) the vertical line. Either choose a shorter angle, or see |<'| instead.
+When the nodes are too far appart, the default angle of |30| may produce strange results as it will go above (for |('|) the vertical line. Either choose a shorter angle, or see |<'| instead. Note that for now this node is based on |in| and |out|, but it may change later. So if you want to change looseness, or really rely on the precise specified angle, prefer to use |IO,(| instead (which takes the |IO| version, guaranteed to stay untouched).
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/s\@nil%
-  \extractkey/zx/wires definition/s'=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/s.=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/-s'=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/-s.=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/s'-=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/s.-=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/start fake center north\@nil%
+  \extractkey/zx/wires definition/start fake center south\@nil%
+  \extractkey/zx/wires definition/start fake center east\@nil%
+  \extractkey/zx/wires definition/start fake center west\@nil%
+  \extractkey/zx/wires definition/start real center\@nil
+  \extractkey/zx/wires definition/end fake center north\@nil%
+  \extractkey/zx/wires definition/end fake center south\@nil%
+  \extractkey/zx/wires definition/end fake center east\@nil%
+  \extractkey/zx/wires definition/end fake center west\@nil%
+  \extractkey/zx/wires definition/end real center\@nil
+  \extractkey/zx/wires definition/left to right\@nil%
+  \extractkey/zx/wires definition/right to left\@nil%
+  \extractkey/zx/wires definition/up to down\@nil%
+  \extractkey/zx/wires definition/down to up\@nil%
+  \extractkey/zx/wires definition/force left to right\@nil%
+  \extractkey/zx/wires definition/force right to left\@nil%
+  \extractkey/zx/wires definition/force up to down\@nil%
+  \extractkey/zx/wires definition/force down to up\@nil%
+  \extractkey/zx/wires definition/no fake center\@nil%
   \makeatother
   \pgfmanualbody
-  |s| is used to create a s-like wire, to have nicer soften diagonal lines between nodes. Other versions are soften versions (the input and output angles are not as sharp, and the difference angle can be configured as an argument or globally using |\zxDefaultSoftAngleS|). Adding |'| or |.| specifies if the wire is going up-right or down-right.
+  Usually each wire should properly use these functions, so the end user should not need that too often (during a first reading, you can skip this paragraph). We added 4 anchors to nodes: |fake center north|, |fake center south|, |fake center east| and |fake center west|. These anchors are used to determine the starting point of the wires depending on the direction of the wire (I tried to use more complex methods to ensure the wires would start on the boundary, but \mylink{https://tex.stackexchange.com/questions/619274}{they all fail}). Because some nodes may not have these anchors, we can't directly set |start anchor=fake center north, on layer=edgelayer| (but the user can do that if they are using only nodes with these anchors) or the code may fail on some nodes. For that reason, we check that these anchors exist while drawing our wires (which, at the best of my knowledge, can only be done while drawing the path). The |start/end fake center *| code is responsible to configure that properly (|start real center| will use the real center), and |left to right| (and similar) just configure both the |start| and |end| point to ensure the node starts at the appropriate anchor. However this won't work for style not defined in this library: in case you are sure that these anchors exists and want to use your own wire styles, you can then set the anchors manually and use |on layer=edgelayer|, or use |force left to right| (and similar) which will automatically do that for the |start| and |end| points.
+\begin{codeexample}[]
+\begin{ZX}
+  \zxX{\alpha+\beta} \ar[r,o',no fake center] & \zxZ{\alpha+\beta}\\
+  \zxX{\alpha+\beta} \ar[r,o'] & \zxZ{\alpha+\beta}
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/args/-andL/-\@nil%
+  \extractkey/zx/args/-andL/1-\@nil%
+  \extractkey/zx/args/-andL/2-\@nil%
+  \extractkey/zx/args/-andL/L\@nil%
+  \extractkey/zx/args/-andL/1L\@nil%
+  \extractkey/zx/args/-andL/2L\@nil%
+  \extractkey/zx/args/-andL/symmetry-L\@nil%
+  \extractkey/zx/args/-andL/symmetry\@nil%
+  \extractkey/zx/args/-andL/symmetry\@nil%
+  \makeatother
+  \pgfmanualbody
+  The next wires can take multiple options. They are all based on the same set of options for now, namely |/zx/args/-andL/|. The |1*| options are used to configure the starting point, the |2*| to configure the ending point. |-| and |L| will set |-| and |L| for both points. |-| and |L| are used to place two anchors of a Bezier curve. They are expressed in relative distance (so they are typically between $0$ and $1$, but can be pushed above $1$ or below $0$ for stronger effects), |-| is typically on the |x| axis and |L| on the |y| axis (the name represents ``graphically'' the direction). They are however not named |x| and |y| because some wires use them slighlty differently, notably |o| which uses |-| for the direction of the arrow and |L| for the direction perpendicular to the arrow (again the shape of |L| represents a perpendicular line). Each wire interprets |-| and |L| to ensure that $0$ should lead to a straight line, and that a correct shape is obtained when |1-| equals |2-|, |1L| equals |2L| (except for non-symmetric shapes of course), and both |-| and |L| are positive. You should not need |symmetry-L| and |symmetry| directly, they are used internally to do the math. Of course if you need to do symmetries at some point you can use these keys (|symmetry-L| exchange |-| and |L|, and |symmetry| exchanges |1| and |2|). Each of the following nodes have default values which can be configured as explained in \cref{subsec:wirecustom}.
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/s=-andL config (default defaultS)\@nil%
+  \extractkey/zx/wires definition/s'=-andL config (default defaultS')\@nil%
+  \extractkey/zx/wires definition/s.=-andL config (default defaultS')\@nil%
+  \extractkey/zx/wires definition/-s=-andL config (default default-S)\@nil%
+  \extractkey/zx/wires definition/-s'=-andL config (default \{defaultS',default-S\})\@nil%
+  \extractkey/zx/wires definition/-s.=-andL config (default \{defaultS',default-S\})\@nil%
+  \extractkey/zx/wires definition/s-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
+  \extractkey/zx/wires definition/s'-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
+  \extractkey/zx/wires definition/s.-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
+  \extractkey/zx/wires definition/-S=-andL config (default \{defaultS',default-S\})\@nil%
+  \extractkey/zx/wires definition/-S'=-andL config (default \{defaultS',default-S\})\@nil%
+  \extractkey/zx/wires definition/-S.=-andL config (default \{defaultS',default-S\})\@nil%
+  \extractkey/zx/wires definition/S-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
+  \extractkey/zx/wires definition/S'-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
+  \extractkey/zx/wires definition/S.-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
+  \makeatother
+  \pgfmanualbody
+  |s| and |S| are used to create a s-like wire, to have nicer diagonal lines between nodes. Other versions are soften versions (the input and output angles are not as sharp. Adding |'| or |.| specifies if the wire is going up-right or down-right, however as of today if it mostly used for backward compatibility since, for instance, |-s'| is the same as |-s| (but some styles may want to do a difference later). The only exception is for |s|/|s'|/|s.|: |s| has a sharper output angle than |s'| and |s.| (which are both equals).
 \begin{codeexample}[width=3cm]
   \begin{ZX}
     \zxX{\alpha} \ar[s,rd] \\
@@ -638,12 +952,12 @@ When the nodes are too far appart, the default angle of |30| may produce strange
     \zxX{\alpha} \ar[s.,rd] \\
                            & \zxZ{\beta}\\
                            & \zxZ{\alpha}\\
-    \zxX{\beta} \ar[s,ru] \\
+    \zxX{\beta} \ar[S,ru] \\
                            & \zxZ{\alpha}\\
     \zxX{\beta} \ar[s',ru] \\
   \end{ZX}
 \end{codeexample}
-|-| forces the angle on the side of |-| to be horizontal.
+|-| forces the angle on the side of |-| to be horizontal. Because for now the wires start inside the node, this is not very visible. For that reason, versions with a capital |S| have an anchor on the side of |-| lying on the surface of the node (|S| has two such anchors since both inputs and outputs arrives horizontally) instead of on the |fake center *| anchor (see explanation on |fake center| anchors above).
 \begin{codeexample}[width=3cm]
   \begin{ZX}
     \zxX{\alpha} \ar[s.,rd] \\
@@ -652,20 +966,46 @@ When the nodes are too far appart, the default angle of |30| may produce strange
                            & \zxZ{\beta}\\
     \zxX{\alpha} \ar[s.-,rd] \\
                            & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[S,rd] \\
+                           & \zxZ{\beta}\\
   \end{ZX}
 \end{codeexample}
+It is possible to configure it using the options in |-andL config| described in \cref{subsec:wirecustom}, where |-| is the (relative) position of the horizontal Bezier anchor and |L| its relative vertical position (to keep a |s|-shape, you should have |-|$>$|L|).
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{\alpha} \ar[rd,s.] \\
+  & \zxZ{\beta}\\
+  % same as s., configure globally using defaultS'\\
+  \zxX{\alpha} \ar[rd,s.={-=.8,L=.2}]\\
+                 & \zxZ{\beta}\\
+  \zxX{\alpha} \ar[rd,s.={L=.4}] \\
+                 & \zxZ{\beta}\\
+  \zxX{\alpha} \ar[rd,s.={L=0.1,-=1}] \\
+                 & \zxZ{\beta}\\
+  \zxX{\alpha} \ar[rd,s.={-=2}] \\
+                 & \zxZ{\beta}
+\end{ZX}
+\end{codeexample}
+For the non-symmetric versions (involving a vertical arrival), you can configure each point separately using |1-| and |1L| (first point) and |2-| and |2L| (second points).
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/ss\@nil%
-  \extractkey/zx/wires definition/ss.=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/.ss=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/sIs.=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/.sIs=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/ss.I-=angle (default 30)\@nil%
-  \extractkey/zx/wires definition/I.ss-=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/ss=-andL config (default \{defaultS,symmetry-L\})\@nil%
+  \extractkey/zx/wires definition/SS=-andL config (default \{defaultS,symmetry-L\})\@nil%
+  \extractkey/zx/wires definition/ss.=-andL config (default \{defaultS',symmetry-L\})\@nil%
+  \extractkey/zx/wires definition/.ss=-andL config (default \{defaultS',symmetry-L\}30)\@nil%
+  \extractkey/zx/wires definition/sIs.=-andL config (default defaultSIS)\@nil%
+  \extractkey/zx/wires definition/.sIs=-andL config (default \{defaultS',defaultSIS\})\@nil%
+  \extractkey/zx/wires definition/ss.I-=-andL config (default \{defaultS',defaultSIS,symmetry\})\@nil%
+  \extractkey/zx/wires definition/I.ss-=-andL config (default \{defaultS',defaultSIS,symmetry\})\@nil%
+  \extractkey/zx/wires definition/SIS=-andL config (default \{defaultS',defaultSIS\})\@nil%
+  \extractkey/zx/wires definition/.SIS=-andL config (default \{defaultS',defaultSIS\})\@nil%
+  \extractkey/zx/wires definition/ISS=-andL config (default \{defaultS',defaultSIS,symmetry\})\@nil%
+  \extractkey/zx/wires definition/SS.I=-andL config (default \{defaultS',defaultSIS,symmetry\})\@nil%
+  \extractkey/zx/wires definition/I.SS=-andL config (default \{defaultS',defaultSIS,symmetry\})\@nil%
+  \extractkey/zx/wires definition/SSI=-andL config (default \{defaultS',defaultSIS,symmetry\})\@nil%
   \makeatother
   \pgfmanualbody
   |ss| is similar to |s| except that we go from top to bottom instead of from left to right. The position of |.| says if the node is wire is going bottom right (|ss.|) or bottom left (|.ss|).
@@ -677,7 +1017,7 @@ When the nodes are too far appart, the default angle of |30| may produce strange
                            & \zxZ{\beta}\\
                            & \zxX{\beta} \ar[.ss,dl] \\
     \zxZ{\alpha}\\
-                           & \zxX{\beta} \ar[.ss=40,dl] \\
+                           & \zxX{\beta} \ar[.ss={},dl] \\
     \zxZ{\alpha}\\
   \end{ZX}
 \end{codeexample}
@@ -696,43 +1036,153 @@ When the nodes are too far appart, the default angle of |30| may produce strange
     \zxZ{\alpha}\\
   \end{ZX}
 \end{codeexample}
+The |S| version forces the anchor on the vertical line to be on the boundary.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[SS,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[SIS,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[SSI,rd] \\
+                           & \zxZ{\beta}\\
+                           & \zxX{\beta} \ar[.sIs,dl] \\
+    \zxZ{\alpha}\\
+                           & \zxX{\beta} \ar[I.ss,dl] \\
+    \zxZ{\alpha}\\
+  \end{ZX}
+\end{codeexample}
+As for |s| it can be configured:
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxX{\alpha} \ar[rd,SIS] \\
+                             & \zxZ{\beta}\\
+  \zxX{\alpha} \ar[rd,SIS={1L=.4}] \\
+                             & \zxZ{\beta}\\
+  \zxX{\alpha} \ar[rd,SIS={1L=.8}] \\
+                             & \zxZ{\beta}\\
+  \zxX{\alpha} \ar[rd,SIS={1L=1,2L=1}] \\
+                             & \zxZ{\beta}\\
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
-
 
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/<'=angle (default 60)\@nil%
-  \extractkey/zx/wires definition/<.=angle (default 60)\@nil%
-  %\extractkey/zx/wires definition/^.=angle (default 60)\@nil%
-  %\extractkey/zx/wires definition/.^=angle (default 60)\@nil%
-  \extractkey/zx/wires definition/'v=angle (default 60)\@nil%
-  \extractkey/zx/wires definition/v'=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/N=angle (default defaultN)\@nil%
+  \extractkey/zx/wires definition/N'=angle (default defaultN)\@nil%
+  \extractkey/zx/wires definition/N.=angle (default defaultN)\@nil%
+  \extractkey/zx/wires definition/-N=angle (default \{defaultN,defaultN-\})\@nil%
+  \extractkey/zx/wires definition/-N'=angle (default \{defaultN,defaultN-\})\@nil%
+  \extractkey/zx/wires definition/-N.=angle (default \{defaultN,defaultN-\})\@nil%
+  \extractkey/zx/wires definition/N-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
+  \extractkey/zx/wires definition/N'-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
+  \extractkey/zx/wires definition/N.-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
   \makeatother
   \pgfmanualbody
-  These keys are a bit like |('| or |(.| but the arrival angle is vertical (or horizontal for the |^| (up-down) and |v| (down-up) versions). As before, the position of the decorator |.|,|'| denote the direction of the wire.
+  |N| is used to create a left-to-right wire leaving at wide angle and arriving at wide angle (it's named |N| because it roughly have the shape of a capital |N|). In older versions, |'| and |.| was required to specify if the wire should go up-right or down-right, but it is not useful anymore (we keep it for compatibilty with |IO| styles and in case some styles want to do a distinction later).
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[N,rd] \\
+                               & \zxZ{\beta}\\
+                               & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[N,ru]
+  \end{ZX}
+\end{codeexample}
+|-| forces the angle on the side of |-| to be horizontal.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[-N,rd] \\
+                               & \zxZ{\beta}\\
+                               & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[N-,ru]
+  \end{ZX}
+\end{codeexample}
+Like other wires, it can be configured using |-| (horizontal relative position of anchor points) and |L| (vertical relative position of anchor points)\dots{} (make sure to have |-|$<$|L| to have a |N|-looking shape).
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[N,rd] \\
+                               & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[N={L=1.2},rd] \\
+                               & \zxZ{\beta}
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/NN=angle (default \{defaultN,symmetry-L,defaultNN\})\@nil%
+  \extractkey/zx/wires definition/NN.=angle (default \{defaultN,symmetry-L,defaultNN\})\@nil%
+  \extractkey/zx/wires definition/.NN=angle (default \{defaultN,symmetry-L,defaultNN\})\@nil%
+  \extractkey/zx/wires definition/NIN=angle (default \{defaultN,symmetry-L,defaultNN,defaultNIN\})\@nil%
+  \extractkey/zx/wires definition/INN=angle (default \{defaultN,symmetry-L,defaultNN,defaultNIN,symmetry\})\@nil%
+  \extractkey/zx/wires definition/NNI=angle (default \{defaultN,symmetry-L,defaultNN,defaultNIN,symmetry\})\@nil%
+  \makeatother
+  \pgfmanualbody
+  Like |N| but for diagrams read up-to-down or down-to-up. The |.| are maintly used for backward compatibility with |IO| style.
+% \begin{codeexample}[width=3cm]
+%   \begin{ZX}
+%     \zxX{\alpha} \ar[NN,rd] \\
+%                                & \zxZ{\beta}\\
+%                                & \zxZ{\alpha}\\
+%     \zxX{\beta} \ar[NN,ru]
+%   \end{ZX}
+% \end{codeexample}
+% |I| forces the angle on the side of |I| to be vertical.
+% \begin{codeexample}[width=3cm]
+%   \begin{ZX}
+%     \zxX{\alpha} \ar[NIN,rd] \\
+%                                & \zxZ{\beta}\\
+%                                & \zxZ{\alpha}\\
+%     \zxX{\beta} \ar[NNI,ru]
+%   \end{ZX}
+% \end{codeexample}
+% It can be configured like |N| using |-|, |L|\dots{}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/<'=-andL config (default like N-)\@nil%
+  \extractkey/zx/wires definition/<.=-andL config (default like N-)\@nil%
+  \extractkey/zx/wires definition/'>=-andL config (default like -N)\@nil%
+  \extractkey/zx/wires definition/.>=-andL config (default like -N)\@nil%
+  %\extractkey/zx/wires definition/^.=-andL config (default 60)\@nil%
+  %\extractkey/zx/wires definition/.^=-andL config (default 60)\@nil%
+  \extractkey/zx/wires definition/'v=-andL config (default like INN)\@nil%
+  \extractkey/zx/wires definition/v'=-andL config (default like NNI)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |<'| and |<.| are similar to |N-|, except that the anchor of the vertical line is put on the boundary (similarly for |*>| and |-N|, |*v*| and |INN|, and |*^*| and |NIN|: |.^| and |^.| were not possible to put in this documentation since the documentation package does not like the |^| character). The position of |'| and |.| does not really matters anymore in new versions, but for backward compatibility with |IO| styles, and maybe forward compatibility (another style may need this information), it's cleaner to put |.| or |'| on the direction of the wire. It also helps the reader of your diagrams to see the shape of the wire.
 \begin{codeexample}[width=0cm]
 \begin{ZX}
-  \zxN{}                         & & \zxZ{}\\
-  \zxX{} \ar[rru,<'] \ar[rrd,<.] & \\
-  \zxN{}                         & & \zxZ{}\\
+  \zxN{}                         & \zxZ{}\\
+  \zxX{} \ar[ru,<'] \ar[rd,<.] \\
+  \zxN{}                         & \zxZ{}\\
 \end{ZX}
 \end{codeexample}
 \begin{codeexample}[width=0cm]
 \begin{ZX}
-  \zxN{} & \zxFracX{\pi}{2} \ar[ddl,.^] \ar[ddr,^.] & \\
-         &                                & \\
+  \zxN{}                         & \zxZ{}\\
+  \zxX{} \ar[ru,.>] \ar[rd,'>] \\
+  \zxN{}                         & \zxZ{}\\
+\end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxN{} & \zxFracX{\pi}{2} \ar[dl,.^] \ar[dr,^.] & \\
   \zxZ{} &                                & \zxX{}
 \end{ZX}
 \end{codeexample}
 \begin{codeexample}[width=0cm]
 \begin{ZX}
   \zxZ{} &                                & \zxX{}\\
-         &                                & \\
-  \zxN{} & \zxX{} \ar[uul,'v] \ar[uur,v'] &
+  \zxN{} & \zxX{} \ar[ul,'v] \ar[ur,v'] &
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
+
 
 \begin{pgfmanualentry}
   \makeatletter
@@ -781,30 +1231,334 @@ When the nodes are too far appart, the default angle of |30| may produce strange
   \extractkey/zx/wires definition/wce\@nil%
   \makeatother
   \pgfmanualbody
-  When the wires are drawn, they start from the border of the node. However, it can make strange results if nodes do not have the same size, or if we connect none nodes (we will get holes). It is therefore possible to force the wire to start at the center of the node (|wire centered start|, alias |wcs|), to end at the center of the node -|wire centered end|, alias |wce|) or both (|wire centered|, alias |wc|). See also |between node| to also increase looseness when connecting only wires.
+  Forces the wires to start at the center of the node (|wire centered start|, alias |wcs|), to end at the center of the node (|wire centered end|, alias |wce|) or both (|wire centered|, alias |wc|). This may be useful, for instance in the old |IO| mode when nodes have different sizes (the result looks strange otherwise), or with some wires (like |C|) connected to |\ZxNone+| (if possible, use |\zxNone| (without any embellishment) since it does not suffer from this issue as it is a coordinate).
+
+  See also |between none| to also increase looseness when connecting only wires (use |between none| \emph{only} in |IO| mode).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxZ{} \ar[o',r] \ar[o.,r]       & \zxX{\alpha}\\
   \zxZ{} \ar[o',r,wc] \ar[o.,r,wc] & \zxX{\alpha}
 \end{ZX}
 \end{codeexample}
-Without |wc| (note that because there is no node, we need to use |&[\zxWCol]| (for columns) and |\\[\zxWRow]| (for rows) to get nicer spacing):
-\begin{codeexample}[width=3cm]
-\zx{\zxNone{} \rar &[\zxWCol] \zxNone{} \rar &[\zxWCol] \zxNone{} }
+% Without |wc| (note that because there is no node, we need to use |&[\zxWCol]| (for columns) and |\\[\zxWRow]| (for rows) to get nicer spacing):
+% \begin{codeexample}[width=3cm]
+% \zx{\zxNone{} \rar &[\zxWCol] \zxNone{} \rar &[\zxWCol] \zxNone{} }
+% \end{codeexample}
+% With |wc|:
+% \begin{codeexample}[width=3cm]
+% \zx{\zxNone{} \rar[wc] &[\zxWCol] \zxNone{} \rar[wc] &[\zxWCol] \zxNone{}}
+% \end{codeexample}
+\end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/bezier=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
+  \extractkey/zx/wires definition/bezier x=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
+  \extractkey/zx/wires definition/bezier y=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
+  \makeatother
+  \pgfmanualbody
+  To create a bezier wire. These styles are not really meant to be used for the final user because they are long to type and would not be changed document-wise when the style is changed, but most styles are based on these styles. The two first arguments are the relative position of the first anchor (|x| and |y| position), the next two of the second anchor. They are said to be relative in the sense that |{0}{0}| is the coordinate of the first point, and |{1}{1}| the second point. The |bezier x| and |bezier y| are useful when the node are supposed to be horizontally or vertically aligned: the distance are now expressed as a fraction of the horizontal (respectively vertical) distance between the two nodes. Using relative coordinates has the advantage that if the nodes positions are moved, the aspect of the wire does not change (it is just squeezed), while this is not true with |in|/|out| wires.
+\end{pgfmanualentry}
+
+
+\subsubsection{IO wires, the old styles}\label{subsub:IOwires}
+
+\begin{stylekey}{/zx/wires definition/IO}
+As explained above, wires were first defined using |in|, |out| and |looseness|, but this turned out to be sometimes hard to use since the shape of the wire was changing depending on the position. For example consider the differences between the older version:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{}                       & \zxZ{} \\
+  \zxZ{} \ar[ru,IO,N'] \ar[rd,IO,N.] &\\
+                               & \zxZ{} \\
+\end{ZX}
+\begin{ZX}
+  \zxN{}                       & \zxZ{} \\[-3pt]
+  \zxZ{} \ar[ru,IO,N'] \ar[rd,IO,N.] &\\[-3pt]
+                               & \zxZ{} \\
+\end{ZX}
+\begin{ZX}
+  \zxN{}                       & \zxZ{} \\[-5pt]
+  \zxZ{} \ar[ru,IO,N'] \ar[rd,IO,N.] &\\[-5pt]
+                               & \zxZ{} \\
+\end{ZX}
 \end{codeexample}
-With |wc|:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{}                       & \zxZ{} \\
+  \zxZ{} \ar[ru,N'] \ar[rd,N.] &\\
+                               & \zxZ{} \\
+\end{ZX}
+and the newer:
+\begin{ZX}
+  \zxN{}                       & \zxZ{} \\[-3pt]
+  \zxZ{} \ar[ru,N'] \ar[rd,N.] &\\[-3pt]
+                               & \zxZ{} \\
+\end{ZX}
+\begin{ZX}
+  \zxN{}                       & \zxZ{} \\[-5pt]
+  \zxZ{} \ar[ru,N'] \ar[rd,N.] &\\[-5pt]
+                               & \zxZ{} \\
+\end{ZX}
+\end{codeexample}
+Here is another example:
+\begin{codeexample}[]
+Before \begin{ZX}
+  \zxNone{} \ar[IO,C,d,wc] \ar[rd,IO,s] &[\zxWCol] \zxNone{} \\[\zxWRow]
+  \zxNone{}                \ar[ru,IO,s] &          \zxNone{}
+\end{ZX} after \begin{ZX}
+  \zxNone{} \ar[C,d] \ar[rd,s] &[\zxWCol] \zxNone{} \\[\zxWRow]
+  \zxNone{}          \ar[ru,s] &          \zxNone{}
+\end{ZX}
+\end{codeexample}
+This example led to the creation of the |bn| style, in order to try to find appropriate looseness values depending on the case\dots{} but it is harder to use and results are less predictable.
+
+The new method also allowed us to use |N| for both |N.| and |N'| styles (however we kept both versions for backward compatibility and in case later we want to make a distinction between nodes going doing or up).
+
+However, if you prefer the old style, you can just use them by adding |IO,| in front of the style name (styles are nested inside |IO|). Note however that the customization options are of course different.
+\end{stylekey}
+
+We list now the older |IO| styles:
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/C\@nil%
+  \extractkey/zx/wires definition/IO/C\@nil%
+  \extractkey/zx/wires definition/IO/C'\@nil%
+  \extractkey/zx/wires definition/IO/C-\@nil%
+  \makeatother
+  \pgfmanualbody
+  |IO| mode for the |C| wire (used for Bell-like shapes).
+\begin{codeexample}[]
+  Bell pair \zx{\zxNone{} \ar[d,IO,C] \\[\zxWRow]
+                \zxNone{}}
+  and funny graph
+  \begin{ZX}
+    \zxX{} \ar[d,IO,C] \ar[r,C']  & \zxZ{} \ar[d,IO,C-]\\
+    \zxZ{} \ar[r,IO,C.]           & \zxX{}
+  \end{ZX}.
+\end{codeexample}
+Note that the |IO| version cannot really be used when nodes are not aligned (using |wc| can sometimes help with the alignment):
+\begin{codeexample}[]
+  Normal \begin{ZX}
+    \zxX{\alpha} \ar[dr,C]\\
+    & \zxNone{}
+  \end{ZX}, and |IO| \begin{ZX}
+    \zxX{\alpha} \ar[dr,IO,C]\\
+    & \zxNone{}
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/o'=angle (default 40)\@nil%
+  \extractkey/zx/wires definition/IO/o.=angle (default 40)\@nil%
+  \extractkey/zx/wires definition/IO/o-=angle (default 40)\@nil%
+  \extractkey/zx/wires definition/IO/-o=angle (default 40)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |IO| version of |o|. Curved wire, similar to |C| but with a soften angle (optionally specified via \meta{angle}, and globally editable with |\zxDefaultLineWidth|). Again, the symbols specify which part of the circle (represented with |o|) must be kept.
 \begin{codeexample}[width=3cm]
-\zx{\zxNone{} \rar[wc] &[\zxWCol] \zxNone{} \rar[wc] &[\zxWCol] \zxNone{}}
+  \begin{ZX}
+    \zxX{} \ar[d,IO,-o] \ar[d,IO,o-]\\
+    \zxZ{} \ar[r,IO,o'] \ar[r,IO,o.] & \zxX{}
+  \end{ZX}.
+\end{codeexample}
+ Note that these wires can be combined with |H|, |X| or |Z|, in that case one should use appropriate column and row spacing as explained in their documentation:
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[d,IO,-o,H] \ar[d,IO,o-,H]\\[\zxHRow]
+    \zxZ{\beta} \rar & \zxZ{} \ar[r,IO,o',X] \ar[r,IO,o.,Z] &[\zxSCol] \zxX{}
+  \end{ZX}.
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/(=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/)=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/('=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/('=angle (default 30)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |IO| version of |(| (so far they are the same, but it may change later, use this version if you want to play with |looseness|). Curved wire, similar to |o| but can be used for diagonal items. The angle is, like in |bend right|, the opening angle from the line which links the two nodes. For the first two commands, the |(| and |)| symbols must be imagined as if the starting point was on top of the parens, and the ending point at the bottom.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{} \ar[rd,IO,(] \ar[rd,IO,),red]\\
+    & \zxZ{}
+  \end{ZX}.
+\end{codeexample}
+Then, |('|=|(| and |(.|=|)|; this notation is, I think, more intuitive when linking nodes from left to right. |('| is used when going to top right and |(.| when going to bottom right.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+  \zxN{}                       & \zxX{}\\
+  \zxZ{} \ar[ru,IO,('] \ar[IO,rd,(.] & \\
+                               & \zxX{}
+\end{ZX}
+\end{codeexample}
+When the nodes are too far appart, the default angle of |30| may produce strange results as it will go above (for |('|) the vertical line. Either choose a shorter angle, or see |<'| instead.
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/s\@nil%
+  \extractkey/zx/wires definition/IO/s'=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/s.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/-s'=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/-s.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/s'-=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/s.-=angle (default 30)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |IO| version of |s|. |s| is used to create a s-like wire, to have nicer soften diagonal lines between nodes. Other versions are soften versions (the input and output angles are not as sharp, and the difference angle can be configured as an argument or globally using |\zxDefaultSoftAngleS|). Adding |'| or |.| specifies if the wire is going up-right or down-right.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[IO,s,rd] \\
+                               & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[IO,s.,rd] \\
+                               & \zxZ{\beta}\\
+                               & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[IO,s,ru] \\
+                               & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[IO,s',ru] \\
+  \end{ZX}
+\end{codeexample}
+|-| forces the angle on the side of |-| to be horizontal.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[IO,s.,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[IO,-s.,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[IO,s.-,rd] \\
+                           & \zxZ{\beta}\\
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/ss\@nil%
+  \extractkey/zx/wires definition/IO/ss.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/.ss=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/sIs.=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/.sIs=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/ss.I-=angle (default 30)\@nil%
+  \extractkey/zx/wires definition/IO/I.ss-=angle (default 30)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |IO| version of |ss|. |ss| is similar to |s| except that we go from top to bottom instead of from left to right. The position of |.| says if the node is wire is going bottom right (|ss.|) or bottom left (|.ss|).
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[IO,ss,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[IO,ss.,rd] \\
+                           & \zxZ{\beta}\\
+                           & \zxX{\beta} \ar[IO,.ss,dl] \\
+    \zxZ{\alpha}\\
+                           & \zxX{\beta} \ar[IO,.ss,dl] \\
+    \zxZ{\alpha}\\
+  \end{ZX}
+\end{codeexample}
+|I| forces the angle above (if in between the two |s|) or below (if on the same side as |.|) to be vertical.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[IO,ss,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[IO,sIs.,rd] \\
+                           & \zxZ{\beta}\\
+    \zxX{\alpha} \ar[IO,ss.I,rd] \\
+                           & \zxZ{\beta}\\
+                           & \zxX{\beta} \ar[IO,.sIs,dl] \\
+    \zxZ{\alpha}\\
+                           & \zxX{\beta} \ar[IO,I.ss,dl] \\
+    \zxZ{\alpha}\\
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/<'=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/<.=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/'>=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/.>=angle (default 60)\@nil%
+  %\extractkey/zx/wires definition/IO/^.=angle (default 60)\@nil%
+  %\extractkey/zx/wires definition/IO/.^=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/'v=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/v'=angle (default 60)\@nil%
+  \makeatother
+  \pgfmanualbody
+  These keys are a bit like |('| or |(.| but the arrival angle is vertical (or horizontal for the |^| (up-down) and |v| (down-up) versions). As before, the position of the decorator |.|,|'| denote the direction of the wire.
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxN{}                         & \zxZ{}\\
+  \zxX{} \ar[IO,ru,<'] \ar[IO,rd,<.] \\
+  \zxN{}                         & \zxZ{}\\
+\end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxN{} & \zxFracX{\pi}{2} \ar[IO,dl,.^] \ar[IO,dr,^.] & \\
+  \zxZ{} &                                & \zxX{}
+\end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+  \zxZ{} &                                & \zxX{}\\
+  \zxN{} & \zxX{} \ar[IO,ul,'v] \ar[IO,ur,v'] &
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/IO/N'=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/N.=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/-N'=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/-N.=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/N'-=angle (default 60)\@nil%
+  \extractkey/zx/wires definition/IO/N.-=angle (default 60)\@nil%
+  \makeatother
+  \pgfmanualbody
+  |IO| version of |N|. |N| is used to create a wire leaving at wide angle and arriving at wide angle. Adding |'| or |.| specifies if the wire is going up-right or down-right.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[IO,N.,rd] \\
+                               & \zxZ{\beta}\\
+                               & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[IO,N',ru] \\
+  \end{ZX}
+\end{codeexample}
+|-| forces the angle on the side of |-| to be horizontal.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxX{\alpha} \ar[IO,-N.,rd] \\
+                               & \zxZ{\beta}\\
+                               & \zxZ{\alpha}\\
+    \zxX{\beta} \ar[IO,N'-,ru] \\
+  \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
 
 \begin{stylekey}{/zx/wires definition/ls=looseness}
-  Shortcut for |looseness|, allows to quickly redefine looseness. Use with care (or redefine style directly). Note that you can also change yourself other values, like |in|, |out|\dots
+  Shortcut for |looseness|, allows to quickly redefine looseness. Use with care (or redefine style directly), and \emph{do not use on styles that are not in |IO|}, since they don't use the |in|/|out| mechanism (only |(|-like styles use |in|/|out|\dots{} for now. In case you want to change looseness of |(|, prefer to use |IO,(| as it is guaranteed to be backward compatible). We may try later to give a key |looseness| for these styles, but it's not the case for now. For |IO| styles, you can also change yourself other values, like |in|, |out|\dots
 \begin{codeexample}[]
 \begin{ZX}
   \zxZ{} \ar[rd,s] \\
                    & \zxX{}\\
-  \zxZ{} \ar[rd,s,ls=3] \\
+  \zxZ{} \ar[rd,IO,s] \\
+                   & \zxX{}\\
+  \zxZ{} \ar[rd,IO,s,ls=3] \\
                    & \zxX{}
 \end{ZX}
 \end{codeexample}
@@ -817,16 +1571,15 @@ With |wc|:
   \extractkey/zx/wires definition/bn\@nil%
   \makeatother
   \pgfmanualbody
-  When drawing wires only, the default looseness may not be good looking and holes may appear in the line. This style (whose alias is |bn|) should therefore be used when curved wires (except |C| which already has a good looseness, use |wire centered| instead) are connected together. In that case, also make sure to separate columns using |&[\zxWCol]| and row using |\\[\zxWRow]|.
+  When drawing only |IO| wires (normal wires would suffer from this parameter), the default looseness may not be good looking and holes may appear in the line. This style (whose alias is |bn|) should therefore be used when curved wires \emph{from the |IO| path} are connected together. In that case, also make sure to separate columns using |&[\zxWCol]| and rows using |\\[\zxWRow]|.
 \begin{codeexample}[width=3cm]
 A swapped Bell pair is %
 \begin{ZX}
-  \zxNone{} \ar[C,d,wc] \ar[rd,s,bn] &[\zxWCol] \zxNone{} \\[\zxWRow]
-  \zxNone{}             \ar[ru,s,bn] &          \zxNone{}
+  \zxNone{} \ar[IO,C,d,wc] \ar[rd,IO,s,bn] &[\zxWCol] \zxNone{} \\[\zxWRow]
+  \zxNone{}                \ar[ru,IO,s,bn] &          \zxNone{}
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
-
 
 \section{Advanced styling}
 
@@ -1005,10 +1758,12 @@ Compare {\def\zxMinusInShort{-}
   \extractcommand\zxHSRowFlat{}\@@
   \extractcommand\zxWCol{}\@@
   \extractcommand\zxWRow{}\@@
+  \extractcommand\zxwCol{}\@@
+  \extractcommand\zxwRow{}\@@
   \extractcommand\zxDotsCol{}\@@
   \extractcommand\zxDotsRow{}\@@
   \pgfmanualbody
-  These are spaces, to use like |&[\zxHCol]| or |\\[\zxHRow]| in order to increase the default spacing of rows and columns depending on the style of the wire. |H| stands for Hadamard, |S| for Spiders, |W| for Wires only, |HS| for both Spiders and Hadamard, |Dots| for the 3 dots styles. And of course |Col| for columns, |Row| for rows.
+  These are spaces, to use like |&[\zxHCol]| or |\\[\zxHRow]| in order to increase the default spacing of rows and columns depending on the style of the wire. |H| stands for Hadamard, |S| for Spiders, |W| for Wires only, |w| is you link a |zxNone| to a spider, |HS| for both Spiders and Hadamard, |Dots| for the 3 dots styles. And of course |Col| for columns, |Row| for rows.
 \end{pgfmanualentry}
 
 
@@ -1023,6 +1778,33 @@ Compare {\def\zxMinusInShort{-}
 \begin{command}{\zxMinus{}}
   The minus sign used in fractions.
 \end{command}
+
+\subsection{Wire customization}\label{subsec:wirecustom}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/args/-andL/\@nil%
+  \extractkey/zx/args/-andL/defaultO (default {-=.2,L=.4})\@nil%
+  \extractkey/zx/args/-andL/defaultN (default {-=.2,L=.8})\@nil%
+  \extractkey/zx/args/-andL/defaultN- (default {1-=.4,1L=0})\@nil%
+  \extractkey/zx/args/-andL/defaultNN (default {})\@nil%
+  \extractkey/zx/args/-andL/defaultNIN (default {1-=0,1L=.6})\@nil%
+  \extractkey/zx/args/-andL/defaultS (default {-=.8,L=0})\@nil%
+  \extractkey/zx/args/-andL/defaultS' (default {-=.8,L=.2})\@nil%
+  \extractkey/zx/args/-andL/default-S (default {1-=.8,1L=0})\@nil%
+  \extractkey/zx/args/-andL/defaultSIS (default {1-=0,1L=.8})\@nil%
+  \makeatother
+  \pgfmanualbody
+  Default values used by wires. You can customize them globally using something like:
+  \begin{verse}
+    |\tikzset{|\\
+    |  /zx/args/-andL/.cd,|\\
+    |  defaultO/.style={-=.2,L=.4}|\\
+    |}|
+   \end{verse}
+   Basically |defaultO| will configure all the |o| familly, |defaultS'| will configure all the ``soft'' versions of |s|, |default-S| will configure the anchor on the side of the vertical arrival\dots{} For more details or which wire uses which configuration, check the default value given in each style definition.
+\end{pgfmanualentry}
 
 \subsection{Further customization}
 
