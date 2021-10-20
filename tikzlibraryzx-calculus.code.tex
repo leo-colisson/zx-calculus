@@ -15,7 +15,7 @@
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
 
-\usetikzlibrary{cd,backgrounds,positioning,shapes,calc}
+\usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections}
 % Declare layers.
 \pgfdeclarelayer{background} % Fox boxes using "fit" to group parts of the graph.
 \pgfdeclarelayer{edgelayer} % For edges that are explicitely defined "wc"
@@ -122,6 +122,23 @@
 % Minus sign to use in \zxZ-{\alpha}
 %\NewExpandableDocumentCommand{\zxMinusInShort}{}{-}
 \NewExpandableDocumentCommand{\zxMinusInShort}{}{-}
+
+% The library tries to find intersection between fake center east/... and the border of the node
+% to draw the nodes directly on the border.
+% To enable this function (can also be set locally), enable this macro:
+\def\zxShouldUseIntersections{}
+% to disable this check, undefined it:
+% \let\zxShouldUseIntersections\undefined
+% Now, if it cannot find a good intersection (either because "name path" is disabled, or
+% because no intersection is found, or because intersections are disabled anyway) we need to
+% have a fallback mechanism. Either we choose instead the "fake center" (or center if fake
+% center does not exists), but then the wire will be hidden behind the node (it is a problem
+% mostly if you use H nodes a lot, otherwise we recommend this solution):
+\def\zxWireInsideIfNoIntersectionName{}
+% If you prefer to start the wire on the surface of the node, do that instead...
+% but be aware that the shape of the wire will be changed a lot, since we can't use anymore the
+% fake anchors... You could also define a style that does that.
+% \let\zxWireInsideIfNoIntersectionName\undefined
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Adding anchors
@@ -249,6 +266,100 @@
   },
 }
 
+%%% I can't find in pgfkeys a way to store coordinates: pgfpoint simply redefines
+%%% \pgx@x and \pgf@y, which get overwritten quickly...
+%%% Usage: \edef\abc{6pt,2pt}
+%%% Hello \zx@parse@coordx{(\abc)}.
+%%% We use this syntax since \tikztolast uses it (\tiztolast) -- is replaced by (6pt,2pt) --.
+%%% Make sure to use edef, or the coordinates may be changed later if 6pt is replaced by a macro.
+\def\zx@parse@coordx@tmp(#1,#2){#1}%
+\def\zx@parse@coordx#1{%
+  \expandafter\zx@parse@coordx@tmp\expandafter#1
+}
+\def\zx@parse@coordy@tmp(#1,#2){#2}%
+\def\zx@parse@coordy#1{%
+  \expandafter\zx@parse@coordy@tmp\expandafter#1
+}
+
+%% This function checks if the node has a "name path", if so it computes the intersection between
+%% if not if \zxWireInsideIfNoIntersectionName is defined it defines the \tikzto* to the
+%% new@center (argument #2), otherwise it does nothing.
+% #1: Node to consider: \tikztostart or \tikztotarget
+% #2: name of the new@center node corresponding to #1
+% #3: name of the other new@center node
+% #4: result will be stored in this macro... if there is something to change.
+% Result will be moved back into #1
+\def\zx@find@intersection@fakecenter#1#2#3#4{%
+  % First, we check if the user wants to compute the intersection:
+  \ifdefined\zxShouldUseIntersections%
+     %% We compute the intersection
+    \edef\tikz@intersect@path@a{zx@name@path@#1}%
+    \ifcsname tikz@intersect@path@name@\tikz@intersect@path@a \endcsname%
+      \message{ZX: the intersection was found :-)}
+      \pgfintersectionofpaths{%
+        %%%% /!\ This lines is the one I'm not sure how to write:
+        \expandafter\pgfsetpath\csname tikz@intersect@path@name@\tikz@intersect@path@a\endcsname%
+        \pgfgetpath\temppath%
+        %\pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
+        \pgfsetpath\temppath%
+      }{% The first path is moved to the center... So we need to shift it also here.
+        %% Not idea why, but x axis is inverted???
+        \pgfextractx{\pgf@xa}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#2)}}{\zx@parse@coordy{(#2)}}}{\pgfpointanchor{#1}{center}}}%
+        \pgfextracty{\pgf@ya}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#2)}}{\zx@parse@coordy{(#2)}}}{\pgfpointanchor{#1}{center}}}%
+        \pgfpathmoveto{\pgfpoint{-\pgf@xa}{\pgf@ya}}%
+        %% What, now both axis are inverted??? If someone can explain me this...
+        \pgfextractx{\pgf@xa}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#3)}}{\zx@parse@coordy{(#3)}}}{\pgfpointanchor{#1}{center}}}%
+        %\message{HUUU what's going on}
+        %\show#3
+        \pgfextracty{\pgf@ya}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#3)}}{\zx@parse@coordy{(#3)}}}{\pgfpointanchor{#1}{center}}}%
+        \pgfpathlineto{\pgfpoint{-\pgf@xa}{-\pgf@ya}}%
+        \pgfgetpath\temppath%
+        %\pgfusepath{stroke} % We draw it, useful to debug
+        \pgfsetpath\temppath%
+      }%
+      \pgfintersectionsolutions
+      \pgfpointintersectionsolution{1}%
+      \ifnum\pgfintersectionsolutions=1%% The good number of solution has been found!
+        \message{[ZX] Cool, just found one solution!}
+        %% Store the intersection (warning: the center of the shape is moved to the center!)
+        \edef\zx@relinter@x{\the\pgf@x}%
+        \edef\zx@relinter@y{\the\pgf@y}%
+        %% Because the shape was moved to center, we shift it back by adding the coord of the shape:
+        \pgfextractx\pgf@xa{\pgfpointanchor{#1}{center}}
+        \pgfextractx\pgf@xb{\pgfpointanchor{#1}{center}}
+        % WARNING! pgfmath removes the dimension (converted in pt). Make sure to put them back after
+        \pgfmathsetmacro{\zx@inter@x}{\pgf@x+\zx@relinter@x}
+        \pgfmathsetmacro{\zx@inter@y}{\pgf@y+\zx@relinter@y}
+        \edef#4{\zx@inter@x pt,\zx@inter@y pt}%
+      \else % The bad number of solution has been found
+        \message{[ZX] WARNING: expecting one solution, found \pgfintersectionsolutions}
+        \ifdefined\zxWireInsideIfNoIntersectionName %
+          % No intersection was found, but still want to use fake center (or center).
+          % ==> The wire will be inside the shape
+          % Basically \tikztostart := tikztostart@new@center
+          \edef#4{#2}%
+        \fi% Otherwise, do nothing
+      \fi
+    \else%
+      \message{ZX: no path named \tikz@intersect@path@a was found.}%
+      \ifdefined\zxWireInsideIfNoIntersectionName %
+        % No intersection was found, but still want to use fake center (or center).
+        % ==> The wire will be inside the shape
+        % Basically \tikztostart := tikztostart@new@center
+        \edef#4{#2}%
+      \fi% Otherwise, do nothing
+    \fi%
+  \else%
+      \message{[ZX]: intersection mechanism disabled}%
+      \ifdefined\zxWireInsideIfNoIntersectionName %
+        % No intersection was found, but still want to use fake center (or center).
+        % ==> The wire will be inside the shape
+        % Basically \tikztostart := tikztostart@new@center
+        \edef#4{#2}%
+      \fi% Otherwise, do nothing
+  \fi
+}
+
 % Styles. User should not modify "wires definition", but is free to change:
 % - "/zx/default style nodes/" to change completely the node style
 % - "/zx/user overlay nodes" to add stuff on current node style
@@ -268,13 +379,28 @@
       looseness=1.2,
     },
     lw/.style={looseness wires only},
-    % Use this when you are drawing lines between none nodes only (like swap gates...)
+    % Use this when you are drawing lines between none nodes only (like swap gates...) in IO mode
     between none/.style={
       looseness wires only,
       wire centered
     },
     bn/.style={
       between none
+    },
+    % See explaination at the beginning where we define \def\zxShouldUseIntersections{}
+    % Rouhgly, tries to start the wires on the border of the shape on the line between the
+    % fake anchors.
+    use intersections/.code={%
+      \def\zxShouldUseIntersections{}%
+    },
+    dont use intersections/.code={%
+      \let\zxShouldUseIntersections\undefined%
+    },
+    wires behind nodes/.code={%
+      \def\zxWireInsideIfNoIntersectionName{}%
+    },
+    no wires behind nodes/.code={%
+      \let\zxWireInsideIfNoIntersectionName\undefined%
     },
     % ------------------------------
     % Practical stuff to draw lines easily:
@@ -356,30 +482,103 @@
     C'/.default=1,
     C./.style={C@generic={min}{0}{-180}{south}{\y}{\x}{(\x1,\n1)}{x radius=\n3, y radius=##1*\n3}},
     C./.default=1,
+    % To debug the bezier curve.
+    edges above/.code={%
+      \def\zxEdgesAbove{}%
+    },%
+    edges not above/.code={%
+      \let\zxEdgesAbove\undefined%
+    },
     %%% bezier{px1}{py1}{px2}{py2} creates a bezier curve where px1/py1 are the
     %%% coordinates of the first control (in "percentage" 0<px1<1, between start and end point) and px2/py2
     %%% are the coordinates in % of the second control point
     %%% bezier@general is used to construct also x/y versions, 5 and 6'th argument are \x or \y.
     bezier@general/.style n args={6}{
-      on layer=edgelayer,
+      possibly@on@edge@layer/.code={ %% see "edges above" style. for debug mode only.
+        \ifdefined\zxEdgesAbove\else
+          \pgfkeysalso{%
+            on layer=edgelayer%
+          }%
+        \fi%
+      },
+      possibly@on@edge@layer,
       to path={
         %%% First, check that inputs/outputs are points.
         \pgfextra{% <- Type latex code inside path
           %% Setup the startup node. This code can be changed by styles
-          \pgfkeys{/zx/tmp/zx@setup@start@node/.try}
-          \pgfkeys{/zx/tmp/zx@setup@end@node/.try}
-          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
-          \ifPgfpointOrNode{\tikztostart}{%
-            \def\StartPoint{\tikztostart}%
-          }{%
-            \def\StartPoint{\tikztostart.center}%
+          %% /zx/tmp/zx@setup@start@node will contain the anchor of the first fake center
+          %% /zx/tmp/zx@setup@end@node will contain the anchor of the second fake center
+          %% If none of them are defined, nothing happens and the start point will be a node.
+          % Retrieve the content of the keys
+          % But first check if they are defined
+          \pgfkeysifdefined{/zx/tmp/zx@setup@start@node}{}{% Put an empty value
+            \pgfkeysalso{/zx/tmp/zx@setup@start@node/.initial=,}%
           }%
-          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
-          \ifPgfpointOrNode{\tikztotarget}{%
-            \def\TargetPoint{\tikztotarget}%
-          }{%
-            \def\TargetPoint{\tikztotarget.center}%
+          \pgfkeysifdefined{/zx/tmp/zx@setup@end@node}{}{% Put an empty value
+            \pgfkeysalso{/zx/tmp/zx@setup@end@node/.initial=,}%
           }%
+          \pgfkeysalso{
+            /zx/tmp/zx@setup@start@node/.get=\zx@anchor@start@node,
+            /zx/tmp/zx@setup@end@node/.get=\zx@anchor@end@node,
+          }
+          \message{[ZX] The start anchor is \zx@anchor@start@node}%
+          \message{[ZX] The end anchor is \zx@anchor@end@node}%
+          %%% This will be the new \tikztostart and \tikztotarget... if someone defines them
+          \let\new@tikztostart\undefined%
+          \let\new@tikztotarget\undefined%
+          % Check if a start anchor was defined...
+          \ifthenelse{\equal{\zx@anchor@start@node}{}}{%
+            % No start anchor was chosen... :c
+            \ifthenelse{\equal{\zx@anchor@end@node}{}}{%
+              % Nothing was defined... So I won't do anything! :C
+            }{%
+              % An end node was defined :D Let's configure its end anchor.
+              \pgfkeysalso{%
+                /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{center}{\new@tikztotarget},
+              }%
+            }
+          }{% A start node was chosen :D
+            \ifthenelse{\equal{\zx@anchor@end@node}{}}{%
+              % No end node was chosen... I'll take center to configure the start node,
+              % and not configure the end node.
+              \pgfkeysalso{
+                /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{center}{\new@tikztostart},
+              }%
+            }{%
+              % And an end node was chosen :D
+              \message{[ZX] Both anchors are set. Lets configure intersection.}
+              \pgfkeysalso{
+                /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{\zx@anchor@end@node}{\new@tikztostart},
+                /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{\zx@anchor@start@node}{\new@tikztotarget},
+              }%
+            }%
+          }%
+          \ifdefined\new@tikztostart%
+            \edef\tikztostart{\new@tikztostart}%
+          \fi
+          \ifdefined\new@tikztotarget%
+            \edef\tikztotarget{\new@tikztotarget}%
+          \fi%
+          %%% Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          % \ifPgfpointOrNode{\tikztostart}{%
+          %   \def\StartPoint{\tikztostart}%
+          % }{%
+          %   \def\StartPoint{\tikztostart.center}%
+          % }%
+          % % Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          % \ifPgfpointOrNode{\tikztotarget}{%
+          %   \def\TargetPoint{\tikztotarget}%
+          % }{%
+          %   \def\TargetPoint{\tikztotarget.center}%
+          % }%
+          %%% Well, let's just use \tikztostart and \tikztotarget in any case, setting it to
+          %%% center will put the wire below the node which is not really desired for H nodes
+          %%% (position will be wrong) or when using arrows. And if center is really desired
+          %%% it's easy to force it using start anchor and end anchor.
+          \def\StartPoint{\tikztostart}
+          \def\TargetPoint{\tikztotarget}
+          %%% TODO: check that it does not change the shape of the wire since I'm not sure what \x1
+          %%% is in that case
         }%
         let
         \p1=(\StartPoint),
@@ -400,64 +599,84 @@
     bezier y/.style n args={4}{
       bezier@general={##1}{##2}{##3}{##4}{\y}{\y}
     },
-    % Directions: configure start/end points
-    /zx/utils/change@tikz@fake@center/.code 2 args={ % ##1: \tikztostart or \tikztotarget, ##2: north...
-      \ifPgfpointOrNode{##1}{}{% This is a node, not a point:
-        \ifAnchorExists{##1}{fake center ##2}{%
-          \pgfpointanchor{##1}{fake center ##2}%
+    % Directions: configure start/end points to "fake center *" if it exists.
+    % If the input is not a node, it's copied to ##3
+    /zx/utils/change@tikz@fake@center/.code n args={3}{%
+      % ##1: \tikztostart or \tikztotarget,
+      % ##2: fake center north...
+      % ##3 name of result. e.g. \tikztostart
+      \ifPgfpointOrNode{##1}{%
+        \edef##3{##1}%
+      }{% This is a node, not a point:
+        \ifAnchorExists{##1}{##2}{%
+          \pgfpointanchor{##1}{##2} %
         }{%
-          \pgfpointanchor{##1}{center}%
+          \pgfpointanchor{##1}{center} %
         }%
-        \edef##1{\the\pgf@x,\the\pgf@y}%
+        %%% Whoo, pgfpoint only redefine pgf@x/pgf@y, but in no way it stores it!!!
+        %%% So can't do \pgfpoint{\pgf@x}{\pgf@y}...
+        %%% I needed to create my own system... see \zx@parse@coordx.
+        \edef##3{\the\pgf@x,\the\pgf@y}%
       }
+    },
+    % Directions: configure start/end points to the intersection between
+    % the "fake center *" if it exists and the "fake center *" of the destination.
+    % If the input is not a node, nothing is done.
+    /zx/utils/change@tikz@fake@center@intersect/.code n args={5}{%
+      % ##1: \tikztostart or \tikztotarget
+      % ##2: fake center north... for ##1
+      % ##3: \tikztostart or \tikztotarget, the other one (needed to compute the intersection)
+      % ##4 fake center north... for ##3
+      % ##5: result will be moved to that macro
+      \ifPgfpointOrNode{##1}{}{% This is a node, not a point:
+        %% Configure the zx@new@center@* which should point to "fake center" if it exists.
+        \pgfkeysalso{%
+          /zx/utils/change@tikz@fake@center={##1}{##2}{\zx@new@center},%
+        }%
+        \message{ZX: coordinate of new center is \zx@new@center}%
+        \pgfkeysalso{%
+          /zx/utils/change@tikz@fake@center={##3}{##4}{\zx@new@center@other},%
+        }%
+        \message{ZX: coordinate of new center is \zx@new@center}%
+        \message{ZX: coordinate of new other center is \zx@new@center@other}%
+        \zx@find@intersection@fakecenter{##1}{\zx@new@center}{\zx@new@center@other}{##5}%
+      }%
     },
     start fake center east/.style={%
-      /zx/tmp/zx@setup@start@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztostart}{east},
-      }
+      /zx/tmp/zx@setup@start@node/.initial=fake center east,
     },
     start fake center west/.style={%
-      /zx/tmp/zx@setup@start@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztostart}{west},
-      }
+      /zx/tmp/zx@setup@start@node/.initial=fake center west,
     },
     start fake center north/.style={%
-      /zx/tmp/zx@setup@start@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztostart}{north},
-      }
+      /zx/tmp/zx@setup@start@node/.initial=fake center north,
     },
     start fake center south/.style={%
-      /zx/tmp/zx@setup@start@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztostart}{south},
-      }
+      /zx/tmp/zx@setup@start@node/.initial=fake center south,
     },
     start real center/.style={
-      /zx/tmp/zx@setup@start@node/.style={
-      }
+      /zx/tmp/zx@setup@start@node/.initial=center,
+    },
+    start no fake center/.style={
+      /zx/tmp/zx@setup@start@node/.initial=,
     },
     end fake center east/.style={%
-      /zx/tmp/zx@setup@end@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztotarget}{east},
-      }
+      /zx/tmp/zx@setup@end@node/.initial=fake center east,
     },
     end fake center west/.style={%
-      /zx/tmp/zx@setup@end@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztotarget}{west},
-      }
+      /zx/tmp/zx@setup@end@node/.initial=fake center west,
     },
     end fake center north/.style={%
-      /zx/tmp/zx@setup@end@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztotarget}{north},
-      }
+      /zx/tmp/zx@setup@end@node/.initial=fake center north,
     },
     end fake center south/.style={%
-      /zx/tmp/zx@setup@end@node/.style={
-        /zx/utils/change@tikz@fake@center={\tikztotarget}{south},
-      }
+      /zx/tmp/zx@setup@end@node/.initial=fake center south,
     },
     end real center/.style={
-      /zx/tmp/zx@setup@end@node/.style={
-      }
+      /zx/tmp/zx@setup@end@node/.initial=center,
+    },
+    end no fake center/.style={
+      /zx/tmp/zx@setup@end@node/.initial=,
     },
     left to right/.style={
       start fake center east,
@@ -476,8 +695,8 @@
       end fake center south
     },
     no fake center/.style={
-      start real center,
-      end real center,
+      start no fake center,
+      end no fake center,
       start anchor=,
       end anchor=,
     },
@@ -544,8 +763,7 @@
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
       }%
       \pgfkeysalso{
-        %up to down,
-        bezier y={0.4}{0.2}{0.4}{0.8},
+        up to down,
         bezier y={\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}{\pgfkeysvalueof{/zx/args/-andL/2-}},
       }%
     },
@@ -557,8 +775,7 @@
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
       }%
       \pgfkeysalso{
-        %up to down,
-        bezier y={0.4}{0.2}{0.4}{0.8},
+        up to down,
         bezier y={-\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/1-}}{-\pgfkeysvalueof{/zx/args/-andL/2L}}{\pgfkeysvalueof{/zx/args/-andL/2-}},
       }%
     },
@@ -782,9 +999,12 @@
     % a new column/row. However, make sure the corresponding row/column is larger, using &[\zxHCol]
     % for columns and \\[\zxHRow] for rows (for Z/X style, use zxSCol and sxSRow), if you have both spiders
     % and Hadamard, use \zxHSCol and \zxHSRow.
-    H/.style={"" {zxHSmall,anchor=center}},
-    Z/.style={"" {zxNoPhaseSmallZ,anchor=center}},
-    X/.style={"" {zxNoPhaseSmallX,anchor=center}},
+    H/.style={"" {zxHSmall,anchor=center,##1}},
+    H/.default={},
+    Z/.style={"" {zxNoPhaseSmallZ,anchor=center,##1}},
+    Z/.default={},
+    X/.style={"" {zxNoPhaseSmallX,anchor=center,##1}},
+    X/.default={},
     % Arrow will go out from the center of the shape instead of from the border. Useful
     % when connecting nodes with different shapes, it will give back a symetric connection.
     wire centered/.style={
@@ -866,9 +1086,17 @@
       zxNoneDouble+,
       inner ysep=0mm,
     },
+    % Used to compute the intersection with the node's boundary
+    allow boundary intersection/.code={%
+      \edef\zx@name@path{zx@name@path@\tikz@fig@name}%
+      \pgfkeysalso{
+        name path=\zx@name@path, % Used by intersection library
+      }%
+    },
     % Will be specific to all spiders
     zxSpiders/.style={
       draw=black,
+      allow boundary intersection, % Used later to do math on it.
     },
     % Will use this style when drawing a X/Z node without phase (not for end user directly)
     zxNoPhase/.style={
