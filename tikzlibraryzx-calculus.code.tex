@@ -266,21 +266,6 @@
   },
 }
 
-%%% I can't find in pgfkeys a way to store coordinates: pgfpoint simply redefines
-%%% \pgx@x and \pgf@y, which get overwritten quickly...
-%%% Usage: \edef\abc{6pt,2pt}
-%%% Hello \zx@parse@coordx{(\abc)}.
-%%% We use this syntax since \tikztolast uses it (\tiztolast) -- is replaced by (6pt,2pt) --.
-%%% Make sure to use edef, or the coordinates may be changed later if 6pt is replaced by a macro.
-\def\zx@parse@coordx@tmp(#1,#2){#1}%
-\def\zx@parse@coordx#1{%
-  \expandafter\zx@parse@coordx@tmp\expandafter#1
-}
-\def\zx@parse@coordy@tmp(#1,#2){#2}%
-\def\zx@parse@coordy#1{%
-  \expandafter\zx@parse@coordy@tmp\expandafter#1
-}
-
 %% This function checks if the node has a "name path", if so it computes the intersection between
 %% if not if \zxWireInsideIfNoIntersectionName is defined it defines the \tikzto* to the
 %% new@center (argument #2), otherwise it does nothing.
@@ -304,14 +289,12 @@
         \pgfsetpath\temppath%
       }{% The first path is moved to the center... So we need to shift it also here.
         %% Not idea why, but x axis is inverted???
-        \pgfextractx{\pgf@xa}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#2)}}{\zx@parse@coordy{(#2)}}}{\pgfpointanchor{#1}{center}}}%
-        \pgfextracty{\pgf@ya}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#2)}}{\zx@parse@coordy{(#2)}}}{\pgfpointanchor{#1}{center}}}%
+        \pgfextractx{\pgf@xa}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
+        \pgfextracty{\pgf@ya}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
         \pgfpathmoveto{\pgfpoint{-\pgf@xa}{\pgf@ya}}%
         %% What, now both axis are inverted??? If someone can explain me this...
-        \pgfextractx{\pgf@xa}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#3)}}{\zx@parse@coordy{(#3)}}}{\pgfpointanchor{#1}{center}}}%
-        %\message{HUUU what's going on}
-        %\show#3
-        \pgfextracty{\pgf@ya}{\pgfpointdiff{\pgfpoint{\zx@parse@coordx{(#3)}}{\zx@parse@coordy{(#3)}}}{\pgfpointanchor{#1}{center}}}%
+        \pgfextractx{\pgf@xa}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}}%
+        \pgfextracty{\pgf@ya}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}}%
         \pgfpathlineto{\pgfpoint{-\pgf@xa}{-\pgf@ya}}%
         \pgfgetpath\temppath%
         %\pgfusepath{stroke} % We draw it, useful to debug
@@ -606,7 +589,11 @@
       % ##2: fake center north...
       % ##3 name of result. e.g. \tikztostart
       \ifPgfpointOrNode{##1}{%
+        %%% Sometimes, ##1 is not 1pt,2pt but "tikz-1-2.north east". Since later we use
+        %%% a parsing mechanism which assumes that we have a coordinate... this is a problem.
         \edef##3{##1}%
+        % This is a great explaination of how parsing is done in tikz:
+        % https://tex.stackexchange.com/a/516897/116348
       }{% This is a node, not a point:
         \ifAnchorExists{##1}{##2}{%
           \pgfpointanchor{##1}{##2} %
