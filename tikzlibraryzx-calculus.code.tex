@@ -266,6 +266,16 @@
   },
 }
 
+%%% Useful debug functions
+%% This function will be called when debugging the library.
+\def\zx@message#1{}
+\def\zx@verbose@message#1{\message{#1}} % For more important messages. Like to show the code is not looping forever
+% To enable debugging:
+% \def\zx@message#1{\message{#1}}
+% To display stroke of while trying to compute the intersections:
+%\def\zx@draw@stroke@inter@debug{}
+
+
 %% This function checks if the node has a "name path", if so it computes the intersection between
 %% if not if \zxWireInsideIfNoIntersectionName is defined it defines the \tikzto* to the
 %% new@center (argument #2), otherwise it does nothing.
@@ -273,37 +283,85 @@
 % #2: name of the new@center node corresponding to #1
 % #3: name of the other new@center node
 % #4: result will be stored in this macro... if there is something to change.
+% #5: 1 if start, 2 if end
 % Result will be moved back into #1
-\def\zx@find@intersection@fakecenter#1#2#3#4{%
+\def\zx@find@intersection@fakecenter#1#2#3#4#5{%
   % First, we check if the user wants to compute the intersection:
   \ifdefined\zxShouldUseIntersections%
      %% We compute the intersection
     \edef\tikz@intersect@path@a{zx@name@path@#1}%
     \ifcsname tikz@intersect@path@name@\tikz@intersect@path@a \endcsname%
-      \message{ZX: the intersection was found :-)}
+      \zx@verbose@message{[ZX] I will start computing intersections}
       \pgfintersectionofpaths{%
         %%%% /!\ This lines is the one I'm not sure how to write:
         \expandafter\pgfsetpath\csname tikz@intersect@path@name@\tikz@intersect@path@a\endcsname%
         \pgfgetpath\temppath%
-        %\pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
+        \ifdefined\zx@draw@stroke@inter@debug%
+          \pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
+        \fi%
         \pgfsetpath\temppath%
       }{% The first path is moved to the center... So we need to shift it also here.
-        %% Not idea why, but x axis is inverted???
-        \pgfextractx{\pgf@xa}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
-        \pgfextracty{\pgf@ya}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
-        \pgfpathmoveto{\pgfpoint{-\pgf@xa}{\pgf@ya}}%
-        %% What, now both axis are inverted??? If someone can explain me this...
-        \pgfextractx{\pgf@xa}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}}%
-        \pgfextracty{\pgf@ya}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}}%
-        \pgfpathlineto{\pgfpoint{-\pgf@xa}{-\pgf@ya}}%
-        \pgfgetpath\temppath%
-        %\pgfusepath{stroke} % We draw it, useful to debug
-        \pgfsetpath\temppath%
+        %%% First intersection: we use the line between the two nodes... but it's really ugly (e.g. in o it does not make a lot of sense)
+        \begin{pgfinterruptboundingbox}%
+          \ifdefined\zxIntersectionLineBetweenStartEnd%
+            %% Not idea why, but x axis is inverted???
+            \pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}%
+            \pgfpathmoveto{\pgfpoint{-\pgf@x}{\pgf@y}}%
+            % And now both axis are???
+            \pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}
+            \pgfpathlineto{\pgfpoint{-\pgf@x}{-\pgf@y}}%
+          \else%
+            %% We use now the method used for bezier curve (at least it's what I see "experimentally")
+            %% More precisely, we use the direction of the bezier curve to know where to start the wire.
+            %% Parse first point to get coordinates in \pgf@x and y
+            %% For the first control point
+            \ifnum#5=1\relax %
+              \tikz@scan@one@point\pgf@process(#2)%
+            \else%
+              \tikz@scan@one@point\pgf@process(#3)%
+            \fi%
+            \edef\zx@tmp@xa{\the\pgf@x}%
+            \edef\zx@tmp@ya{\the\pgf@y}%
+            \ifnum#5=1 \relax%
+              \tikz@scan@one@point\pgf@process(#3)%
+            \else%
+              \tikz@scan@one@point\pgf@process(#2)%
+            \fi%
+            \edef\zx@tmp@xb{\the\pgf@x}%
+            \edef\zx@tmp@yb{\the\pgf@y}%
+            \pgfkeysalso{/zx/tmp/zx@getControlPoints={\zx@tmp@xa}{\zx@tmp@ya}{\zx@tmp@xb}{\zx@tmp@yb}}%
+            % Now results are in controlOne, and controlTwo
+            \ifnum#5=1 \relax%
+              \def\zx@control{\controlOne}%
+            \else%
+              \def\zx@control{\controlTwo}%
+            \fi%
+            \pgfextractx{\pgf@xa}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
+            \pgfextracty{\pgf@ya}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
+            \pgfpathmoveto{\pgfpoint{-\pgf@xa}{\pgf@ya}}%
+            %% What, now both axis are inverted??? If someone can explain me this...
+            %% We scale the point to force it to cross the boundary.
+            \pgf@process{%
+              \pgfqpointscale{10}{%
+                \pgfpointdiff{\tikz@scan@one@point\pgf@process(\zx@control)%
+                }{%
+                  \pgfpointanchor{#1}{center}%
+                }%
+              }%
+            }
+            \pgfpathlineto{\pgfpoint{-\pgf@x}{-\pgf@y}}%
+          \fi%
+          \pgfgetpath\temppath%
+          \ifdefined\zx@draw@stroke@inter@debug%
+            \pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
+          \fi%
+          \pgfsetpath\temppath%
+        \end{pgfinterruptboundingbox}%
       }%
       \pgfintersectionsolutions
       \pgfpointintersectionsolution{1}%
       \ifnum\pgfintersectionsolutions=1%% The good number of solution has been found!
-        \message{[ZX] Cool, just found one solution!}
+        \zx@message{[ZX] Cool, just found one solution!}
         %% Store the intersection (warning: the center of the shape is moved to the center!)
         \edef\zx@relinter@x{\the\pgf@x}%
         \edef\zx@relinter@y{\the\pgf@y}%
@@ -315,7 +373,7 @@
         \pgfmathsetmacro{\zx@inter@y}{\pgf@y+\zx@relinter@y}
         \edef#4{\zx@inter@x pt,\zx@inter@y pt}%
       \else % The bad number of solution has been found
-        \message{[ZX] WARNING: expecting one solution, found \pgfintersectionsolutions}
+        \zx@message{[ZX] WARNING: expecting one solution, found \pgfintersectionsolutions}
         \ifdefined\zxWireInsideIfNoIntersectionName %
           % No intersection was found, but still want to use fake center (or center).
           % ==> The wire will be inside the shape
@@ -324,7 +382,7 @@
         \fi% Otherwise, do nothing
       \fi
     \else%
-      \message{ZX: no path named \tikz@intersect@path@a was found.}%
+      \zx@message{ZX: no path named \tikz@intersect@path@a was found.}%
       \ifdefined\zxWireInsideIfNoIntersectionName %
         % No intersection was found, but still want to use fake center (or center).
         % ==> The wire will be inside the shape
@@ -333,7 +391,7 @@
       \fi% Otherwise, do nothing
     \fi%
   \else%
-      \message{[ZX]: intersection mechanism disabled}%
+      \zx@message{[ZX]: intersection mechanism disabled}%
       \ifdefined\zxWireInsideIfNoIntersectionName %
         % No intersection was found, but still want to use fake center (or center).
         % ==> The wire will be inside the shape
@@ -503,9 +561,32 @@
           \pgfkeysalso{
             /zx/tmp/zx@setup@start@node/.get=\zx@anchor@start@node,
             /zx/tmp/zx@setup@end@node/.get=\zx@anchor@end@node,
+            /zx/tmp/zx@getControlPoints/.code n args={4}{
+              \zx@message{I will evaluate my control points:}
+              % Args: start point, x,y then end point x,y
+              % Use ########1 ... (yes, LaTeX is a funny language, and I love nested functions)
+              % Because to path is considered as a function already.
+              \def\x################1{%
+                \ifnum################1=1 % <-- super important space...
+                  ########1%
+                \else%
+                  ########3%
+                \fi%
+              }%
+              \zx@message{[ZX] x is defined.}
+              \def\y################1{%
+                \ifnum ################1 = 1 % <-- super important space...
+                  ########2%
+                \else%
+                  ########4%
+                \fi%
+              }%
+              \tikz@scan@one@point\pgf@process(\x1-##51*##1+##52*##1,\y1-##61*##2+##62*##2)%
+              \edef\controlOne{\the\pgf@x,\the\pgf@y}
+              \tikz@scan@one@point\pgf@process(\x1-##51*##3+##52*##3,\y1-##61*##4+##62*##4)%
+              \edef\controlTwo{\the\pgf@x,\the\pgf@y}
+            },
           }
-          \message{[ZX] The start anchor is \zx@anchor@start@node}%
-          \message{[ZX] The end anchor is \zx@anchor@end@node}%
           %%% This will be the new \tikztostart and \tikztotarget... if someone defines them
           \let\new@tikztostart\undefined%
           \let\new@tikztotarget\undefined%
@@ -517,7 +598,7 @@
             }{%
               % An end node was defined :D Let's configure its end anchor.
               \pgfkeysalso{%
-                /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{center}{\new@tikztotarget},
+                /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{center}{\new@tikztotarget}{2},
               }%
             }
           }{% A start node was chosen :D
@@ -525,14 +606,14 @@
               % No end node was chosen... I'll take center to configure the start node,
               % and not configure the end node.
               \pgfkeysalso{
-                /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{center}{\new@tikztostart},
+                /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{center}{\new@tikztostart}{1},
               }%
             }{%
               % And an end node was chosen :D
-              \message{[ZX] Both anchors are set. Lets configure intersection.}
+              \zx@message{[ZX] Both anchors are set. Lets configure intersection.}
               \pgfkeysalso{
-                /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{\zx@anchor@end@node}{\new@tikztostart},
-                /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{\zx@anchor@start@node}{\new@tikztotarget},
+                /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{\zx@anchor@end@node}{\new@tikztostart}{1},
+                /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{\zx@anchor@start@node}{\new@tikztotarget}{2},
               }%
             }%
           }%
@@ -572,7 +653,7 @@
       },
     },
     bezier/.style n args={4}{
-      bezier@general={##1}{##2}{##3}{##4}{\x}{\y}
+      bezier@general={##1}{##2}{##3}{##4}{\x}{\y},
     },
     % Like bezier, all proportions are relative to x distance
     bezier x/.style n args={4}{
@@ -609,24 +690,24 @@
     % Directions: configure start/end points to the intersection between
     % the "fake center *" if it exists and the "fake center *" of the destination.
     % If the input is not a node, nothing is done.
-    /zx/utils/change@tikz@fake@center@intersect/.code n args={5}{%
+    /zx/utils/change@tikz@fake@center@intersect/.code n args={6}{%
       % ##1: \tikztostart or \tikztotarget
       % ##2: fake center north... for ##1
       % ##3: \tikztostart or \tikztotarget, the other one (needed to compute the intersection)
       % ##4 fake center north... for ##3
       % ##5: result will be moved to that macro
+      % ##6: 1 if start, 2 if end.
       \ifPgfpointOrNode{##1}{}{% This is a node, not a point:
         %% Configure the zx@new@center@* which should point to "fake center" if it exists.
         \pgfkeysalso{%
           /zx/utils/change@tikz@fake@center={##1}{##2}{\zx@new@center},%
         }%
-        \message{ZX: coordinate of new center is \zx@new@center}%
         \pgfkeysalso{%
           /zx/utils/change@tikz@fake@center={##3}{##4}{\zx@new@center@other},%
         }%
-        \message{ZX: coordinate of new center is \zx@new@center}%
-        \message{ZX: coordinate of new other center is \zx@new@center@other}%
-        \zx@find@intersection@fakecenter{##1}{\zx@new@center}{\zx@new@center@other}{##5}%
+        \zx@message{ZX: coordinate of new center is \zx@new@center}%
+        \zx@message{ZX: coordinate of new other center is \zx@new@center@other}%
+        \zx@find@intersection@fakecenter{##1}{\zx@new@center}{\zx@new@center@other}{##5}{##6}%
       }%
     },
     start fake center east/.style={%
