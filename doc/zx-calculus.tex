@@ -1,5 +1,6 @@
 \documentclass[a4paper]{ltxdoc}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Packages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,7 +38,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Version 2021/10/19}\\[3mm]
+  {Version 2021/10/22}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -62,7 +63,7 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
-This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing\dots{}) won't be made later. In case you want a completely unalterable style, just copy the two files of this library in your project forever (see installation)! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
+This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus/issues}{\texttt{github.com/leo-colisson/zx-calculus/issues}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing, wire looks\dots{}) won't be made later. In case you want a completely unalterable style, just copy the two files of this library in your project forever (see installation)! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
 
 \section{Installation}
 
@@ -180,6 +181,7 @@ The reason for this is that it is hard to always get exactly the good spacing by
 \end{ZX}
 \end{codeexample}
 
+
 When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that:
 \begin{codeexample}[]
   $\zx[math baseline=myZ]{
@@ -205,7 +207,8 @@ Now you should know enough to start your first diagrams. The rest of the documen
 \end{ZX}
 \end{codeexample}
 \noindent You will also see some tricks (notably based on alias) to create clear bigger diagrams, like this debug mode which turns
-\begin{ZX}[row sep=1pt,
+{
+\begin{ZX}[zx row sep=1pt,
   execute at begin picture={%
     %%% Definition of long items (the goal is to have a small and readable matrix
     % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
@@ -238,7 +241,7 @@ Now you should know enough to start your first diagrams. The rest of the documen
 \end{ZX} into %
 {%
   \def\zxDebugMode{}%%%%
-  \begin{ZX}[row sep=1pt,
+  \begin{ZX}[zx row sep=1pt,
     execute at begin picture={%
       %%% Definition of long items (the goal is to have a small and readable matrix
       % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
@@ -294,7 +297,7 @@ You will also see how you can customize the styles, and how you can easily extan
 
 If you have some questions, suggestions, or bugs, please report them on \texttt{\url{https://github.com/leo-colisson/zx-calculus/issues}}.
 
-\textbf{Tip}: if you are unsure of the definition of a style in an example, just click on it, a link will point to its definition.
+\textbf{Tips}: if you are unsure of the definition of a style in an example, just click on it, a link will point to its definition. Also, if your pdf viewer does not copy/paste these examples correctly, you can copy them from the source code of this documentation available \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/doc/zx-calculus.tex}{here} (to find the example, just use the ``search'' function of your web browser).
 
 \section{Usage}
 
@@ -701,7 +704,7 @@ and the other ones work analogously.
 
 Note that sometimes, it may be practical to properly organize big diagrams to increase readability. To that end, one surely wants to have a small and well indented matrix (emacs |M-x align-current| or |M-x align| (for selected lines) commands are very practical to indent matrices automatically). Unfortunately, adding wires inside the matrix can make the line really long and hard to read. Similarly, some nodes involving fractions or long expressions can also be quite long. It is however easy to increase readability (and maintainability) by moving the wires at the very end of the diagram, using |a| (like |alias|, but with a debug mode) to connect nodes and |\def| to create shortcuts. Putting inside a macro with |\def| long node definitions can also be useful to keep small items in the matrix:
 \begin{codeexample}[width=0pt]
-\begin{ZX}[row sep=1pt,
+\begin{ZX}[zx row sep=1pt,
   execute at begin picture={%
     %%% Definition of long items (the goal is to have a small and readable matrix
     % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
@@ -738,7 +741,7 @@ In that setting, it is often useful to enable the debug mode via |\def\zxDebugMo
 \begin{codeexample}[width=0pt]
 {
   \def\zxDebugMode{}%%%%
-  \begin{ZX}[row sep=1pt,
+  \begin{ZX}[zx row sep=1pt,
     execute at begin picture={%
       %%% Definition of long items (the goal is to have a small and readable matrix
       % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
@@ -1078,6 +1081,7 @@ As for |s| it can be configured:
   \extractkey/zx/wires definition/N-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
   \extractkey/zx/wires definition/N'-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
   \extractkey/zx/wires definition/N.-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
+  \extractkey/zx/wires definition/Nbase=angle (default defaultN)\@nil%
   \makeatother
   \pgfmanualbody
   |N| is used to create a left-to-right wire leaving at wide angle and arriving at wide angle (it's named |N| because it roughly have the shape of a capital |N|). In older versions, |'| and |.| was required to specify if the wire should go up-right or down-right, but it is not useful anymore (we keep it for compatibilty with |IO| styles and in case some styles want to do a distinction later).
@@ -1107,7 +1111,10 @@ Like other wires, it can be configured using |-| (horizontal relative position o
                                & \zxZ{\beta}
   \end{ZX}
 \end{codeexample}
+All these styles are based on Nbase (which should not be used directly), including the styles like |<|. If you wish to overwrite later |N|-like commands, but not |<|-like, then change |N|. If you wish to also update |<| commands, use |Nbase|.
 \end{pgfmanualentry}
+
+
 
 \begin{pgfmanualentry}
   \makeatletter
@@ -1205,9 +1212,9 @@ Like other wires, it can be configured using |-| (horizontal relative position o
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/H\@nil%
-  \extractkey/zx/wires definition/Z\@nil%
-  \extractkey/zx/wires definition/X\@nil%
+  \extractkey/zx/wires definition/H=style (default {})\@nil%
+  \extractkey/zx/wires definition/Z=style (default {})\@nil%
+  \extractkey/zx/wires definition/X=style (default {})\@nil%
   \makeatother
   \pgfmanualbody
   Adds a |H| (Hadamard), |Z| or |X| node (without phase) in the middle of the wire. Width of column or rows should be adapted accordingly using |\zxNameRowcolFlatnot| where |Name| is replaced by |H|, |S| (for ``spiders'', i.e.\ |X| or |Z|), |HS| (for both |H| and |S|) or |W|, |Rowcol| is either |Row| (for changing row sep) or |Col| (for changing column sep) and |Flatnot| is empty or |Flat| (if the wire is supposed to be a straight line as it requires more space). For instance:
@@ -1218,6 +1225,17 @@ Like other wires, it can be configured using |-| (horizontal relative position o
   \zxX{\gamma}
 \end{ZX}
 \end{codeexample}
+The \meta{style} parameter can be used to add additional \tikzname{} style to the nodes, notably a position using |\ar[rd,-N.,H={pos=.35}]|. The reason for using that is that the wires start inside the nodes, therefore the ``middle'' of the wire is closer to the node when the other side is on an empty node.
+\begin{codeexample}[width=0pt]
+\begin{ZX}[zx row sep=0pt]
+ \zxN{} \ar[rd,-N.,H={pos=.35}] &[\zxwCol,\zxHCol]  &[\zxwCol,\zxHCol] \zxN{} \\[\zxNRow]%%
+                                & \zxX{\alpha}
+                                     \ar[ru,N'-,H={pos=1-.35}]
+                                     \ar[rd,N.-,H={pos=1-.35}] &  \\[\zxNRow]
+ \zxN{} \ar[ru,-N',H={pos=.35}]                                &  & \zxN{}
+\end{ZX}
+\end{codeexample}
+Note that it's possible to automatically start wires on the border of the node, but it is slower and create other issues, see \cref{subsec:wiresInsideOutside} for more details. The second option (also presented in this section) is to manually define the |start anchor| and |end anchor|, but it can change the shape of the wire).
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -1231,13 +1249,13 @@ Like other wires, it can be configured using |-| (horizontal relative position o
   \extractkey/zx/wires definition/wce\@nil%
   \makeatother
   \pgfmanualbody
-  Forces the wires to start at the center of the node (|wire centered start|, alias |wcs|), to end at the center of the node (|wire centered end|, alias |wce|) or both (|wire centered|, alias |wc|). This may be useful, for instance in the old |IO| mode when nodes have different sizes (the result looks strange otherwise), or with some wires (like |C|) connected to |\ZxNone+| (if possible, use |\zxNone| (without any embellishment) since it does not suffer from this issue as it is a coordinate).
+  Forces the wires to start at the center of the node (|wire centered start|, alias |wcs|), to end at the center of the node (|wire centered end|, alias |wce|) or both (|wire centered|, alias |wc|). This may be useful, for instance in the old |IO| mode (see below) when nodes have different sizes (the result looks strange otherwise), or with some wires (like |C|) connected to |\ZxNone+| (if possible, use |\zxNone| (without any embellishment) since it does not suffer from this issue as it is a coordinate).
 
   See also |between none| to also increase looseness when connecting only wires (use |between none| \emph{only} in |IO| mode).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxZ{} \ar[o',r] \ar[o.,r]       & \zxX{\alpha}\\
-  \zxZ{} \ar[o',r,wc] \ar[o.,r,wc] & \zxX{\alpha}
+  \zxZ{} \ar[IO,o',r] \ar[IO,o.,r]       & \zxX{\alpha}\\
+  \zxZ{} \ar[IO,o',r,wc] \ar[IO,o.,r,wc] & \zxX{\alpha}
 \end{ZX}
 \end{codeexample}
 % Without |wc| (note that because there is no node, we need to use |&[\zxWCol]| (for columns) and |\\[\zxWRow]| (for rows) to get nicer spacing):
@@ -1762,8 +1780,34 @@ Compare {\def\zxMinusInShort{-}
   \extractcommand\zxwRow{}\@@
   \extractcommand\zxDotsCol{}\@@
   \extractcommand\zxDotsRow{}\@@
+  \extractcommand\zxZeroCol{}\@@
+  \extractcommand\zxZeroRow{}\@@
+  \extractcommand\zxNCol{}\@@
+  \extractcommand\zxNRow{}\@@
   \pgfmanualbody
-  These are spaces, to use like |&[\zxHCol]| or |\\[\zxHRow]| in order to increase the default spacing of rows and columns depending on the style of the wire. |H| stands for Hadamard, |S| for Spiders, |W| for Wires only, |w| is you link a |zxNone| to a spider, |HS| for both Spiders and Hadamard, |Dots| for the 3 dots styles. And of course |Col| for columns, |Row| for rows.
+  These are spaces, to use like |&[\zxHCol]| or |\\[\zxHRow]| in order to increase the default spacing of rows and columns depending on the style of the wire. |H| stands for Hadamard, |S| for Spiders, |W| for Wires only, |w| is you link a |zxNone| to a spider (goal is to increase the space), |N| is when you have a |\zxN| and want to reduce the space between columns, |HS| for both Spiders and Hadamard, |Dots| for the 3 dots styles, |Zero| completely resets the default column sep. And of course |Col| for columns, |Row| for rows.
+\begin{codeexample}[width=3cm]
+\begin{ZX}
+ \zxN{} \ar[rd,-N.] &[\zxwCol]    &[\zxwCol] \zxN{} \\[\zxNRow]%%
+                    & \zxX{\alpha}
+                      \ar[ru,N'-]
+                      \ar[rd,N.-] &  \\[\zxNRow]
+ \zxN{} \ar[ru,-N']               &  & \zxN{}
+\end{ZX}
+\end{codeexample}
+Note that you can add multiple of them by separating with commas (see |\pgfmatrixnextcell|'s documentation for more details). For instance to have a column separation of exactly |2mm|, do |&[\zxZeroCol,2mm]| (if you just do |&[2mm]| the column will be |2mm| larger).
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxDefaultColumnSep{}\@@
+  \extractcommand\zxDefaultRowSep{}\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/defaultEnv/zx column sep=length\@nil%
+  \extractkey/zx/defaultEnv/zx row sep=length\@nil%
+  \makeatother
+  \pgfmanualbody
+  |\zxDefaultColumn/RowSep| are the column and row space, and the corresponding styles are to change a single matrix. Prefer to change these parameters compared to changing the |row sep| and |column sep| (without |zx|) of the matrix directly since other spacing styles like |\zxZeroCol| or |\zxNCol| depend on |\zxDefaultColumn|.
 \end{pgfmanualentry}
 
 
@@ -1804,6 +1848,598 @@ Compare {\def\zxMinusInShort{-}
     |}|
    \end{verse}
    Basically |defaultO| will configure all the |o| familly, |defaultS'| will configure all the ``soft'' versions of |s|, |default-S| will configure the anchor on the side of the vertical arrival\dots{} For more details or which wire uses which configuration, check the default value given in each style definition.
+\end{pgfmanualentry}
+
+\subsection{Wires starting inside or on the boundary of the node}\label{subsec:wiresInsideOutside}
+
+This library provides multiple methods to draw the wires between the nodes (for all curves depending on |bezier|, which is basically everything but |C| and straight lines).
+
+\paragraph{Default drawing method.}
+By default the lines will be drawn behind the node and the starting and ending points will be defined to be a |fake center *| anchor (if it exists, the exact chosen anchors (north, south\dots{}) depending on the direction). Because this anchor lies behind the node, we put them on the |edgelayer| layer. For debugging purpose, it can be practical to display them:
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxEdgesAbove\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/edge above\@nil%
+  \extractkey/zx/wires definition/edge not above\@nil%
+  \makeatother
+  \pgfmanualbody
+  If the macro |\zxEdgesAbove| is undefined (using |\let\zxEdgesAbove\undefined|) edges will be drawn above the nodes. To change it on a per-edge basis, use |edge above| (or its contrary |edge not above|) \emph{before the name of the wire}. This is mostly useful to understand how lines are drawn and for debugging purpose.
+\begin{codeexample}[]
+  What you see:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,s] \\
+                         & \zxZ{\alpha+\beta}}
+  What is drawn:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,edge above,s] \\
+                         & \zxZ{\alpha+\beta}}
+\end{codeexample}
+(you can node the fact that the wire does not start at the center but at a |fake center *| anchor to provide a nicer look)
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxControlPointsVisible\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/control points visible\@nil%
+  \extractkey/zx/wires definition/control points not visible\@nil%
+  \makeatother
+  \pgfmanualbody
+  Similarly, it can be useful for debugging to see the control points of the curves (note that |C|, straight lines and |(| wires are not based on our curve system, so it won't do anything for them). If the macro |\zxControlPointsVisible| is defined (using |\def\zxEdgesAbove{}|) control points will be drawn. To change it on a per-edge basis, use |control points visible| (or its contrary |control points not visible|). This is mostly useful to understand how lines are drawn and for debugging purpose.
+\begin{codeexample}[]
+  Controls not visible:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,s] \\
+                         & \zxZ{\alpha+\beta}}
+  Control visible:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,control points visible,s] \\
+                         & \zxZ{\alpha+\beta}}
+  Control visible + edge above:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,edge above,control points visible,s] \\
+                         & \zxZ{\alpha+\beta}}
+\end{codeexample}
+\textbf{WARNING}: this command adds some points in the wire path, and in particular if you have a |H| wire (Hadamard in the middle of the wire), this option will not place it correctly. But it's not really a problem since it's just to do a quick debugging.
+\end{pgfmanualentry}
+
+Unfortunately, the default drawing method also has drawbacks. For instance, when using the |H| edge between a spider and an empty node, the ``middle'' of the edge will appear too close to the center by default (we draw the first edge above to illustrate the reason of this visual artifact):
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+ \zxN{} \ar[rd,edge above,-N.,H] &[\zxwCol,\zxHCol]  &[\zxwCol,\zxHCol] \zxN{} \\[\zxNRow]%%
+                                 & \zxX{\alpha}
+                                   \ar[ru,N'-,H]
+                                   \ar[rd,N.-,H] &  \\[\zxNRow]
+ \zxN{} \ar[ru,-N',H]                        &  & \zxN{}
+\end{ZX}
+\end{codeexample}
+To solve that issue, you need to manually position the |H| node as shown before:
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+ \zxN{} \ar[rd,edge above,-N.,H={pos=.35}] &[\zxwCol,\zxHCol]  &[\zxwCol,\zxHCol] \zxN{} \\[\zxNRow]%%
+                                           & \zxX{\alpha}
+                                             \ar[ru,N'-,H={pos=1-.35}]
+                                             \ar[rd,N.-,H={pos=1-.35}] &  \\[\zxNRow]
+ \zxN{} \ar[ru,-N',H={pos=.35}]                                  &  & \zxN{}
+\end{ZX}
+\end{codeexample}
+Or manually position the anchor outside the node (you can use angles, centered on the real center on the shape), but be aware that it can change the shape of the node (see below):
+\begin{codeexample}[width=0cm]
+\begin{ZX}
+ \zxN{} \ar[rd,edge above,-N.,H,end anchor=180-45] &[\zxwCol,\zxHCol]  &[\zxwCol,\zxHCol] \zxN{} \\[\zxNRow]%%
+                                           & \zxX{\alpha}
+                                             \ar[ru,N'-,H,start anchor=45]
+                                             \ar[rd,N.-,H,start anchor=-45] &  \\[\zxNRow]
+ \zxN{} \ar[ru,-N',H,end anchor=180+45]                                  &  & \zxN{}
+\end{ZX}
+\end{codeexample}
+
+A second drawback is that it is not possible to add arrows on the curved wires (except |C| which uses a different approach), since they will be hidden behind the node:
+\begin{codeexample}[]
+  What you see:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,s,<->] \\
+                         & \zxZ{\alpha+\beta}}
+  What is drawn:
+  \zx{\zxZ{\alpha+\beta} \ar[dr,edge above,s,<->] \\
+                         & \zxZ{\alpha+\beta}}
+\end{codeexample}
+Here, the only solution (without changing the drawing mode) is to manually position the anchor as before\dots{} but note that on nodes with a large content |45| degrees is actually nearly on the top since the angle is not taken from a fake center but from the real center of the node.
+\begin{codeexample}[]
+  \zx{\zxZ{\alpha+\beta} \ar[dr,s,<->,start anchor=-45,end anchor=180-45] \\
+                         & \zxZ{\alpha+\beta}}
+  \zx{\zxZ{\alpha+\beta} \ar[dr,s,<->,start anchor=-15,end anchor=180-15] \\
+                         & \zxZ{\alpha+\beta}}
+\end{codeexample}
+ Note that the shape of the wire may be a bit different since the ending and leaving parts was hidden before, and the current styles are not designed to look nicely when starting on the border of a node. For that reason, you may need to tweak the style of the wire yourself using |-|, |L| options.
+
+ \paragraph{The ``intersection'' drawing methods}
+
+ We also define other modes to draw wires (they are very new and not yet tested a lot). In the first mode, appropriate |fake center *| is taken, then depending on the bezier control points, a point is taken on the border of the shape (starting from the fake center and using the direction of the bezier control point). Then the node is drawn. Here is how to enable this mode:
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxEnableIntersections\marg{}\@@
+  \extractcommand\zxDisableIntersections\marg{}\@@
+  \extractcommand\zxEnableIntersectionsNodes\@@
+  \extractcommand\zxEnableIntersectionsWires\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/use intersections\@nil%
+  \extractkey/zx/wires definition/dont use intersections\@nil%
+  \makeatother
+  \pgfmanualbody
+  The simpler method to enables or disable intersections is to call |\zxEnableIntersections{}| or |\zxDisableIntersections{}| (potentially in a group to have a local action only). Note that \emph{this does not automatically adapt the styles}, see |ui| to adapt the styles automatically.
+\begin{codeexample}[width=0cm]
+{% Enable intersections (but does not load our custom "intersections" style, see ui).
+  \zxEnableIntersections{}% Small space left = artifact of the documentation
+  \begin{ZX}
+    \zxN{} \ar[rd,edge above,-N.,H] &[\zxwCol,\zxHCol] &[\zxwCol,\zxHCol] \zxN{} \\[\zxNRow]%%
+                                    & \zxX{\alpha}
+                                      \ar[ru,N'-,H]
+                                      \ar[rd,N.-,H]    &  \\[\zxNRow]
+    \zxN{} \ar[ru,-N',H]            &                  & \zxN{}
+  \end{ZX}
+}
+\end{codeexample}
+(The |edge above| is just to show that the wire does not go inside.) However, this method enable intersections for the whole drawing. You can disable it for a single arrow using the |dont use intersections| style. But it is possible instead to enable it for a single wire. To do that, first define |\def\zxEnableIntersectionsNodes{}| (it will automatically add a |name path| on each node. If you don't care about optimizations, you can just define it once at the beginning of your project), and then use |use intersections| on the wires which should use intersections:
+\begin{codeexample}[width=0cm]
+{% Create the machinary needed to compute intersections, but does not enable it.
+  \def\zxEnableIntersectionsNodes{}% Small space left = artifact of the documentation
+  \begin{ZX}
+    \zxN{} \ar[rd,edge above,-N.,H, %% "use intersections" does not load any style, cf ui.
+            use intersections] &[\zxwCol,\zxHCol]  &[\zxwCol,\zxHCol] \zxN{} \\[\zxNRow]%%
+                                                   & \zxX{\alpha}
+                                                     \ar[ru,edge above,N'-,H,use intersections]
+                                                        \ar[rd,edge above,N.-,H]  &  \\[\zxNRow]
+    \zxN{} \ar[ru,edge above,-N',H]                &                              & \zxN{}
+  \end{ZX}
+}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/ui\@nil%
+  \makeatother
+  \pgfmanualbody
+  This method has however a few drawbacks. One of the first reason that explains why we don't use it by default is that it is quite long to compute (it involves the |intersections| library to obtain the bezier point to start at and my code may also be not very well optimized as I'm a beginner with \LaTeX{} and \tikzname{} programming\dots{} and what a strange language!). Secondly, it has not yet been tested a lot. Note also that the default wire styles have not been optimized for this setup and the results may vary compared to the default drawing mode (sometimes they are ``better'', sometimes they are not). We have however tried to define a second style |/zx/args/-andL/ui/| that have nicer results. To load it, just type |ui| \emph{before the wire style name}, it will automatically load |use intersections| together with our custom styles (see below how to use |user overlay wires| to load it by default):
+%%% I'm not sure why, but inside codeexample if I write zxEnableIntersections{}%<go to line>\begin{ZX}... then an additional space is added... Not sure why.
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  Before \begin{ZX}
+    \zxX{\beta} \ar[r,o'] & \zxX{}
+  \end{ZX} after \begin{ZX}
+    \zxX{\beta} \ar[r,o',use intersections] & \zxX{}
+  \end{ZX} corrected manually \begin{ZX}
+    \zxX{\beta} \ar[r,edge above, use intersections, o'={-=.2,L=.15}] & \zxX{}
+  \end{ZX} or with our custom style \begin{ZX}
+    \zxX{\beta} \ar[r,edge above, ui, o'] & \zxX{}
+  \end{ZX}.
+}
+\end{codeexample}
+Here are further comparisons:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  Before \begin{ZX}
+    \zxX{} \ar[r,o'] & \zxX{}
+  \end{ZX} ui \begin{ZX}
+    \zxX{} \ar[r, ui, o'] & \zxX{}
+  \end{ZX}. Before \begin{ZX}
+    \zxX{\alpha} \ar[r,o'] & \zxZ{\beta}
+  \end{ZX} ui \begin{ZX}
+    \zxX{\alpha} \ar[r, ui, o'] & \zxZ{\beta}
+  \end{ZX}. Before \begin{ZX}
+    \zxX{\alpha+\beta} \ar[r,o'] & \zxZ{\alpha+\beta}
+  \end{ZX} ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[r, ui, o'] & \zxZ{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+With |N|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,N]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,N]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,N]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,N]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,N]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,N]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,N]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,N]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |N-|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,N-]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,N-]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,N-]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,N-]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,N-]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,N-]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,N-]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,N-]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |<.|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,<.]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,<.]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,<.]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,<.]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,<.]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,<.]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,<.]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,<.]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |NIN|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,NIN]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,NIN]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,NIN]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,NIN]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,NIN]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,NIN]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,NIN]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,NIN]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With this mode |s| behaves basically like |S| since the only difference is the anchor:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,s]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,s]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,s]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,s]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,s]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,s]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,s]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,s]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |s'|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,s']\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,s']\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,s']\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,s']\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,s']\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,s']\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,s']\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,s']\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |-s|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,-s]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,-s]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,-s]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,-s]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,-s]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,-s]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,-s]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,-s]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |SIS|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,SIS]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,SIS]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,SIS]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,SIS]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,SIS]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,SIS]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,SIS]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,SIS]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+With |^.|:
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{} \ar[rd,^.]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{} \ar[rd,ui,^.]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,^.]\\ & \zxX{}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,^.]\\ & \zxX{}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,^.]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha} \ar[rd,ui,^.]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,^.]\\ & \zxX{\alpha+\beta}
+  \end{ZX} $\Rightarrow $ ui \begin{ZX}
+    \zxX{\alpha+\beta} \ar[rd,ui,^.]\\ & \zxX{\alpha+\beta}
+  \end{ZX}.
+}
+\end{codeexample}
+
+Now using our favorite drawing. Here we illustrate how we apply our custom style to all arrows.
+\begin{codeexample}[width=0pt]
+\def\zxEnableIntersectionsNodes{}%
+\tikzset{
+  /zx/user overlay wires/.style={
+    ui, % Other method
+  }
+}
+\begin{ZX}[
+  execute at begin picture={%
+    %%% Definition of long items (the goal is to have a small and readable matrix
+    % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+    \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+    \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+  }
+  ]
+  %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+  & \zxN[a=n]{}  & \zxZ[a=xmiddle]{}       &            & \zxN[a=out1]{} \\
+  \zxN[a=in1]{} & \Zpifour{}   & \zxX[a=Xdown]{}         & \mypitwo{} &                \\
+  &              &                         &            & \zxN[a=out2]{} \\
+  \zxN[a=in2]{} & \zxX[a=X1]{} & \zxZ[a=toprightpi]{\pi} &            & \zxN[a=out3]{}
+  %%% Arrows
+  % Column 1
+  \ar[from=in1,to=X1,s]
+  \ar[from=in2,to=Zpi4,.>]
+  % Column 2
+  \ar[from=X1,to=xmiddle,N']
+  \ar[from=X1,to=toprightpi,H]
+  \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
+  \ar[from=Zpi4,to=Xdown]
+  % Column 3
+  \ar[from=xmiddle,to=Xdown,C-]
+  \ar[from=xmiddle,to=mypi2,'>]
+  % Column 4
+  \ar[from=toprightpi,to=mypi2,-N]
+  \ar[from=mypi2,to=out1,<']
+  \ar[from=mypi2,to=out2,<.]
+  \ar[edge above,use intersections,from=Xdown,to=out3,<.]
+\end{ZX}
+\end{codeexample}
+
+The same using |control points visible| to check if the good styles are applied:
+\begin{codeexample}[width=0pt]
+\def\zxEnableIntersectionsNodes{}%
+\tikzset{
+  /zx/user overlay wires/.style={
+    ui, % Enable our style on all
+    edge above, % For debugging
+    control points visible % For debugging
+  }
+}
+\def\zxDebugMode{}
+\def\zxControlPointsVisible{}
+\begin{ZX}[
+  execute at begin picture={%
+    %%% Definition of long items (the goal is to have a small and readable matrix
+    % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+    \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+    \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+  }
+  ]
+  %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+  & \zxN[a=n]{}  & \zxZ[a=xmiddle]{}       &            & \zxN[a=out1]{} \\
+  \zxN[a=in1]{} & \Zpifour{}   & \zxX[a=Xdown]{}         & \mypitwo{} &                \\
+  &              &                         &            & \zxN[a=out2]{} \\
+  \zxN[a=in2]{} & \zxX[a=X1]{} & \zxZ[a=toprightpi]{\pi} &            & \zxN[a=out3]{}
+  %%% Arrows
+  % Column 1
+  \ar[from=in1,to=X1,s]
+  \ar[from=in2,to=Zpi4,.>]
+  % Column 2
+  \ar[from=X1,to=xmiddle,N']
+  \ar[from=X1,to=toprightpi,H]
+  \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
+  \ar[from=Zpi4,to=Xdown]
+  % Column 3
+  \ar[from=xmiddle,to=Xdown,C-]
+  \ar[from=xmiddle,to=mypi2,'>]
+  % Column 4
+  \ar[from=toprightpi,to=mypi2,-N]
+  \ar[from=mypi2,to=out1,<']
+  \ar[from=mypi2,to=out2,<.]
+  \ar[edge above,use intersections,from=Xdown,to=out3,<.]
+\end{ZX}
+\end{codeexample}
+
+Now, we can also globally enable the |ui| style and the intersection only for some kinds of arrows. For instance (here we enable it for all styles based on |N|, i.e.\ |*N*| and |>|-like wires). See that the |s| node is note using the intersections mode:
+\begin{codeexample}[width=0pt]
+\def\zxEnableIntersectionsNodes{}%
+\tikzset{
+  /zx/user overlay wires/.style={
+    %% Nbase changes both N-like and >-like styles.
+    %% Use N/.append to change only N-like.
+    Nbase/.append style={%
+      ui, % intersection only for arrows based on N (N and <)
+    },
+    edge above, % For debugging
+    control points visible % For debugging
+  }
+}
+\def\zxDebugMode{}
+\def\zxControlPointsVisible{}
+\begin{ZX}[
+  execute at begin picture={%
+    %%% Definition of long items (the goal is to have a small and readable matrix
+    % (warning: macro can't have numbers in TeX. Also, make sure not to use existing names)
+    \def\Zpifour{\zxFracZ[a=Zpi4]-{\pi}{4}}%
+    \def\mypitwo{\zxFracX[a=mypi2]{\pi}{2}}%
+  }
+  ]
+  %%% Matrix: in emacs "M-x align" is practical to automatically format it. a is for 'alias'
+  & \zxN[a=n]{}  & \zxZ[a=xmiddle]{}       &            & \zxN[a=out1]{} \\
+  \zxN[a=in1]{} & \Zpifour{}   & \zxX[a=Xdown]{}         & \mypitwo{} &                \\
+  &              &                         &            & \zxN[a=out2]{} \\
+  \zxN[a=in2]{} & \zxX[a=X1]{} & \zxZ[a=toprightpi]{\pi} &            & \zxN[a=out3]{}
+  %%% Arrows
+  % Column 1
+  \ar[from=in1,to=X1,s]
+  \ar[from=in2,to=Zpi4,.>]
+  % Column 2
+  \ar[from=X1,to=xmiddle,N']
+  \ar[from=X1,to=toprightpi,H]
+  \ar[from=Zpi4,to=n,C] \ar[from=n,to=xmiddle,wc]
+  \ar[from=Zpi4,to=Xdown]
+  % Column 3
+  \ar[from=xmiddle,to=Xdown,C-]
+  \ar[from=xmiddle,to=mypi2,'>]
+  % Column 4
+  \ar[from=toprightpi,to=mypi2,-N]
+  \ar[from=mypi2,to=out1,<']
+  \ar[from=mypi2,to=out2,<.]
+  \ar[edge above,use intersections,from=Xdown,to=out3,<.]
+\end{ZX}
+\end{codeexample}
+
+\end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxIntersectionLineBetweenStartEnd\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/intersections mode between start end\@nil%
+  \extractkey/zx/wires definition/intersections mode bezier controls\@nil%
+  \makeatother
+  \pgfmanualbody
+
+Node that we also defined another intersection mechanism, in which the intersection with the node boundary is computed using the line that links the two fake centers of the starting and ending point. To use it, either define |\def\zxIntersectionLineBetweenStartEnd{}| or use the style |intersections between start end| (or to come back to the normal intersection mode |intersections bezier controls|). Note that this just changes the mode of computing intersections, but does not enable intersections, you still need to enable intersections as explained above (for instance using |use intersection|, or |ui| if you also want to load our style). Note however that we don't spent too much effort in this mode as the result is often not really appealing, in particular the |o| shapes, and therefore we designed no special style for it and made only a few tests.
+\begin{codeexample}[]
+{%
+  \def\zxEnableIntersectionsNodes{}
+  \begin{ZX}
+    \zxX{\alpha} \ar[rd,N]\\ & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ between start end \begin{ZX}
+    \zxX{\alpha} \ar[edge above,rd,ui,intersections mode between start end,N]\\ & \zxX{\beta}
+  \end{ZX}.
+  \begin{ZX}
+    \zxX{\alpha} \ar[r,o'] \ar[r,o.] & \zxX{\beta}
+  \end{ZX} $\Rightarrow $ between start end \begin{ZX}
+    \zxX{\alpha} \ar[r,ui,intersections mode between start end,o']
+                 \ar[r,ui,intersections mode between start end,o.] & \zxX{\beta}
+  \end{ZX}.
+}
+\end{codeexample}
 \end{pgfmanualentry}
 
 \subsection{Further customization}
@@ -1884,9 +2520,14 @@ This can also be used to fake multi-columns nodes (I need to check later if I ca
 \end{ZX}
 \end{codeexample}
 }
+
+\section{Future works and known bugs}
+
+There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. I also would like to provide externalization to boost compilation time. But |tikz-cd| is not really compatible with externalization, so it would need a bit of work (of course, you can always compile your images in a separate file, but it is cumbersome). See potential solutions here: \mylink{https://tex.stackexchange.com/questions/171931/}{here}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it). And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that!
+
 \section{Acknowledgement}
 
-I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users (sorry, I don't want to risk an incomplete list) that helped me to understand a bit more \LaTeX and \tikzname. I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
+I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav\dots{}). I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
 
 \printindex
 

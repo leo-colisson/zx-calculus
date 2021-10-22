@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2021/10/19
+%%% Version: 2021/10/22
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,12 +60,19 @@
 %% Same as zxWCol, but when a single empty node is connected to a non-empty node.
 \newcommand{\zxwCol}{1mm}
 \newcommand{\zxwRow}{1mm}
-%% When adding two lines with only empty nodes, it can create quite a large space. Use this to reduce it
-\newcommand{\zxNoneCol}{.5mm}
-\newcommand{\zxNoneRow}{.5mm}
 %% When vdots/dots are used in lines
 \newcommand{\zxDotsCol}{3mm}
 \newcommand{\zxDotsRow}{3mm}
+%% Default separation between rows and columns
+\newcommand{\zxDefaultColumnSep}{1.5mm}
+\newcommand{\zxDefaultRowSep}{1.5mm}
+% To cancel the default tow separation
+\newcommand{\zxZeroCol}{-\zxDefaultColumnSep}
+\newcommand{\zxZeroRow}{-\zxDefaultRowSep}
+%% When adding two lines with only empty nodes, it can create quite a large space. Use this to reduce it
+%% Yes, we can add multiple arguments, space will add up (see documentation pgfmatrixnextcell)
+\newcommand{\zxNCol}{-\zxDefaultColumnSep,.5mm}
+\newcommand{\zxNRow}{-\zxDefaultRowSep,.5mm}
 
 
 % Angles by default for s and o related arrows
@@ -93,10 +100,26 @@
   defaultN-/.style={1-=.4,1L=0},
   defaultNN/.style={},
   defaultNIN/.style={1-=0,1L=.6},
+  defaultChevron/.style={}, % < should be stronger than N- also in ui mode.
+  defaultChevronDown/.style={}, % The ^ v versions (default NN and default NIN will be loaded before).
   defaultS/.style={-=.8,L=0},
   defaultS'/.style={-=.8,L=.2},
   default-S/.style={1-=.8,1L=0},
   defaultSIS/.style={1-=0,1L=.8},
+  % Loads the default styles for the "use intersection" method.
+  /zx/args/-andL/ui/.style={
+    /zx/args/-andL/defaultO/.style={-=.2,L=.17},
+    /zx/args/-andL/defaultN/.style={-=.2,L=.7},
+    /zx/args/-andL/defaultN-/.style={1-=.5,1L=.2,2-=.2,2L=.5}, %% Todo: write a different style for <
+    /zx/args/-andL/defaultNN/.style={},
+    /zx/args/-andL/defaultChevron/.style={1-=.2,1L=0,2-=.2,2L=.8},
+    /zx/args/-andL/defaultChevronDown/.style={1L=.2,1-=0,2L=.2,2-=.8},
+    /zx/args/-andL/defaultNIN/.style={1-=0,1L=.66,2-=.55,2L=.16},
+    /zx/args/-andL/defaultS/.style={-=.8,L=0},
+    /zx/args/-andL/defaultS'/.style={-=.8,L=.3},
+    /zx/args/-andL/default-S/.style={1-=.8,1L=0},
+    /zx/args/-andL/defaultSIS/.style={1-=0,1L=.8,2-=.15,2L=.6},
+  },
 }
 
 
@@ -126,9 +149,19 @@
 % The library tries to find intersection between fake center east/... and the border of the node
 % to draw the nodes directly on the border.
 % To enable this function (can also be set locally), enable this macro:
-\def\zxShouldUseIntersections{}
-% to disable this check, undefined it:
-% \let\zxShouldUseIntersections\undefined
+% \def\zxEnableIntersectionsNodes{} %% To add the "name shape" on each node
+% \def\zxEnableIntersectionsWires{} %% For wires only (can't work without \zxEnableIntersectionsNodes)
+\newcommand{\zxEnableIntersections}{%
+  \def\zxEnableIntersectionsWires{}%
+  \def\zxEnableIntersectionsNodes{}%
+}
+% to disable intersections, undefined it:
+\let\zxEnableIntersectionsNodes\undefined
+\let\zxEnableIntersectionsWires\undefined
+\newcommand{\zxDisableIntersections}{%
+  \let\zxEnableIntersectionsNodes\undefined%
+  \let\zxEnableIntersectionsWires\undefined%
+}
 % Now, if it cannot find a good intersection (either because "name path" is disabled, or
 % because no intersection is found, or because intersections are disabled anyway) we need to
 % have a fallback mechanism. Either we choose instead the "fake center" (or center if fake
@@ -154,7 +187,7 @@
   \endgroup
 }
 \def\zx@useanchor#1#2{\csname pgf@anchor@#1@#2\endcsname}
-\zx@pgfaddtoshape{rounded rectangle}{
+\zx@pgfaddtoshape{rounded rectangle}{%
   \anchor{fake center east}{%
     \zx@useanchor{rounded rectangle}{north east}%
     \pgf@yc=.5\pgf@y% final y = 0.5*this y + 0.5*other y.
@@ -177,48 +210,48 @@
   }%
 }
 
-\zx@pgfaddtoshape{coordinate}{
+\zx@pgfaddtoshape{coordinate}{%
   \anchor{fake center east}{%
-    \zx@useanchor{coordinate}{center}
+    \zx@useanchor{coordinate}{center}%
   }%
   \anchor{fake center west}{%
-    \zx@useanchor{coordinate}{center}
+    \zx@useanchor{coordinate}{center}%
   }%
   \anchor{fake center north}{%
-    \zx@useanchor{coordinate}{center}
+    \zx@useanchor{coordinate}{center}%
   }%
   \anchor{fake center south}{%
-    \zx@useanchor{coordinate}{center}
+    \zx@useanchor{coordinate}{center}%
   }%
 }
 
-\zx@pgfaddtoshape{circle}{
+\zx@pgfaddtoshape{circle}{%
   \anchor{fake center east}{%
-    \zx@useanchor{circle}{center}
+    \zx@useanchor{circle}{center}%
   }%
   \anchor{fake center west}{%
-    \zx@useanchor{circle}{center}
+    \zx@useanchor{circle}{center}%
   }%
   \anchor{fake center north}{%
-    \zx@useanchor{circle}{center}
+    \zx@useanchor{circle}{center}%
   }%
   \anchor{fake center south}{%
-    \zx@useanchor{circle}{center}
+    \zx@useanchor{circle}{center}%
   }%
 }
 
 \zx@pgfaddtoshape{rectangle}{
   \anchor{fake center east}{%
-    \zx@useanchor{rectangle}{center}
+    \zx@useanchor{rectangle}{center}%
   }%
   \anchor{fake center west}{%
-    \zx@useanchor{rectangle}{center}
+    \zx@useanchor{rectangle}{center}%
   }%
   \anchor{fake center north}{%
-    \zx@useanchor{rectangle}{center}
+    \zx@useanchor{rectangle}{center}%
   }%
   \anchor{fake center south}{%
-    \zx@useanchor{rectangle}{center}
+    \zx@useanchor{rectangle}{center}%
   }%
 }
 
@@ -269,10 +302,13 @@
 %%% Useful debug functions
 %% This function will be called when debugging the library.
 \def\zx@message#1{}
-\def\zx@verbose@message#1{\message{#1}} % For more important messages. Like to show the code is not looping forever
+% The ^^J adds a new line:
+\def\zx@verbose@message#1{\message{#1^^J}} % For more important messages. Like to show the code is not looping forever
 % To enable debugging:
-% \def\zx@message#1{\message{#1}}
+% WARNING: if you use in code, do not forget the makeatletter!
+%\def\zx@message#1{\message{#1^^J}}
 % To display stroke of while trying to compute the intersections:
+% WARNING: if you use in code, do not forget the makeatletter!
 %\def\zx@draw@stroke@inter@debug{}
 
 
@@ -287,19 +323,21 @@
 % Result will be moved back into #1
 \def\zx@find@intersection@fakecenter#1#2#3#4#5{%
   % First, we check if the user wants to compute the intersection:
-  \ifdefined\zxShouldUseIntersections%
+  \ifdefined\zxEnableIntersectionsWires%
      %% We compute the intersection
     \edef\tikz@intersect@path@a{zx@name@path@#1}%
     \ifcsname tikz@intersect@path@name@\tikz@intersect@path@a \endcsname%
-      \zx@verbose@message{[ZX] I will start computing intersections}
+      \zx@verbose@message{[ZX] I will start computing intersections}%
       \pgfintersectionofpaths{%
-        %%%% /!\ This lines is the one I'm not sure how to write:
-        \expandafter\pgfsetpath\csname tikz@intersect@path@name@\tikz@intersect@path@a\endcsname%
-        \pgfgetpath\temppath%
-        \ifdefined\zx@draw@stroke@inter@debug%
-          \pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
-        \fi%
-        \pgfsetpath\temppath%
+        \begin{pgfinterruptboundingbox}%
+          %%%% /!\ This lines is the one I'm not sure how to write:
+          \expandafter\pgfsetpath\csname tikz@intersect@path@name@\tikz@intersect@path@a\endcsname%
+          \pgfgetpath\temppath%
+          \ifdefined\zx@draw@stroke@inter@debug%
+            \pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
+          \fi%
+          \pgfsetpath\temppath%
+        \end{pgfinterruptboundingbox}%
       }{% The first path is moved to the center... So we need to shift it also here.
         %%% First intersection: we use the line between the two nodes... but it's really ugly (e.g. in o it does not make a lot of sense)
         \begin{pgfinterruptboundingbox}%
@@ -308,57 +346,85 @@
             \pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}%
             \pgfpathmoveto{\pgfpoint{-\pgf@x}{\pgf@y}}%
             % And now both axis are???
-            \pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}
+            \pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}%
             \pgfpathlineto{\pgfpoint{-\pgf@x}{-\pgf@y}}%
           \else%
             %% We use now the method used for bezier curve (at least it's what I see "experimentally")
             %% More precisely, we use the direction of the bezier curve to know where to start the wire.
-            %% Parse first point to get coordinates in \pgf@x and y
-            %% For the first control point
-            \ifnum#5=1\relax %
-              \tikz@scan@one@point\pgf@process(#2)%
+            %% Parse once the control points for efficiency reasons:
+            %% First parse the fake centers.
+            \tikz@scan@one@point\pgf@process(#2)%
+            \edef\zx@tmp@current@fake@x{\the\pgf@x}%
+            \edef\zx@tmp@current@fake@y{\the\pgf@y}%
+            \zx@message{The input fakes are #2 and #3.}%
+            \tikz@scan@one@point\pgf@process(#3)%
+            \edef\zx@tmp@other@fake@x{\the\pgf@x}%
+            \edef\zx@tmp@other@fake@y{\the\pgf@y}%
+            \zx@message{The parsed input fakes are (\zx@tmp@current@fake@x , \zx@tmp@current@fake@y) and (\zx@tmp@other@fake@x , \zx@tmp@other@fake@y).}%
+            %% Reorder the controls to compute. #5 = 1 if "start fake center" is "current fake center".
+            \ifnum#5=1 % <-- important space!!!
+              \edef\zx@tmp@start@fake@x{\zx@tmp@current@fake@x}%
+              \edef\zx@tmp@start@fake@y{\zx@tmp@current@fake@y}%
+              \edef\zx@tmp@end@fake@x{\zx@tmp@other@fake@x}%
+              \edef\zx@tmp@end@fake@y{\zx@tmp@other@fake@y}%
             \else%
-              \tikz@scan@one@point\pgf@process(#3)%
+              \edef\zx@tmp@end@fake@x{\zx@tmp@current@fake@x}%
+              \edef\zx@tmp@end@fake@y{\zx@tmp@current@fake@y}%
+              \edef\zx@tmp@start@fake@x{\zx@tmp@other@fake@x}%
+              \edef\zx@tmp@start@fake@y{\zx@tmp@other@fake@y}%
             \fi%
-            \edef\zx@tmp@xa{\the\pgf@x}%
-            \edef\zx@tmp@ya{\the\pgf@y}%
-            \ifnum#5=1 \relax%
-              \tikz@scan@one@point\pgf@process(#3)%
-            \else%
-              \tikz@scan@one@point\pgf@process(#2)%
-            \fi%
-            \edef\zx@tmp@xb{\the\pgf@x}%
-            \edef\zx@tmp@yb{\the\pgf@y}%
-            \pgfkeysalso{/zx/tmp/zx@getControlPoints={\zx@tmp@xa}{\zx@tmp@ya}{\zx@tmp@xb}{\zx@tmp@yb}}%
+            \zx@message{We computed: start fake (\zx@tmp@start@fake@x , \zx@tmp@start@fake@y) end fake (\zx@tmp@end@fake@x , \zx@tmp@end@fake@y )}%
+            \pgfkeysalso{/zx/tmp/zx@getControlPoints={\zx@tmp@start@fake@x}{\zx@tmp@start@fake@y}{\zx@tmp@end@fake@x}{\zx@tmp@end@fake@y}}%
             % Now results are in controlOne, and controlTwo
             \ifnum#5=1 \relax%
               \def\zx@control{\controlOne}%
             \else%
               \def\zx@control{\controlTwo}%
             \fi%
-            \pgfextractx{\pgf@xa}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
-            \pgfextracty{\pgf@ya}{\pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}}%
-            \pgfpathmoveto{\pgfpoint{-\pgf@xa}{\pgf@ya}}%
+            %%% Parse new control
+            \tikz@scan@one@point\pgf@process(\zx@control)%
+            \edef\zx@tmp@current@ctrl@x{\the\pgf@x}%
+            \edef\zx@tmp@current@ctrl@y{\the\pgf@y}%
+            \zx@message{[ZX] Current control is number #5, i.e. \zx@control (both are \controlOne and \controlTwo)}%
+            % We store the center coordinates since it's used several times
+            \pgfpointanchor{#1}{center}%
+            \edef\zx@tmp@real@center@x{\the\pgf@x}%
+            \edef\zx@tmp@real@center@y{\the\pgf@y}%
+            %%% Go to  current fake center, except that real center is the new origin.
+            \pgfpointdiff{\pgfpoint{\zx@tmp@real@center@x}{\zx@tmp@real@center@y}}{\pgfpoint{\zx@tmp@current@fake@x}{\zx@tmp@current@fake@y}}%
+            \pgfpathmoveto{\pgfpoint{\pgf@x}{\pgf@y}}%
             %% What, now both axis are inverted??? If someone can explain me this...
             %% We scale the point to force it to cross the boundary.
-            \pgf@process{%
-              \pgfqpointscale{10}{%
-                \pgfpointdiff{\tikz@scan@one@point\pgf@process(\zx@control)%
+            \pgfpathlineto{%
+              \pgfpointadd{%
+                \pgf@process{%
+                  \pgfpointscale{10}{%
+                    \pgf@process{%
+                      \pgfpointdiff{%
+                        \pgfpoint{\zx@tmp@current@fake@x}{\zx@tmp@current@fake@y}%
+                      }{%
+                        \pgfpoint{\zx@tmp@current@ctrl@x}{\zx@tmp@current@ctrl@y}%
+                      }%
+                    }%
+                  }%
+                }%
+              }{%
+                \pgfpointdiff{%
+                  \pgfpoint{\zx@tmp@real@center@x}{\zx@tmp@real@center@y}%
                 }{%
-                  \pgfpointanchor{#1}{center}%
+                  \pgfpoint{\zx@tmp@current@fake@x}{\zx@tmp@current@fake@y}%
                 }%
               }%
-            }
-            \pgfpathlineto{\pgfpoint{-\pgf@x}{-\pgf@y}}%
+            }%
           \fi%
           \pgfgetpath\temppath%
           \ifdefined\zx@draw@stroke@inter@debug%
-            \pgfusepath{stroke} % We draw it, useful to debug, and realize the shape is moved.
+            \pgfusepath{stroke}% We draw it, useful to debug, and realize the shape is moved.
           \fi%
           \pgfsetpath\temppath%
         \end{pgfinterruptboundingbox}%
       }%
-      \pgfintersectionsolutions
+      \pgfintersectionsolutions%
       \pgfpointintersectionsolution{1}%
       \ifnum\pgfintersectionsolutions=1%% The good number of solution has been found!
         \zx@message{[ZX] Cool, just found one solution!}
@@ -366,24 +432,24 @@
         \edef\zx@relinter@x{\the\pgf@x}%
         \edef\zx@relinter@y{\the\pgf@y}%
         %% Because the shape was moved to center, we shift it back by adding the coord of the shape:
-        \pgfextractx\pgf@xa{\pgfpointanchor{#1}{center}}
-        \pgfextractx\pgf@xb{\pgfpointanchor{#1}{center}}
+        \pgfextractx\pgf@xa{\pgfpointanchor{#1}{center}}%
+        \pgfextractx\pgf@xb{\pgfpointanchor{#1}{center}}%
         % WARNING! pgfmath removes the dimension (converted in pt). Make sure to put them back after
-        \pgfmathsetmacro{\zx@inter@x}{\pgf@x+\zx@relinter@x}
-        \pgfmathsetmacro{\zx@inter@y}{\pgf@y+\zx@relinter@y}
+        \pgfmathsetmacro{\zx@inter@x}{\pgf@x+\zx@relinter@x}%
+        \pgfmathsetmacro{\zx@inter@y}{\pgf@y+\zx@relinter@y}%
         \edef#4{\zx@inter@x pt,\zx@inter@y pt}%
-      \else % The bad number of solution has been found
-        \zx@message{[ZX] WARNING: expecting one solution, found \pgfintersectionsolutions}
-        \ifdefined\zxWireInsideIfNoIntersectionName %
+      \else% The bad number of solution has been found
+        \zx@message{[ZX] WARNING: expecting one solution, found \pgfintersectionsolutions}%
+        \ifdefined\zxWireInsideIfNoIntersectionName%
           % No intersection was found, but still want to use fake center (or center).
           % ==> The wire will be inside the shape
           % Basically \tikztostart := tikztostart@new@center
           \edef#4{#2}%
         \fi% Otherwise, do nothing
-      \fi
+      \fi%
     \else%
       \zx@message{ZX: no path named \tikz@intersect@path@a was found.}%
-      \ifdefined\zxWireInsideIfNoIntersectionName %
+      \ifdefined\zxWireInsideIfNoIntersectionName%
         % No intersection was found, but still want to use fake center (or center).
         % ==> The wire will be inside the shape
         % Basically \tikztostart := tikztostart@new@center
@@ -392,14 +458,14 @@
     \fi%
   \else%
       \zx@message{[ZX]: intersection mechanism disabled}%
-      \ifdefined\zxWireInsideIfNoIntersectionName %
+      \ifdefined\zxWireInsideIfNoIntersectionName%
         % No intersection was found, but still want to use fake center (or center).
         % ==> The wire will be inside the shape
         % Basically \tikztostart := tikztostart@new@center
         \edef#4{#2}%
       \fi% Otherwise, do nothing
-  \fi
-}
+  \fi%
+}%
 
 % Styles. User should not modify "wires definition", but is free to change:
 % - "/zx/default style nodes/" to change completely the node style
@@ -428,20 +494,49 @@
     bn/.style={
       between none
     },
-    % See explaination at the beginning where we define \def\zxShouldUseIntersections{}
+    % To debug the bezier curve.
+    edge above/.code={%
+      \def\zxEdgesAbove{}%
+    },%
+    edge not above/.code={%
+      \let\zxEdgesAbove\undefined%
+    },
+    control points visible/.code={%
+      \def\zxControlPointsVisible{}%
+    },%
+    control points not visible/.code={%
+      \let\zxControlPointsVisible\undefined%
+    },
+    % See explaination at the beginning where we define \def\zxEnableIntersectionsWires{}
     % Rouhgly, tries to start the wires on the border of the shape on the line between the
     % fake anchors.
     use intersections/.code={%
-      \def\zxShouldUseIntersections{}%
+      \def\zxEnableIntersectionsWires{}%
     },
     dont use intersections/.code={%
-      \let\zxShouldUseIntersections\undefined%
+      \let\zxEnableIntersectionsWires\undefined%
+    },
+    ui/.style={
+      use intersections,
+      /zx/args/-andL/ui
+    },
+    intersections mode between start end/.code={%
+      \def\zxIntersectionLineBetweenStartEnd{}%
+    },
+    intersections mode bezier controls/.code={%
+      \let\zxIntersectionLineBetweenStartEnd\undefined%
     },
     wires behind nodes/.code={%
       \def\zxWireInsideIfNoIntersectionName{}%
     },
     no wires behind nodes/.code={%
       \let\zxWireInsideIfNoIntersectionName\undefined%
+    },
+    intersection between start end/.code={
+      \def\zxIntersectionLineBetweenStartEnd{}%
+    },
+    intersection bezier control/.code={
+      \let\zxIntersectionLineBetweenStartEnd\undefined%
     },
     % ------------------------------
     % Practical stuff to draw lines easily:
@@ -458,7 +553,7 @@
     % If only tex was a functional language... https://tex.stackexchange.com/questions/618955
     C@generic/.style n args={8}{ % min/max, angle1, angle2, anchor, \x or \y, \y or \x, where to move,radius code (for circle should be "radius=\n3")
       to path={
-        \pgfextra{ %% <- we will use def... so need to "exit" a few seconds pgf
+        \pgfextra{%% <- we will use def... so need to "exit" a few seconds pgf
           % Test if tikztostart is a point or a node, and define StartPoint accordingly.
           \ifPgfpointOrNode{\tikztostart}{%
             \def\StartPoint{\tikztostart}%
@@ -488,21 +583,21 @@
         }%
         \ifpgfmathcomparison\else -- ##7\fi
         %%%% Version 1:
-        \pgfextra{
-          \pgfmathparse{
+        \pgfextra{%
+          \pgfmathparse{%
             ifthenelse(##61<##62, % if end angle < angle, draw clockwis
             "arc[start angle=##3,end angle=##2,##8]",%
             "arc[start angle=##2,end angle=##3,##8]"%
             )%
-          }
-        }
-        \pgfmathresult
+          }%
+        }%
+        \pgfmathresult%
         \pgfextra{%
           %% We check if we are moving or not (required to preserve arrow tip direction)
           \pgfmathapproxequalto{##52}{\n1}%
         }%
         \ifpgfmathcomparison\else -- (\TargetPoint)\fi
-        \tikztonodes % All to path finishes with that to deal with futur nodes I think
+        \tikztonodes% All to path finishes with that to deal with futur nodes I think
       }
     },
     % At the first version, styles were defined using in=... out=... looseness=... However
@@ -523,27 +618,20 @@
     C'/.default=1,
     C./.style={C@generic={min}{0}{-180}{south}{\y}{\x}{(\x1,\n1)}{x radius=\n3, y radius=##1*\n3}},
     C./.default=1,
-    % To debug the bezier curve.
-    edges above/.code={%
-      \def\zxEdgesAbove{}%
-    },%
-    edges not above/.code={%
-      \let\zxEdgesAbove\undefined%
-    },
     %%% bezier{px1}{py1}{px2}{py2} creates a bezier curve where px1/py1 are the
     %%% coordinates of the first control (in "percentage" 0<px1<1, between start and end point) and px2/py2
     %%% are the coordinates in % of the second control point
     %%% bezier@general is used to construct also x/y versions, 5 and 6'th argument are \x or \y.
     bezier@general/.style n args={6}{
-      possibly@on@edge@layer/.code={ %% see "edges above" style. for debug mode only.
-        \ifdefined\zxEdgesAbove\else
+      possibly@on@edge@layer/.code={%% see "edges above" style. for debug mode only.
+        \ifdefined\zxEdgesAbove\else%
           \pgfkeysalso{%
             on layer=edgelayer%
           }%
         \fi%
       },
       possibly@on@edge@layer,
-      to path={
+      to path={%
         %%% First, check that inputs/outputs are points.
         \pgfextra{% <- Type latex code inside path
           %% Setup the startup node. This code can be changed by styles
@@ -561,10 +649,10 @@
           \pgfkeysalso{
             /zx/tmp/zx@setup@start@node/.get=\zx@anchor@start@node,
             /zx/tmp/zx@setup@end@node/.get=\zx@anchor@end@node,
-            /zx/tmp/zx@getControlPoints/.code n args={4}{
-              \zx@message{I will evaluate my control points:}
+            /zx/tmp/zx@getControlPoints/.code n args={4}{%
+              \zx@message{I will evaluate my control points:}%
               % Args: start point, x,y then end point x,y
-              % Use ########1 ... (yes, LaTeX is a funny language, and I love nested functions)
+              % Use ########1 ... (yes, LaTeX is a funny exponential language, and I love nested functions)
               % Because to path is considered as a function already.
               \def\x################1{%
                 \ifnum################1=1 % <-- super important space...
@@ -573,7 +661,7 @@
                   ########3%
                 \fi%
               }%
-              \zx@message{[ZX] x is defined.}
+              \zx@message{[ZX] x is defined.}%
               \def\y################1{%
                 \ifnum ################1 = 1 % <-- super important space...
                   ########2%
@@ -582,11 +670,12 @@
                 \fi%
               }%
               \tikz@scan@one@point\pgf@process(\x1-##51*##1+##52*##1,\y1-##61*##2+##62*##2)%
-              \edef\controlOne{\the\pgf@x,\the\pgf@y}
+              \edef\controlOne{\the\pgf@x,\the\pgf@y}%
               \tikz@scan@one@point\pgf@process(\x1-##51*##3+##52*##3,\y1-##61*##4+##62*##4)%
-              \edef\controlTwo{\the\pgf@x,\the\pgf@y}
-            },
-          }
+              \edef\controlTwo{\the\pgf@x,\the\pgf@y}%
+              \zx@message{[ZX] First control point is: \controlOne, second is \controlTwo.}%
+            },%
+          }%
           %%% This will be the new \tikztostart and \tikztotarget... if someone defines them
           \let\new@tikztostart\undefined%
           \let\new@tikztotarget\undefined%
@@ -600,7 +689,7 @@
               \pgfkeysalso{%
                 /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{center}{\new@tikztotarget}{2},
               }%
-            }
+            }%
           }{% A start node was chosen :D
             \ifthenelse{\equal{\zx@anchor@end@node}{}}{%
               % No end node was chosen... I'll take center to configure the start node,
@@ -610,7 +699,7 @@
               }%
             }{%
               % And an end node was chosen :D
-              \zx@message{[ZX] Both anchors are set. Lets configure intersection.}
+              \zx@message{[ZX] Both anchors are set. Lets configure intersection.}%
               \pgfkeysalso{
                 /zx/utils/change@tikz@fake@center@intersect={\tikztostart}{\zx@anchor@start@node}{\tikztotarget}{\zx@anchor@end@node}{\new@tikztostart}{1},
                 /zx/utils/change@tikz@fake@center@intersect={\tikztotarget}{\zx@anchor@end@node}{\tikztostart}{\zx@anchor@start@node}{\new@tikztotarget}{2},
@@ -619,7 +708,7 @@
           }%
           \ifdefined\new@tikztostart%
             \edef\tikztostart{\new@tikztostart}%
-          \fi
+          \fi%
           \ifdefined\new@tikztotarget%
             \edef\tikztotarget{\new@tikztotarget}%
           \fi%
@@ -639,17 +728,24 @@
           %%% center will put the wire below the node which is not really desired for H nodes
           %%% (position will be wrong) or when using arrows. And if center is really desired
           %%% it's easy to force it using start anchor and end anchor.
-          \def\StartPoint{\tikztostart}
-          \def\TargetPoint{\tikztotarget}
+          \def\StartPoint{\tikztostart}%
+          \def\TargetPoint{\tikztotarget}%
           %%% TODO: check that it does not change the shape of the wire since I'm not sure what \x1
-          %%% is in that case
+          %%% is in that case%
         }%
         let
         \p1=(\StartPoint),
-        \p2=(\TargetPoint), %% ##5 = \x or \y, so ##51 = \x1 or \y1.
+        \p2=(\TargetPoint),%% ##5 = \x or \y, so ##51 = \x1 or \y1.
         \p{control1}=(\x1-##51*##1+##52*##1, \y1-##61*##2+##62*##2),
         \p{control2}=(\x1-##51*##3+##52*##3, \y1-##61*##4+##62*##4) in
-        (\StartPoint) .. controls (\p{control1}) and (\p{control2}) .. (\TargetPoint) \tikztonodes
+        (\StartPoint) .. controls (\p{control1}) and (\p{control2}) .. (\TargetPoint)
+        \ifdefined\zxControlPointsVisible
+          (\StartPoint) node[anchor=center,circle,fill=yellow,inner sep=.5pt,on layer=foreground]{}
+          -- (\p{control1}) node[anchor=center,circle,fill=orange,inner sep=.5pt,on layer=foreground]{}
+          (\p{control2}) node[anchor=center,circle,fill=purple,inner sep=.5pt,on layer=foreground]{}
+          -- (\TargetPoint) node[anchor=center,circle,fill=brown,inner sep=.5pt,on layer=foreground]{}
+        \fi
+        \tikztonodes
       },
     },
     bezier/.style n args={4}{
@@ -677,15 +773,15 @@
         % https://tex.stackexchange.com/a/516897/116348
       }{% This is a node, not a point:
         \ifAnchorExists{##1}{##2}{%
-          \pgfpointanchor{##1}{##2} %
+          \pgfpointanchor{##1}{##2}%
         }{%
-          \pgfpointanchor{##1}{center} %
+          \pgfpointanchor{##1}{center}%
         }%
         %%% Whoo, pgfpoint only redefine pgf@x/pgf@y, but in no way it stores it!!!
         %%% So can't do \pgfpoint{\pgf@x}{\pgf@y}...
         %%% I needed to create my own system... see \zx@parse@coordx.
         \edef##3{\the\pgf@x,\the\pgf@y}%
-      }
+      }%
     },
     % Directions: configure start/end points to the intersection between
     % the "fake center *" if it exists and the "fake center *" of the destination.
@@ -867,7 +963,9 @@
     },
     (./.default=30,
     %%%% Links with a N-shape, i.e. like s shape, but symetric against the diagonal. Equivalently, it's a soft 's' shape with a much wider angle (>45).
-    N/.code={
+    %% Nbase will be reused later by < > shapes as well. It's useful to make a distinction between N and
+    %% Nbase when user will want to overwrite N without overwritting < >.
+    Nbase/.code={
       \pgfkeys{%
         /zx/args/-andL/.cd,
         defaultN,
@@ -880,6 +978,7 @@
         bezier={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
       }%
     },
+    N/.style={Nbase={##1}},
     % With this model, we don't need differences between N' and N. so we can also call it N.
     % But keep other notations to allow easy style change (to use IO again for instance).
     N'/.style={N={##1}},
@@ -898,16 +997,22 @@
     INN/.style={NIN={symmetry,##1}},
     NNI/.style={INN={##1}},
     %%% <' is basically like -N' (historically < was first), we just put an anchor on the east/....
-    <'/.style={N-={##1},end anchor=west},
-    <./.style={N-={##1},end anchor=west},
+    <'/.style={Nbase={defaultN,defaultN-,defaultChevron,symmetry,##1},end anchor=west},
+    <./.style={<'={##1}},
     % Don't use <>^ alone char as style name, it could be useful later for other shortcuts
     % (replacement directions)
-    '>/.style={-N={##1},start anchor=east},
-    .>/.style={-N={##1},start anchor=east},
-    ^./.style={NNI={##1},end anchor=north},
-    .^/.style={INN={##1},end anchor=north},
-    'v/.style={INN={symmetry,##1}, start anchor=south},
-    v'/.style={NNI={symmetry,##1}, start anchor=south},
+    '>/.style={Nbase={defaultN,defaultN-,defaultChevron,##1},start anchor=east},
+    .>/.style={'>={##1}},
+    ^./.style={
+      Nbase={defaultN,defaultN-,defaultChevron,symmetry-L,defaultNN,defaultNIN,defaultChevronDown,symmetry,##1},
+      end anchor=north
+    },
+    .^/.style={^.={##1}},
+    'v/.style={
+      Nbase={defaultN,defaultN-,defaultChevron,symmetry-L,defaultNN,defaultNIN,defaultChevronDown,##1},
+      start anchor=south
+    },
+    v'/.style={'v={##1}},
     %%%% Links with a s-like shape.
     s/.code={
       \pgfkeys{%
@@ -1101,7 +1206,7 @@
     % Style for empty nodes
     zxAllNodes/.style={
       shape=rectangle, % Otherwise nodes are asymetrical rectangle, which is not practical in our case. Gives notably anchor "center" which is really centered compared to asymatrical rectangles
-      anchor=center,   % Center cells
+      anchor=center, % Center cells
       line width=\zxDefaultLineWidth,
       execute at begin node={\thinmuskip=0mu\medmuskip=0mu\thickmuskip=0mu}, % Reduce space around +/-...
     },
@@ -1156,15 +1261,18 @@
     },
     % Used to compute the intersection with the node's boundary
     allow boundary intersection/.code={%
-      \edef\zx@name@path{zx@name@path@\tikz@fig@name}%
-      \pgfkeysalso{
-        name path=\zx@name@path, % Used by intersection library
-      }%
+      \ifdefined\zxEnableIntersectionsNodes%
+        \edef\zx@name@path{zx@name@path@\tikz@fig@name}%
+        \zx@message{[ZX] The name of the path will be \zx@name@path.}%
+        \pgfkeysalso{
+          name path=\zx@name@path, % Used by intersection library
+        }%
+      \fi%
     },
     % Will be specific to all spiders
     zxSpiders/.style={
       draw=black,
-      allow boundary intersection, % Used later to do math on it.
+      allow boundary intersection,% Used later to do math on it.
     },
     % Will use this style when drawing a X/Z node without phase (not for end user directly)
     zxNoPhase/.style={
@@ -1187,7 +1295,7 @@
       rounded rectangle,
       inner sep=0.0mm,
       scale=0.8,
-    }, % negative outer sep would draw lines from inside...
+    },% negative outer sep would draw lines from inside...
     % Style for nodes that are bigger, like $\alpha+\beta$ or $(a\oplus b)\pi$
     zxLong/.style={zxShort, inner xsep=1.2mm},
     %%% Styles of the label when |phase in label| is used
@@ -1220,7 +1328,7 @@
     %%% impossible styles that adds the phase in a label outside of the node)
     %%% add@Phase@Spider{,Z,X}={phase of the node} will be in charge of adding it.
     % add@Phase@Spider{emptyStyle}{ShortStyle}{LongStyle}{label style}{node content}
-    add@Phase@Spider/.style n args={5}{ %
+    add@Phase@Spider/.style n args={5}{%
       zx@emptyStyle/.style={##1},
       zx@shortStyle/.style={##2},
       zx@notEmptyStyle/.style={##3},
@@ -1228,7 +1336,7 @@
       /zx/zx@content/.initial={##5},
       phase in content,
     },
-    add@Phase@Spider@Frac/.style n args={8}{ % add@Phase@Spider{emptyStyle}{NotEmptyStyle}{labelstyle}{sign}{above fraction (no parens)}{below fraction (no parens)}{above fraction (parens)}{below fraction (parens)}
+    add@Phase@Spider@Frac/.style n args={8}{% add@Phase@Spider{emptyStyle}{NotEmptyStyle}{labelstyle}{sign}{above fraction (no parens)}{below fraction (no parens)}{above fraction (parens)}{below fraction (parens)}
       zx@emptyStyle/.style={##1},
       zx@notEmptyStyle/.style={##2},
       zx@labelStyle/.style={##3},
@@ -1452,8 +1560,23 @@
   /zx/user overlay wires/.style={
   },
   /zx/defaultEnv/.style={
-    column sep=tiny,
-    row sep=tiny,
+    %tiny depends on the size of the font... which we want to keep consistent look
+    column sep=\zxDefaultColumnSep,
+    row sep=\zxDefaultRowSep,
+    zx column sep/.code={%
+      \def\zxDefaultColumnSep{##1}%
+      \pgfkeysalso{
+        column sep=##1,
+      }%
+    },
+    zx row sep/.code={%
+      \def\zxDefaultRowSep{##1}%
+      \pgfkeysalso{%
+        row sep=##1,
+      }%
+    },
+    %column sep=tiny,
+    %row sep=tiny,
     % center on the math axis
     baseline={([yshift=-axis_height]current bounding box.center)},
     % Fix 1-row diagram baseline
@@ -1468,6 +1591,15 @@
         \pgfkeysalso{%
           alias=####1,%
         }%
+        %% name path won't work with alias... So let's create two name path ^^
+        %% https://tex.stackexchange.com/questions/619622
+        \ifdefined\zxEnableIntersectionsNodes%
+          \edef\zx@name@path{zx@name@path@####1}%
+          \zx@message{[ZX] Name given using an alias: \zx@name@path.}%
+          \pgfkeysalso{
+            name path=\zx@name@path, % Used by intersection library
+          }%
+        \fi%
         \ifdefined\zxDebugMode%
           \pgfkeysalso{%
             label={[inner sep=0pt,overlay,red,font={\fontsize{5}{6}}]-45:\scalebox{.5}{####1}}
@@ -1550,7 +1682,7 @@
 \def\node@on@layer{\aftergroup\node@@on@layer}
 
 %%% Declare a symbol for a short minus (useful in fractions)
-\DeclareMathSymbol{\zxMinus}{\mathbin}{AMSa}{"39} % Requires amssymb
+\DeclareMathSymbol{\zxMinus}{\mathbin}{AMSa}{"39}% Requires amssymb
 
 %%% Checks if a function is a point or a node.
 %%% Not sure if best solution (needed to dig into source of TeX), but can't find anything better in manual
@@ -1652,13 +1784,13 @@
 % Usage: node without any style, but may have space. Default is no space, \zxNone+{} is both horizontal
 % and vertical, \zxNone-{} is only horizontal space, \zxNone|{} is only vertical space.
 \NewExpandableDocumentCommand{\zxNone}{t+t-t|O{}m}{
-  \IfBooleanTF{#1}{ % \zxNone+
+  \IfBooleanTF{#1}{% \zxNone+
     |[zxNone+,#4]| #5%
   }{
-    \IfBooleanTF{#2}{ % \zxNone-
+    \IfBooleanTF{#2}{% \zxNone-
       |[zxNone-,#4]| #5%
     }{
-      \IfBooleanTF{#3}{ % \zxNone
+      \IfBooleanTF{#3}{% \zxNone
         |[zxNoneI,#4]| #5%
       }{% \zxNone
         |[zxNone,#4]| #5%
@@ -1669,13 +1801,13 @@
 
 % Usage: alias of \zxNone... To bad token can't be easily forwarded to another function.
 \NewExpandableDocumentCommand{\zxN}{t+t-t|O{}m}{
-  \IfBooleanTF{#1}{ % \zxNone+
+  \IfBooleanTF{#1}{% \zxNone+
     |[zxNone+,#4]| #5%
   }{
-    \IfBooleanTF{#2}{ % \zxNone-
+    \IfBooleanTF{#2}{% \zxNone-
       |[zxNone-,#4]| #5%
     }{
-      \IfBooleanTF{#3}{ % \zxNone
+      \IfBooleanTF{#3}{% \zxNone
         |[zxNoneI,#4]| #5%
       }{% \zxNone
         |[zxNone,#4]| #5%
@@ -1686,13 +1818,13 @@
 
 % Cf \zxNone, but with larger space.
 \NewExpandableDocumentCommand{\zxNoneDouble}{t+t-t|O{}m}{
-  \IfBooleanTF{#1}{ % \zxNoneDouble+
+  \IfBooleanTF{#1}{% \zxNoneDouble+
     |[zxNoneDouble+,#4]| #5%
   }{
-    \IfBooleanTF{#2}{ % \zxNoneDouble-
+    \IfBooleanTF{#2}{% \zxNoneDouble-
       |[zxNoneDouble-,#4]| #5%
     }{
-      \IfBooleanTF{#3}{ % \zxNoneDouble
+      \IfBooleanTF{#3}{% \zxNoneDouble
         |[zxNoneDoubleI,#4]| #5%
       }{% \zxNoneDouble
         |[zxNoneDouble,#4]| #5%
@@ -1755,7 +1887,7 @@
     \let\tikzcd@\tikzcd@@originalCopyZx%
     \let\endtikzcd\endtikzcd@originalCopyZx%
   \fi%
-  \pgfsetlayers{background,edgelayer,nodelayer,main,box,labellayer,foreground} % Layers are defined locally to avoid to disturb other drawings
+  \pgfsetlayers{background,edgelayer,nodelayer,main,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
   \begin{tikzcd}[%
     /zx/defaultEnv,%
     #1]%
@@ -1795,11 +1927,11 @@
       % Check if width < ratio*(height+depth) to see if short style applies
       \ifdimcomp{\wd\zx@box}{<}{\dimexpr \zxMaxRatio\ht\zx@box + \zxMaxRatio\dp\zx@box\relax}{%
         #3% Short style is used
-      }{ % Else
+      }{% Else
         #4% Long style is used
-      } %
-    }{
+      }%
+    }{%
       #4% Long style is used
-    }
+    }%
   }%
 }
