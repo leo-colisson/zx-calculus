@@ -63,7 +63,7 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
-This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus/issues}{\texttt{github.com/leo-colisson/zx-calculus/issues}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing, wire looks\dots{}) won't be made later. In case you want a completely unalterable style, just copy the two files of this library in your project forever (see installation)! The documentation is also a work in progress, so feel free to check the code to discover new functionalities.
+This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus/issues}{\texttt{github.com/leo-colisson/zx-calculus/issues}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing, wire looks\dots{}) won't be made later. In case you want a completely unalterable style, just copy the two files of this library in your project forever (see installation)!
 
 \section{Installation}
 
@@ -202,7 +202,7 @@ We also provide easy methods like |phase in label right| to change the labelling
 Now you should know enough to start your first diagrams. The rest of the documentation will go through all the styles, customizations and features, including the one needed to obtain:
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
+  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'={a=75}]
       & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
 \end{ZX}
 \end{codeexample}
@@ -431,7 +431,7 @@ The optional |-| optional argument is to add a minus sign (customizable, see |\z
 \end{codeexample}
 The |*| optional argument is to force a condensed style, no matter what is the text inside. This can be practical \emph{sometimes}:
 \begin{codeexample}[width=3cm]
-  Compare \zx{\zxN{} \rar & \zxZ{a\pi}} with \zx{\zxN{} \rar & \zxZ*{a\pi}}.
+  Compare \zx{\zxN{} \rar &[\zxwCol] \zxZ{a\pi}} with \zx{\zxN{} \rar &[\zxwCol] \zxZ*{a\pi}}.
 \end{codeexample}
 \noindent but you should use it as rarely as possible (otherwise, change the style directly). See that it does not always give nice results:
 \begin{codeexample}[width=3cm]
@@ -513,7 +513,7 @@ The |*| optional argument is to force a condensed style, no matter what is the t
 \noindent The previous commands can be useful to create this figure:
 \begin{codeexample}[width=0pt]% Forces code/example on two lines.
 \begin{ZX}
-  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
+  \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'={a=75}]
       & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
 \end{ZX}
 \end{codeexample}
@@ -629,14 +629,14 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
   (|axis_height| is the distance to use to center equations on the ``mathematical axis'') by using this in the \meta{options} field of |\zx[options]{...}|. However, this can be a bit long to write, so |math baseline=yourAlias| is a shorcut to |baseline={([yshift=-axis_height]yourAlias)}|:
 \begin{codeexample}[width=0pt]
   Compare $\begin{ZX}
-    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
+    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'={a=75}]
     & \zxX{\beta} \zxLoopAboveDots{} \rightManyDots{m}
   \end{ZX}
   = {\def\zxDefaultSoftAngleS{20} % useful to make the angle in \leftManyDots{} nicer.
     \begin{ZX}
       \leftManyDots{n} \zxX{\alpha+\beta} \rightManyDots{m}
     \end{ZX}}$ with $\begin{ZX}[math baseline=wantedBaseline]
-    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o']
+    \leftManyDots{n} \zxX{\alpha} \zxLoopAboveDots{} \middleManyDots{} \ar[r,o'={a=75}]
     %% See here --v the node chosen as the baseline
     & \zxX[a=wantedBaseline]{\beta} \zxLoopAboveDots{} \rightManyDots{m}
   \end{ZX}
@@ -790,11 +790,16 @@ Note that the first version of that library (which appeared one week before this
   \extractkey/zx/wires definition/C-=radius ratio (default 1)\@nil%
   \makeatother
   \pgfmanualbody
-  Bell-like wires with an arrival at ``right angle'', |C| represents the shape of the wire, while |.| (bottom), |'| (top) and |-| (side) represent (visually) its position. Combine with |wire centered| (|wc|) to avoid holes when connecting multiple wires (not required with |\zxNone|).
+  Bell-like wires with an arrival at ``right angle'', |C| represents the shape of the wire, while |.| (bottom), |'| (top) and |-| (side) represent (visually) its position. Combine with |wire centered| (|wc|) to avoid holes when connecting multiple wires (not required with |\zxNone{}|, alias |\zxN{}|).
 \begin{codeexample}[]
-  Bell pair \zx{\zxNone{} \ar[d,C] \\[\zxWRow]
+  A Bell pair \zx{\zxNone{} \ar[d,C] \\[\zxWRow]
                 \zxNone{}}
-  and funny graph
+  , a swapped Bell pair
+  \begin{ZX}
+    \zxN{} \ar[d,C] \ar[rd,s] &[\zxWCol] \zxN{} \\[\zxWRow]
+    \zxN{}          \ar[ru,s] &          \zxN{}
+  \end{ZX}
+  and a funny graph
   \begin{ZX}
     \zxX{} \ar[d,C] \ar[r,C']  & \zxZ{} \ar[d,C-]\\
     \zxZ{} \ar[r,C.]           & \zxX{}
@@ -913,18 +918,43 @@ When the nodes are too far appart, the default angle of |30| may produce strange
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/args/-andL/-\@nil%
-  \extractkey/zx/args/-andL/1-\@nil%
-  \extractkey/zx/args/-andL/2-\@nil%
-  \extractkey/zx/args/-andL/L\@nil%
-  \extractkey/zx/args/-andL/1L\@nil%
-  \extractkey/zx/args/-andL/2L\@nil%
+  \extractkey/zx/args/-andL/-=x\@nil%
+  \extractkey/zx/args/-andL/1-=x\@nil%
+  \extractkey/zx/args/-andL/2-=x\@nil%
+  \extractkey/zx/args/-andL/L=y\@nil%
+  \extractkey/zx/args/-andL/1L=y\@nil%
+  \extractkey/zx/args/-andL/2L=y\@nil%
+  \extractkey/zx/args/-andL/1 angle and length=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/1al=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/2 angle and length=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/2al=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/angle and length=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/al=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/1 angle=\marg{angle}\@nil%
+  \extractkey/zx/args/-andL/1a=\marg{angle}\@nil%
+  \extractkey/zx/args/-andL/2 angle=\marg{angle}\@nil%
+  \extractkey/zx/args/-andL/1a=\marg{angle}\marg{length}\@nil%
+  \extractkey/zx/args/-andL/angle=\marg{angle}\@nil%
+  \extractkey/zx/args/-andL/a=\marg{angle}\@nil%
   \extractkey/zx/args/-andL/symmetry-L\@nil%
   \extractkey/zx/args/-andL/symmetry\@nil%
-  \extractkey/zx/args/-andL/symmetry\@nil%
+  \extractkey/zx/args/-andL/negate1L\@nil%
+  \extractkey/zx/args/-andL/negate2L\@nil%
+  \extractkey/zx/args/-andL/negateL\@nil%
+  \extractkey/zx/args/-andL/negate1-\@nil%
+  \extractkey/zx/args/-andL/negate2-\@nil%
+  \extractkey/zx/args/-andL/negate-\@nil%
+  \extractkey/zx/args/-andL/oneMinus1-\@nil%
+  \extractkey/zx/args/-andL/oneMinus2-\@nil%
+  \extractkey/zx/args/-andL/oneMinus1L\@nil%
+  \extractkey/zx/args/-andL/oneMinus2L\@nil%
   \makeatother
   \pgfmanualbody
-  The next wires can take multiple options. They are all based on the same set of options for now, namely |/zx/args/-andL/|. The |1*| options are used to configure the starting point, the |2*| to configure the ending point. |-| and |L| will set |-| and |L| for both points. |-| and |L| are used to place two anchors of a Bezier curve. They are expressed in relative distance (so they are typically between $0$ and $1$, but can be pushed above $1$ or below $0$ for stronger effects), |-| is typically on the |x| axis and |L| on the |y| axis (the name represents ``graphically'' the direction). They are however not named |x| and |y| because some wires use them slighlty differently, notably |o| which uses |-| for the direction of the arrow and |L| for the direction perpendicular to the arrow (again the shape of |L| represents a perpendicular line). Each wire interprets |-| and |L| to ensure that $0$ should lead to a straight line, and that a correct shape is obtained when |1-| equals |2-|, |1L| equals |2L| (except for non-symmetric shapes of course), and both |-| and |L| are positive. You should not need |symmetry-L| and |symmetry| directly, they are used internally to do the math. Of course if you need to do symmetries at some point you can use these keys (|symmetry-L| exchange |-| and |L|, and |symmetry| exchanges |1| and |2|). Each of the following nodes have default values which can be configured as explained in \cref{subsec:wirecustom}.
+  The next wires can take multiple options. They are all based on the same set of options for now, namely |/zx/args/-andL/|. The |1*| options are used to configure the starting point, the |2*| to configure the ending point, if no number is given both points are updated. |-| and |L| are used to place two anchors of a Bezier curve. They are expressed in relative distance (so they are typically between $0$ and $1$, but can be pushed above $1$ or below $0$ for stronger effects), |-| is typically on the |x| axis and |L| on the |y| axis (the name represents ``graphically'' the direction). They are however not named |x| and |y| because some wires use them slighlty differently, notably |o| which uses |-| for the direction of the arrow and |L| for the direction perpendicular to the arrow (again the shape of |L| represents a perpendicular line). Each wire interprets |-| and |L| to ensure that $0$ should lead to a straight line, and that a correct shape is obtained when |1-| equals |2-|, |1L| equals |2L| (except for non-symmetric shapes of course), and both |-| and |L| are positive.
+
+  The other expressions involving |angle| (or the shortcut |a|) allow you to define |1-|,|1L|\dots{} using a maybe more intuitive ``polar'' notation, i.e.\ an ``angle'' and a relative length (if not specified, like in |1 angle|, the length defaults to $0.6$). Note that the angle is not really an angle (it is an angle only when the nodes are placed at $45$ degrees, or for the |bezier x/y| variations), but a ``squeezed angle'' (when nodes are not at $45$ degrees, the shape is squeezed horizontally or vertically not to change the wire) and similarly for the length. In the above list, the meaning of each expression should be clear from the name: for instance |1angle and length={45}{.8}| will setup a squeezed angle of $45$ and a relative length of $.8$ for the first point, i.e.\ this is equivalent to $1-=.8\cos(45)$ and $1L=.8\sin(45)$, and |angle=45| will change the angle of both points to $45$, with a relative length of $.6$. In the above list, each long expression has below it a shorter version, for intance |a=45| is equivalent to |angle=45|.
+
+  The last expressions (|symmetry-L|, |symmetry|\dots) are used internally to do some math. Of course if you need to do symmetries at some point you can use these keys (|symmetry-L| exchange |-| and |L|, and |symmetry| exchanges |1| and |2|), |negateX| just negates |X| and |oneMinusX| replaces |X| with |1-X|. Each of the following nodes have default values which can be configured as explained in \cref{subsec:wirecustom}.
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -973,7 +1003,7 @@ When the nodes are too far appart, the default angle of |30| may produce strange
                            & \zxZ{\beta}\\
   \end{ZX}
 \end{codeexample}
-It is possible to configure it using the options in |-andL config| described in \cref{subsec:wirecustom}, where |-| is the (relative) position of the horizontal Bezier anchor and |L| its relative vertical position (to keep a |s|-shape, you should have |-|$>$|L|).
+It is possible to configure it using the options in |-andL config| as explained above (default values are given in \cref{subsec:wirecustom}), where |-| is the (relative) position of the horizontal Bezier anchor and |L| its relative vertical position (to keep a |s|-shape, you should have |-|$>$|L|).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxX{\alpha} \ar[rd,s.] \\
@@ -985,11 +1015,17 @@ It is possible to configure it using the options in |-andL config| described in 
                  & \zxZ{\beta}\\
   \zxX{\alpha} \ar[rd,s.={L=0.1,-=1}] \\
                  & \zxZ{\beta}\\
-  \zxX{\alpha} \ar[rd,s.={-=2}] \\
+  \zxX{\alpha} \ar[rd,edge above, control points visible,s.={-=2}] \\
                  & \zxZ{\beta}
 \end{ZX}
 \end{codeexample}
-For the non-symmetric versions (involving a vertical arrival), you can configure each point separately using |1-| and |1L| (first point) and |2-| and |2L| (second points).
+For the non-symmetric versions (involving a vertical arrival), you can configure each point separately using |1-| and |1L| (first point) and |2-| and |2L| (second points). You can also specify the ``squeezed angle'' and ``length'' of each point, for instance using the |1 angle and length={10}{.8}| option (short version is |1al={10}{.8}|) or both at the same time using |al={10}{.6}| (this last command being itself equivalent to |a=10|). As explained later |edge above| and |control points visible| can help you to visualize the control points of the underlying Bezier curve.
+\begin{codeexample}[width=3cm]
+  \begin{ZX}
+    \zxZ{} \ar[dr,s.={al={10}{.8}}]\\ &\zxZ{}\\
+    \zxZ{} \ar[edge above,control points visible,dr,s.={a=10}]\\ &\zxZ{}
+  \end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -1072,16 +1108,16 @@ As for |s| it can be configured:
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/N=angle (default defaultN)\@nil%
-  \extractkey/zx/wires definition/N'=angle (default defaultN)\@nil%
-  \extractkey/zx/wires definition/N.=angle (default defaultN)\@nil%
-  \extractkey/zx/wires definition/-N=angle (default \{defaultN,defaultN-\})\@nil%
-  \extractkey/zx/wires definition/-N'=angle (default \{defaultN,defaultN-\})\@nil%
-  \extractkey/zx/wires definition/-N.=angle (default \{defaultN,defaultN-\})\@nil%
-  \extractkey/zx/wires definition/N-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
-  \extractkey/zx/wires definition/N'-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
-  \extractkey/zx/wires definition/N.-=angle (default \{defaultN,defaultN-,symmetry\})\@nil%
-  \extractkey/zx/wires definition/Nbase=angle (default defaultN)\@nil%
+  \extractkey/zx/wires definition/N=-andL config (default defaultN)\@nil%
+  \extractkey/zx/wires definition/N'=-andL config (default defaultN)\@nil%
+  \extractkey/zx/wires definition/N.=-andL config (default defaultN)\@nil%
+  \extractkey/zx/wires definition/-N=-andL config (default \{defaultN,defaultN-\})\@nil%
+  \extractkey/zx/wires definition/-N'=-andL config (default \{defaultN,defaultN-\})\@nil%
+  \extractkey/zx/wires definition/-N.=-andL config (default \{defaultN,defaultN-\})\@nil%
+  \extractkey/zx/wires definition/N-=-andL config (default \{defaultN,defaultN-,symmetry\})\@nil%
+  \extractkey/zx/wires definition/N'-=-andL config (default \{defaultN,defaultN-,symmetry\})\@nil%
+  \extractkey/zx/wires definition/N.-=-andL config (default \{defaultN,defaultN-,symmetry\})\@nil%
+  \extractkey/zx/wires definition/Nbase=-andL config (default defaultN)\@nil%
   \makeatother
   \pgfmanualbody
   |N| is used to create a left-to-right wire leaving at wide angle and arriving at wide angle (it's named |N| because it roughly have the shape of a capital |N|). In older versions, |'| and |.| was required to specify if the wire should go up-right or down-right, but it is not useful anymore (we keep it for compatibilty with |IO| styles and in case some styles want to do a distinction later).
@@ -1102,7 +1138,7 @@ As for |s| it can be configured:
     \zxX{\beta} \ar[N-,ru]
   \end{ZX}
 \end{codeexample}
-Like other wires, it can be configured using |-| (horizontal relative position of anchor points) and |L| (vertical relative position of anchor points)\dots{} (make sure to have |-|$<$|L| to have a |N|-looking shape).
+Like other wires, it can be configured using |-| (horizontal relative position of anchor points) and |L| (vertical relative position of anchor points, make sure to have |-|$<$|L| to have a |N|-looking shape), |al={angle}{relative length}|\dots{}
 \begin{codeexample}[width=3cm]
   \begin{ZX}
     \zxX{\alpha} \ar[N,rd] \\
@@ -1119,12 +1155,12 @@ All these styles are based on Nbase (which should not be used directly), includi
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/NN=angle (default \{defaultN,symmetry-L,defaultNN\})\@nil%
-  \extractkey/zx/wires definition/NN.=angle (default \{defaultN,symmetry-L,defaultNN\})\@nil%
-  \extractkey/zx/wires definition/.NN=angle (default \{defaultN,symmetry-L,defaultNN\})\@nil%
-  \extractkey/zx/wires definition/NIN=angle (default \{defaultN,symmetry-L,defaultNN,defaultNIN\})\@nil%
-  \extractkey/zx/wires definition/INN=angle (default \{defaultN,symmetry-L,defaultNN,defaultNIN,symmetry\})\@nil%
-  \extractkey/zx/wires definition/NNI=angle (default \{defaultN,symmetry-L,defaultNN,defaultNIN,symmetry\})\@nil%
+  \extractkey/zx/wires definition/NN=-andL config (default \{defaultN,symmetry-L,defaultNN\})\@nil%
+  \extractkey/zx/wires definition/NN.=-andL config (default \{defaultN,symmetry-L,defaultNN\})\@nil%
+  \extractkey/zx/wires definition/.NN=-andL config (default \{defaultN,symmetry-L,defaultNN\})\@nil%
+  \extractkey/zx/wires definition/NIN=-andL config (default \{defaultN,symmetry-L,defaultNN,defaultNIN\})\@nil%
+  \extractkey/zx/wires definition/INN=-andL config (default \{defaultN,symmetry-L,defaultNN,defaultNIN,symmetry\})\@nil%
+  \extractkey/zx/wires definition/NNI=-andL config (default \{defaultN,symmetry-L,defaultNN,defaultNIN,symmetry\})\@nil%
   \makeatother
   \pgfmanualbody
   Like |N| but for diagrams read up-to-down or down-to-up. The |.| are maintly used for backward compatibility with |IO| style.
@@ -1272,12 +1308,15 @@ Note that it's possible to automatically start wires on the border of the node, 
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/wires definition/bezier=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
-  \extractkey/zx/wires definition/bezier x=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
-  \extractkey/zx/wires definition/bezier y=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
+  \extractkey/zx/wires definition/bezier=-andL config \@nil%
+  \extractkey/zx/wires definition/bezier x=-andL config \@nil%
+  \extractkey/zx/wires definition/bezier y=-andL config \@nil%
+  \extractkey/zx/wires definition/bezier 4=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
+  \extractkey/zx/wires definition/bezier 4 x=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
+  \extractkey/zx/wires definition/bezier 4 y=\{x1\}\{y1\}\{x2\}\{y2\} \@nil%
   \makeatother
   \pgfmanualbody
-  To create a bezier wire. These styles are not really meant to be used for the final user because they are long to type and would not be changed document-wise when the style is changed, but most styles are based on these styles. The two first arguments are the relative position of the first anchor (|x| and |y| position), the next two of the second anchor. They are said to be relative in the sense that |{0}{0}| is the coordinate of the first point, and |{1}{1}| the second point. The |bezier x| and |bezier y| are useful when the node are supposed to be horizontally or vertically aligned: the distance are now expressed as a fraction of the horizontal (respectively vertical) distance between the two nodes. Using relative coordinates has the advantage that if the nodes positions are moved, the aspect of the wire does not change (it is just squeezed), while this is not true with |in|/|out| wires.
+  To create a bezier wire. These styles are not really meant to be used for the final user because they are long to type and would not be changed document-wise when the style is changed, but most styles are based on these styles. For the |bezier 4 *| versions, the two first arguments are the relative position of the first anchor (|x| and |y| position), the next two of the second anchor. In the |bezier *| versions, the value of |1-| will be the relative |x| position of the first point, |1L| the relative position of the second, and |2-| and |2L| will be for the second point (the advantage of this is that it is also possible to specify angles using |1al={angle}{length}|\dots{} as explained in the |-andL| syle). They are said to be relative in the sense that |{0}{0}| is the coordinate of the first point, and |{1}{1}| the second point. The |bezier x| and |bezier 4 y| are useful when the node are supposed to be horizontally or vertically aligned: the distance are now expressed as a fraction of the horizontal (respectively vertical) distance between the two nodes. Using relative coordinates has the advantage that if the nodes positions are moved, the aspect of the wire does not change (it is just squeezed), while this is not true with |in|/|out| wires which preserves angles but not shapes.
 \end{pgfmanualentry}
 
 
@@ -1840,7 +1879,7 @@ Note that you can add multiple of them by separating with commas (see |\pgfmatri
   \extractkey/zx/args/-andL/defaultSIS (default {1-=0,1L=.8})\@nil%
   \makeatother
   \pgfmanualbody
-  Default values used by wires. You can customize them globally using something like:
+  Default values used by wires (). You can customize them globally using something like:
   \begin{verse}
     |\tikzset{|\\
     |  /zx/args/-andL/.cd,|\\
@@ -2521,9 +2560,9 @@ This can also be used to fake multi-columns nodes (I need to check later if I ca
 \end{codeexample}
 }
 
-\section{Future works and known bugs}
+\section{Futur works}
 
-There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. I also would like to provide externalization to boost compilation time. But |tikz-cd| is not really compatible with externalization, so it would need a bit of work (of course, you can always compile your images in a separate file, but it is cumbersome). See potential solutions here: \mylink{https://tex.stackexchange.com/questions/171931/}{here}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it). And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that!
+There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. I also would like to provide externalization to boost compilation time. But |tikz-cd| is not really compatible with externalization, so it would need a bit of work (of course, you can always compile your images in a separate file, but it is cumbersome). See potential solutions here: \mylink{https://tex.stackexchange.com/questions/171931/}{here}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it), or even write a dedicated graphical tool (why not based on tikzit itself, or \mylink{https://tikzcd.yichuanshen.de/}{this tool}). And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that!
 
 \section{Acknowledgement}
 

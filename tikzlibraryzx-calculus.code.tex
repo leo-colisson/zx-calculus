@@ -297,6 +297,85 @@
       2L/.evaluated=\zx@tmptwo,
     }%
   },
+  negate1L/.style={
+    /zx/args/-andL/1L/.evaluated=-\pgfkeysvalueof{/zx/args/-andL/1L},
+  },
+  negate2L/.style={
+    /zx/args/-andL/2L/.evaluated=-\pgfkeysvalueof{/zx/args/-andL/2L},
+  },
+  negateL/.style={
+    negate1L,
+    negate2L,
+  },
+  negate1-/.style={
+    /zx/args/-andL/1-/.evaluated=-\pgfkeysvalueof{/zx/args/-andL/1-},
+  },
+  negate2-/.style={
+    /zx/args/-andL/2-/.evaluated=-\pgfkeysvalueof{/zx/args/-andL/2-},
+  },
+  negate-/.style={
+    negate1-,
+    negate2-,
+  },
+  negateL/.style={
+    negate1L,
+    negate2L,
+  },
+  oneMinus1-/.style={
+    /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+  },
+  oneMinus2-/.style={
+    /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
+  },
+  oneMinus1L/.style={
+    /zx/args/-andL/1L/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/1L},
+  },
+  oneMinus2L/.style={
+    /zx/args/-andL/2L/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2L},
+  },
+  % Angle/length:
+  1 angle and length/.code 2 args={%
+    \pgfmathparse{#2*cos(#1)}%
+    \pgfkeysalso{1-/.expand once=\pgfmathresult}%
+    \pgfmathparse{#2*sin(#1)}%
+    \pgfkeysalso{1L/.expand once=\pgfmathresult}%
+  },
+  2 angle and length/.code 2 args={%
+    \pgfmathparse{#2*cos(#1)}%
+    \pgfkeysalso{2-/.expand once=\pgfmathresult}%
+    \pgfmathparse{#2*sin(#1)}%
+    \pgfkeysalso{2L/.expand once=\pgfmathresult}%
+  },
+  1al/.style 2 args={
+    1 angle and length={#1}{#2}
+  },
+  2al/.style 2 args={
+    2 angle and length={#1}{#2}
+  },
+  al/.style 2 args={
+    1 angle and length={#1}{#2},
+    2 angle and length={#1}{#2},
+  },
+  1 angle/.style={
+    1 angle and length={#1}{.6}
+  },
+  2 angle/.style={
+    2 angle and length={#1}{.6}
+  },
+  1a/.style={
+    1 angle={#1},
+  },
+  2a/.style={
+    2 angle={#1},
+  },
+  angle/.style={
+    1 angle={#1},
+    2 angle={#1},
+  },
+  a/.style={
+    1 angle and length={#1}{.6},
+    2 angle and length={#1}{.6},
+  },
 }
 
 %%% Useful debug functions
@@ -748,16 +827,44 @@
         \tikztonodes
       },
     },
-    bezier/.style n args={4}{
+    %% Not sure it will be very useful, compared to bezier, bezier x and bezier y directly.
+    bezier 4/.style n args={4}{
       bezier@general={##1}{##2}{##3}{##4}{\x}{\y},
     },
     % Like bezier, all proportions are relative to x distance
-    bezier x/.style n args={4}{
+    bezier 4 x/.style n args={4}{
       bezier@general={##1}{##2}{##3}{##4}{\x}{\x}
     },
     % Like bezier, all proportions are relative to y distance
-    bezier y/.style n args={4}{
+    bezier 4 y/.style n args={4}{
       bezier@general={##1}{##2}{##3}{##4}{\y}{\y}
+    },
+    bezier/.code={%
+      \pgfkeys{
+        /zx/args/-andL/.cd,
+        ##1
+      }%
+      \pgfkeysalso{
+        bezier 4={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}
+      }%
+    },
+    bezier x/.code={%
+      \pgfkeys{
+        /zx/args/-andL/.cd,
+        ##1
+      }%
+      \pgfkeysalso{
+        bezier 4 x={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}
+      }%
+    },
+    bezier y/.code={%
+      \pgfkeys{
+        /zx/args/-andL/.cd,
+        ##1
+      }%
+      \pgfkeysalso{
+        bezier 4 y={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}
+      }%
     },
     % Directions: configure start/end points to "fake center *" if it exists.
     % If the input is not a node, it's copied to ##3
@@ -893,55 +1000,48 @@
     % Angle is customizable, for instance o'=50.
     %%% Actually, it may not be super useful to define it via bezier since it's used only
     %%% horizontally and vertically... Anyway.
-    o'/.code={%
-      \pgfkeys{%
+    o'/.style={%
+      left to right,
+      bezier x={
+        defaultO,
+        ##1,
+        %% 2- --> 1 - (2-)
+        oneMinus2-,
+      },
+    },
+    o./.style={%
+      left to right,
+      bezier x={%
         /zx/args/-andL/.cd,
         defaultO,
         ##1,
         %% 2- --> 1 - (2-)
-        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
-      }%
-      \pgfkeysalso{
-        left to right,
-        bezier x={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
-      }%
+        oneMinus2-,
+        negate1L,
+        negate2L,
+      },%
     },
-    o./.code={%
-      \pgfkeys{%
-        /zx/args/-andL/.cd,
-        defaultO,
-        ##1,
-        %% 2- --> 1 - (2-)
-        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
-      }%
-      \pgfkeysalso{
-        left to right,
-        bezier x={\pgfkeysvalueof{/zx/args/-andL/1-}}{-\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{-\pgfkeysvalueof{/zx/args/-andL/2L}},
-      }%
-    },
-    -o/.code={%
-      \pgfkeys{%
+    -o/.style={%
+      up to down,
+      bezier y={%
         /zx/args/-andL/.cd,
         defaultO,
         ##1,
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
-      }%
-      \pgfkeysalso{
-        up to down,
-        bezier y={\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}{\pgfkeysvalueof{/zx/args/-andL/2-}},
-      }%
+        symmetry-L,
+      }
     },
-    o-/.code={%
-      \pgfkeys{%
+    o-/.style={%
+      up to down,
+      bezier y={%
         /zx/args/-andL/.cd,
         defaultO,
         ##1,
         /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
-      }%
-      \pgfkeysalso{
-        up to down,
-        bezier y={-\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/1-}}{-\pgfkeysvalueof{/zx/args/-andL/2L}}{\pgfkeysvalueof{/zx/args/-andL/2-}},
-      }%
+        /zx/args/-andL/1L/.evaluated=-\pgfkeysvalueof{/zx/args/-andL/1L},
+        /zx/args/-andL/2L/.evaluated=-\pgfkeysvalueof{/zx/args/-andL/2L},
+        symmetry-L,
+      },
     },
     % Similar to o, but can be used also for diagonal items. Combine it with
     % The dot versions are mode logic in "left to right", and the others for up to down (possible to change)
@@ -965,18 +1065,15 @@
     %%%% Links with a N-shape, i.e. like s shape, but symetric against the diagonal. Equivalently, it's a soft 's' shape with a much wider angle (>45).
     %% Nbase will be reused later by < > shapes as well. It's useful to make a distinction between N and
     %% Nbase when user will want to overwrite N without overwritting < >.
-    Nbase/.code={
-      \pgfkeys{%
+    Nbase/.style={
+      left to right,
+      bezier={
         /zx/args/-andL/.cd,
         defaultN,
         ##1,
-        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
-        /zx/args/-andL/2L/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2L},
-      }%
-      \pgfkeysalso{
-        left to right,
-        bezier={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
-      }%
+        oneMinus2-,
+        oneMinus2L,
+      },
     },
     N/.style={Nbase={##1}},
     % With this model, we don't need differences between N' and N. so we can also call it N.
@@ -1014,18 +1111,15 @@
     },
     v'/.style={'v={##1}},
     %%%% Links with a s-like shape.
-    s/.code={
-      \pgfkeys{%
+    s/.style={
+      left to right,
+      bezier={%
         /zx/args/-andL/.cd,
         defaultS,
         ##1,
-        /zx/args/-andL/2-/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2-},
-        /zx/args/-andL/2L/.evaluated=1-\pgfkeysvalueof{/zx/args/-andL/2L},
-      }%
-      \pgfkeysalso{
-        left to right,
-        bezier={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}},
-      }%
+        oneMinus2-,
+        oneMinus2L,
+      }
     },
     % like S, but with anchor east and west
     S/.style={
