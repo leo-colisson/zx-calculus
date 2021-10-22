@@ -1164,7 +1164,7 @@
       N.-/.default=\zxDefaultSoftAngleN,
     },
     % No line but vdots/dots in between.
-    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdots$}" anchor=center},
+    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" anchor=center},
     3 vdots/.default={},
     3 dots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\chdots$}" anchor=center},
     3 dots/.default={},
@@ -1754,7 +1754,7 @@
 % Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
 % First optional argument is scale of text, second is scale of =.
 \NewExpandableDocumentCommand{\leftManyDots}{O{1}O{\zxScaleDots}m}{%
-  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdots$}} \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
+  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdotsCenterMathline$}} \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
 }
 
 % Useful to link two nodes and put a vdots in between.
@@ -1764,7 +1764,7 @@
 
 % Like \leftManyDots but on the right. Do *not* create a new node, like in |[zxShortZ]| \alpha \rightManyDots{m}
 \NewExpandableDocumentCommand{\rightManyDots}{O{1}O{\zxScaleDots}m}{%
-  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdots$}}\scalebox{#1}{\,$#3$}
+  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdotsCenterMathline$}}\scalebox{#1}{\,$#3$}
 }
 
 % A swap on one line... Practical mostly to gain space. Must be used with large nodes tough...
@@ -1778,8 +1778,9 @@
 }
 
 \NewExpandableDocumentCommand{\zxLoopAboveDots}{O{20}O{}m}{%
-  \ar[loop,in=90-#1,out=90+#1,looseness=8,min distance=3mm,"\cvdots" {scale=.6,anchor=north,yshift=-0.4mm},#2]
+  \ar[loop,in=90-#1,out=90+#1,looseness=8,min distance=3mm,"\cvdotsCenterMathline" {scale=.6,anchor=north,yshift=-0.25mm},#2]
 }
+
 
 % Usage: node without any style, but may have space. Default is no space, \zxNone+{} is both horizontal
 % and vertical, \zxNone-{} is only horizontal space, \zxNone|{} is only vertical space.
@@ -1881,6 +1882,7 @@
 %%%%% Main environment \begin{ZX}...\end{ZX}
 \NewDocumentEnvironment{ZX}{O{}}{%
   \bgroup%
+  \fontsize{10}{12}\selectfont% Normalize the font size to have consistent drawings everywhere.
   % Add a switch in case someone really wants the current tikzcd version:
   \ifdefined\doNotPatchQuantikz% Do not patch tikzcd.
   \else% Restore locally original tikzcd.
