@@ -2481,9 +2481,74 @@ Node that we also defined another intersection mechanism, in which the intersect
 \end{codeexample}
 \end{pgfmanualentry}
 
+\subsection{Nested diagrams}
+
+
+If you consider this example:
+
+\begin{codeexample}[]
+Alone \begin{ZX}
+  \zxX{} \rar \ar[r,o'] \ar[r,o.] & \zxZ{}
+\end{ZX} %
+in a diagram %
+\begin{ZX}[math baseline=myb]
+                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxX{}
+                                                    \rar
+                                                    \ar[r,o']
+                                                    \ar[r,o.] & \zxZ{} &[\zxwCol]\\
+  \zxN[a=myb]{} \rar & \zxFracZ{\pi}{2} \rar & \zxFracX{\pi}{2} \rar & \zxFracZ{\pi}{2} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+
+You can see that the constant looks much wider in the second picture, due to the fact that the nodes below increase the column size. One solution I found for this problem is to use |savebox| to create your drawing \emph{before} the diagram, and then use the |fit| library to include it where you want in the matrix (see below for a command that does that automatically):
+
+\begin{codeexample}[width=0pt]
+%% Create a new box
+\newsavebox{\myZXbox}
+%% Save our small diagram.
+%% Warning: the char '&' cause troubles in functions, so use ampersand replacement
+%% and \& instead:
+\sbox{\myZXbox}{%
+  \zx[ampersand replacement=\&]{ %<-- strange font? this is just an ampersand.
+    \zxX{} \rar \ar[r,o'] \ar[r,o.] \& \zxZ{}
+  }%
+}
+
+$x = \begin{ZX}[
+  execute at end picture={
+    %% Add our initial drawing at the end:
+    \node[fit=(start)(end),yshift=-axis_height] {\usebox{\myZXbox}};
+  },
+  math baseline=myb]
+                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]\\
+  \zxN[a=myb]{} \rar & \zxFracZ{\pi}{2} \rar      & \zxFracX{\pi}{2} \rar & \zxFracZ{\pi}{2} \rar & \zxN{}
+\end{ZX}$
+\end{codeexample}
+
+Note that this has the advantage of preserving the baseline of the big drawing. However, it is a bit cumbersome to use, so we provide here a wrapper that automatically does the following code (this has not been tested extensively, and may be subject to changes):
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxSaveDiagram\marg{name with backslash}\opt{\oarg{zx options}}\marg{diagram with ampersand \textbackslash\&}\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/use diagram=\marg{name with \textbackslash}\marg{(nodes)(to)(fit)}\@nil%
+  \makeatother
+  \pgfmanualbody
+  Use |\zxSaveDiagram| to save and name a diagram (must be done before the diagram you want to insert this diagram into, also \textbf{do not forget the backslash before the name} and \textbf{replace all} |&| \textbf{in the first diagram with} |\&|. Then, |use diagram| to insert it inside a diagram (the second argument is a list of nodes given to the |fit| library):
+\begin{codeexample}[width=0pt]
+%%             v---- note the backslash      note the \&   ---v
+\zxSaveDiagram{\myZXconstant}{\zxX{} \rar \ar[r,o'] \ar[r,o.] \& \zxZ{}}
+$x = \begin{ZX}[use diagram={\myZXconstant}{(start)(end)}, math baseline=myb]
+                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]\\
+  \zxN[a=myb]{} \rar & \zxFracZ{\pi}{2} \rar      & \zxFracX{\pi}{2} \rar & \zxFracZ{\pi}{2} \rar & \zxN{}
+\end{ZX}$
+\end{codeexample}
+Note that if you need more space to insert the drawing, you can use |\zxN+[a=start,minimum width=2cm]{}| instead of |\zxN|.
+\end{pgfmanualentry}
+
 \subsection{Further customization}
 
-You can further customize your drawings using any functionality from \tikzname{} and |tikz-cd| (but it is of course at your own risk). For instance, we can change the separation between rows and/or columns for a whole picture using:
+You can further customize your drawings using any functionality from \tikzname{} and |tikz-cd| (but it is of course at your own risk). For instance, we can change the separation between rows and/or columns for a whole picture (but prefer to use |zx row sep| as it also updates pre-configured column spaces):
 \begin{codeexample}[width=0pt]
   \begin{ZX}[row sep=1mm]
                 &                                         &                        & & \zxZ{\pi} \\
@@ -2562,7 +2627,7 @@ This can also be used to fake multi-columns nodes (I need to check later if I ca
 
 \section{Futur works}
 
-There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. I also would like to provide externalization to boost compilation time. But |tikz-cd| is not really compatible with externalization, so it would need a bit of work (of course, you can always compile your images in a separate file, but it is cumbersome). See potential solutions here: \mylink{https://tex.stackexchange.com/questions/171931/}{here}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it), or even write a dedicated graphical tool (why not based on tikzit itself, or \mylink{https://tikzcd.yichuanshen.de/}{this tool}). And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that!
+There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. I also would like to provide externalization to boost compilation time. But |tikz-cd| is not really compatible with externalization, so it would need a bit of work (of course, you can always compile your images in a separate file, but it is cumbersome). See potential solutions here: \mylink{https://tex.stackexchange.com/questions/171931/}{here}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it), or even write a dedicated graphical tool (why not based on tikzit itself, or \mylink{https://tikzcd.yichuanshen.de/}{this tool}). I also want to find a nicer way to merge cells (for now I propose to use the |fit| library but it's not very robust against overlays) and to nest ZX diagrams (see ). And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that!
 
 \section{Acknowledgement}
 

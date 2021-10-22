@@ -1678,6 +1678,12 @@
     1-row diagram/.style={},
     %% usage: math baseline=wantedBaseline, where you have somewhere \zxX[a=wantedBaseline]{\beta}
     math baseline/.style={baseline={([yshift=-axis_height]##1)}},
+    %%% Include a diagram in another diagram.
+    use diagram/.style 2 args={
+      execute at end picture={
+        \node[fit=##2,inner sep=0pt,yshift=-axis_height]{\zxUseDiagram{##1}};
+      }
+    },
     % Load (thanks ".search also") our own style
     /tikz/every node/.style={%
       % For quickly adding alias, and displaying this alias in debug mode.
@@ -1835,6 +1841,19 @@
 }
 
 \DeclareRobustCommand{\cvdots}{\cvdotsCenterMathline}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Practical functions to nest diagrams
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\NewDocumentCommand{\zxSaveDiagram}{mO{}m}{
+  \newsavebox{#1}%
+  \savebox{#1}{\begin{ZX}[ampersand replacement=\&,#2]#3\end{ZX}}%
+}
+
+\NewDocumentCommand{\zxUseDiagram}{m}{
+  \usebox{#1}%
+}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
