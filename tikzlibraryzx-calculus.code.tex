@@ -421,12 +421,10 @@
         %%% First intersection: we use the line between the two nodes... but it's really ugly (e.g. in o it does not make a lot of sense)
         \begin{pgfinterruptboundingbox}%
           \ifdefined\zxIntersectionLineBetweenStartEnd%
-            %% Not idea why, but x axis is inverted???
-            \pgfpointdiff{\tikz@scan@one@point\pgf@process(#2)}{\pgfpointanchor{#1}{center}}%
-            \pgfpathmoveto{\pgfpoint{-\pgf@x}{\pgf@y}}%
-            % And now both axis are???
-            \pgfpointdiff{\tikz@scan@one@point\pgf@process(#3)}{\pgfpointanchor{#1}{center}}%
-            \pgfpathlineto{\pgfpoint{-\pgf@x}{-\pgf@y}}%
+            \pgfpointdiff{\pgfpointanchor{#1}{center}}{\tikz@scan@one@point\pgf@process(#2)}%
+            \pgfpathmoveto{\pgfpoint{\pgf@x}{\pgf@y}}%
+            \pgfpointdiff{\pgfpointanchor{#1}{center}}{\tikz@scan@one@point\pgf@process(#3)}%
+            \pgfpathlineto{\pgfpoint{\pgf@x}{\pgf@y}}%
           \else%
             %% We use now the method used for bezier curve (at least it's what I see "experimentally")
             %% More precisely, we use the direction of the bezier curve to know where to start the wire.
