@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2021/10/22
+%%% Version: 2021/10/23
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1256,9 +1256,9 @@
       N.-/.default=\zxDefaultSoftAngleN,
     },
     % No line but vdots/dots in between.
-    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" anchor=center},
+    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
     3 vdots/.default={},
-    3 dots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\chdots$}" anchor=center},
+    3 dots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\chdots$}" {anchor=center,zxNormalFont}},
     3 dots/.default={},
     % Add a Hadmard/Z/X (no phase) in the middle of the line. Practical to add small nodes without creating
     % a new column/row. However, make sure the corresponding row/column is larger, using &[\zxHCol]
@@ -1296,11 +1296,20 @@
   /zx/styles/rounded style/.style={
     %% Can be redefined by user
     % Style for empty nodes
+    zxSpacingInsideNodes/.style={
+      execute at begin node={\thinmuskip=0mu\medmuskip=0mu\thickmuskip=0mu}, % Reduce space around +/-...
+    },
+    %% Normalize fonts to avoid different rendering when document has a different font shape.
+    zxNormalFont/.style={
+      font={\fontsize{10}{12}\selectfont},
+    },
     zxAllNodes/.style={
       shape=rectangle, % Otherwise nodes are asymetrical rectangle, which is not practical in our case. Gives notably anchor "center" which is really centered compared to asymatrical rectangles
       anchor=center, % Center cells
       line width=\zxDefaultLineWidth,
-      execute at begin node={\thinmuskip=0mu\medmuskip=0mu\thickmuskip=0mu}, % Reduce space around +/-...
+      % Normalize the font size (avoids different rendering of dots...)
+      zxSpacingInsideNodes,
+      zxNormalFont,
     },
     % Use this to denote an empty diagram
     zxEmptyDiagram/.style={
@@ -1676,6 +1685,9 @@
     1-row diagram/.style={},
     %% usage: math baseline=wantedBaseline, where you have somewhere \zxX[a=wantedBaseline]{\beta}
     math baseline/.style={baseline={([yshift=-axis_height]##1)}},
+    amp/.style={
+      ampersand replacement=\&,
+    },
     %%% Include a diagram in another diagram.
     use diagram/.style 2 args={
       execute at end picture={
@@ -1889,7 +1901,7 @@
 }
 
 \NewExpandableDocumentCommand{\zxLoopAboveDots}{O{20}O{}m}{%
-  \ar[loop,in=90-#1,out=90+#1,looseness=8,min distance=3mm,"\cvdotsCenterMathline" {scale=.6,anchor=north,yshift=-0.25mm},#2]
+  \ar[loop,in=90-#1,out=90+#1,looseness=8,min distance=3mm,"\cvdotsCenterMathline" {zxNormalFont,scale=.6,anchor=north,yshift=-0.25mm},#2]
 }
 
 
@@ -1993,7 +2005,8 @@
 %%%%% Main environment \begin{ZX}...\end{ZX}
 \NewDocumentEnvironment{ZX}{O{}}{%
   \bgroup%
-  \fontsize{10}{12}\selectfont% Normalize the font size to have consistent drawings everywhere.
+  % Do not change the font size here or it will change axis_height... Use \fontsize{10}{12}\selectfont
+  % when drawing some texts instead.
   % Add a switch in case someone really wants the current tikzcd version:
   \ifdefined\doNotPatchQuantikz% Do not patch tikzcd.
   \else% Restore locally original tikzcd.
