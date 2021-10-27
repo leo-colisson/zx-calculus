@@ -18,6 +18,7 @@
 \input{pgfmanual-en-macros.tex} % Is supposed to be included in recent TeX distributions, but I get errors...
 \usepackage{makeidx} % Produces an index of commands.
 \makeindex % Useful or not index will be created
+\usepackage{alertmessage} % For warning, info...
 \usepackage[hidelinks]{hyperref}
 \newcommand{\mylink}[2]{\href{#1}{#2}\footnote{\url{#1}}}
 \usepackage{verbatim}
@@ -38,7 +39,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Version 2021/10/22}\\[3mm]
+  {Léo Colisson \quad Version 2021/10/27}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -84,13 +85,19 @@ If this library is not yet packaged into CTAN (which is very likely in 2021), yo
 
 \section{Quickstart}
 
-You can create a diagram either with |\zx[options]{matrix}| or with:
+You can create a diagram either with |\zx[options]{matrix}|, |\zxAmp[options]{matrix}| or with:
 \begin{verse}
   |\begin{ZX}[options]|\\
     |  matrix|\\
   |\end{ZX}|
 \end{verse}
-The matrix is composed of columns separated by |&| and rows separated by |\\|. This matrix is basically a \tikzname{} matrix of nodes (even better, a |tikz-cd| matrix, so you can use all the machinary of |tikz-cd|), so cells can be created using \verb#|tikz style| content#. However, the users does not usually need to use this syntax since many nodes like |\zxZ{spider phase}| have been created for them (including |\zxN{}| which is an empty node):
+The matrix is composed of rows separated by |\\| and columns separated by |&| (except in |\zxAmp| where columns are separated with |\&|).
+
+\alertwarning{ % Can't use |...| or \verb|...| in this environment :'(
+  Due to \LaTeX{} restrictions, \texttt{\&} can sometimes cause some troubles. \texttt{\textbackslash{}zxAmp} is always guaranteed to work (just make sure to use \texttt{\textbackslash{}\&} instead of \texttt{\&}). See \cref{subsec:addDiagram} for more details.
+}
+
+This matrix is basically a \tikzname{} matrix of nodes (even better, a |tikz-cd| matrix, so you can use all the machinary of |tikz-cd|), so cells can be created using \verb#|tikz style| content#. However, the users does not usually need to use this syntax since many nodes like |\zxZ{spider phase}| have been created for them (including |\zxN{}| which is an empty node):
 
 \begin{codeexample}[width=0pt]
 \begin{ZX}
@@ -109,7 +116,9 @@ To link the nodes, you should use |\arrow[options]| (|\ar[options]| for short) a
                   &        & \zxX-{\alpha}
 \end{ZX}
 \end{codeexample}
-See how the alignment of your matrix helps reading it: in emacs |M-x align| is your friend. You may also encounter some shortcuts, like |\rar| instead of |\ar[r]|. Since straight lines are boring, we created many styles that you can just add in the options. For instance, a measured Bell-pair can be created using the |C| style (note also how the |*| argument forces the node to be tighter):
+See how the alignment of your matrix helps reading it: in emacs |M-x align| is your friend (or even better, if you are tired of selecting the lines to align, bind \mylink{https://tex.stackexchange.com/a/64566/116348}{this \texttt{align-environment} function} to some shortcuts, like |C-<tab>| and you will just have to do a single key-press to align your matrix).
+
+You may also encounter some shortcuts, like |\rar| instead of |\ar[r]|. Since straight lines are boring, we created many styles that you can just add in the options. For instance, a measured Bell-pair can be created using the |C| style (note also how the |*| argument forces the node to be tighter):
 \begin{codeexample}[]
 \begin{ZX}
   \zxZ*{a \pi} \ar[d,C]\\
@@ -301,12 +310,13 @@ If you have some questions, suggestions, or bugs, please report them on \texttt{
 
 \section{Usage}
 
-\subsection{Add a diagram}
+\subsection{Add a diagram}\label{subsec:addDiagram}
 \begin{pgfmanualentry}
   \extractcommand\zx\opt{\oarg{options}}\marg{your diagram}\@@
   \extractenvironement{ZX}\opt{\oarg{options}}\@@
+  \extractcommand\zxAmp\opt{\oarg{options}}\marg{your diagram}\@@
   \pgfmanualbody
-  You can create a new ZX-diagram either with a command (quicker for inline diagrams) or with an environment. The \meta{options} can be used to locally change the style of the diagram, using the same options as the |{tikz-cd}| environment (from the \mylink{https://www.ctan.org/pkg/tikz-cd}{\texttt{tikz-cd} package}). The \meta{your diagram} argument, or the content of |{ZX}| environment is a \tikzname{} matrix of nodes, exactly like in the |tikz-cd| package: columns are separated using |&|, columns using |\\|, and nodes are created using \verb#|[tikz style]| node content# or with shortcut commands presented later in this document (recommended). Content is typeset in math mode by default, and diagrams can be included in any equation. Wires can be added like in |tikz-cd| (see more below) using |\arrow| or |\ar|: we provide later recommended styles to quickly create different kinds of wires which can change with the configured style.
+  You can create a new ZX-diagram either with a macro (quicker for inline diagrams) or with an environment. All these commands are mostly equivalent, except that in |\zxAmp| columns are separated with |\&| instead of |&| (practical to use inside |align| or inside macros). The \meta{options} can be used to locally change the style of the diagram, using the same options as the |{tikz-cd}| environment (from the \mylink{https://www.ctan.org/pkg/tikz-cd}{\texttt{tikz-cd} package}). The \meta{your diagram} argument, or the content of |{ZX}| environment is a \tikzname{} matrix of nodes, exactly like in the |tikz-cd| package: rows are separated using |\\|, columns using |&| (except for |\zxAmp| where columns are separated using |\&|), and nodes are created using \verb#|[tikz style]| node content# or with shortcut commands presented later in this document (recommended). Wires can be added like in |tikz-cd| (see more below) using |\arrow| or |\ar|: we provide later recommended styles to quickly create different kinds of wires which can change with the configured style. Content is typeset in math mode by default, and diagrams can be included in any equation.
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 % Do not indent not to put space in final code
 \begin{codeexample}[]
@@ -319,6 +329,24 @@ and custom diagram: %
 \end{codeexample}
 }
 \end{pgfmanualentry}
+
+\begin{stylekey}{/tikz/defaultEnv/amp}
+  Due to \LaTeX{} limitations, |&| can't be used inside macros, and the macro |\zx| does not work in the |align| environment. To solve that, in macros either use the |ampersand replacement=\&| option (whose shortcut is |amp|) or |\zxAmp| (in any case, replace |&| with |\&|). In the |align| environment, don't use |\zx| (other math environments don't have this limitation for what I tried):
+\begin{codeexample}[vbox]
+An aligned equation:
+\begin{align}
+  \zxAmp{\zxZ{} \arrow[r] \& \zxX{}} &= \begin{ZX}[amp] \zxX{} \arrow[r] \& \zxZ{} \end{ZX}
+\end{align}
+% In a macro use \setlength{\fboxsep}{0pt} % removes padding around fbox
+% \fbox{\zxAmp{\zxZ{} \rar \& \zxX{}}} or
+% \fbox{%
+%   \begin{ZX}[amp] % amp is a shortcut for "ampersand replacement=\&"
+%     %  See \ here ---v
+%     \zxX{} \arrow[r] \& \zxZ{}
+%   \end{ZX}%
+% }
+\end{codeexample}
+\end{stylekey}
 
 \subsection{Nodes}
 
@@ -518,6 +546,47 @@ The |*| optional argument is to force a condensed style, no matter what is the t
 \end{ZX}
 \end{codeexample}
 
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/styles/rounded style/content vertically centered\@nil%
+  \extractkey/zx/styles/rounded style/content fixed baseline\@nil%
+  \extractkey/zx/styles/rounded style preload/content vertically centered\@nil%
+  \extractkey/zx/styles/rounded style preload/content fixed baseline\@nil%
+  \makeatother
+  \pgfmanualbody
+  By default the content of the nodes are vertically centered. This can be nice to have as much space as possible around the text, but when using several nodes with letters having different height or depth, the baseline of each node won't be aligned (this is particularly visible on nodes with very high text, like |b'|):
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxX[a=start]{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi}
+  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
+   \ar[from=start,to=end,on layer=background]
+\end{ZX}
+\end{codeexample}
+Using |content fixed baseline|, it is however possible to fix the height and depth of the text to make sure the baselines are aligned (|content vertically centered| is use to come back to the default behavior):
+\begin{codeexample}[width=0pt]
+\begin{ZX}[content fixed baseline]
+  \zxX[a=start]{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi}
+  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
+   \ar[from=start,to=end,on layer=background]
+\end{ZX}
+\end{codeexample}
+Note however that the height is really hardcoded (not sure how to avoid that) and is quite small (otherwise nodes quickly become too large), so too large content may overlay on top of the node (this is visible on the |'b\pi| node). You can use this style either on a per-picture basis (it's what we just did), on a per-node basis (just use it in the options of the node), or globally:
+\begin{codeexample}[width=0pt]
+\tikzset{
+  /zx/user overlay/.style={
+    content fixed baseline,
+  },
+}
+\begin{ZX}
+  \zxX[a=start]{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi}
+  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
+   \ar[from=start,to=end,on layer=background]
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
 \subsection{Phase in label style}
 
 We also provide styles to place the phase on a label next to an empty node (not yet very well tested):
@@ -525,17 +594,17 @@ We also provide styles to place the phase on a label next to an empty node (not 
 \begin{pgfmanualentry}
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/styles rounded style/phase in content\@nil%
-  \extractkey/zx/styles rounded style/phase in label=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/pil=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/phase in label above=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/pila=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/phase in label below=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/pilb=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/phase in label right=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/pilr=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/phase in label left=style (default {})\@nil%
-  \extractkey/zx/styles rounded style/pill=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/phase in content\@nil%
+  \extractkey/zx/styles/rounded style/phase in label=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/pil=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/phase in label above=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/pila=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/phase in label below=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/pilb=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/phase in label right=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/pilr=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/phase in label left=style (default {})\@nil%
+  \extractkey/zx/styles/rounded style/pill=style (default {})\@nil%
   \makeatother
   \pgfmanualbody
   The above styles are useful to place a spider phase in a label outside the node. They can either be put on the style of a node to modify a single node at a time:
@@ -551,15 +620,13 @@ We also provide styles to place the phase on a label next to an empty node (not 
 \end{codeexample}
 \noindent or globally:
 \begin{codeexample}[]
-{
-  \tikzset{
-    /zx/user post preparation labels/.style={
-      phase in label={label position=-45, text=purple,fill=none}
-    }
+\tikzset{
+  /zx/user overlay/.style={
+    phase in label={label position=-45, text=purple,fill=none}
   }
-  \zx{
-    \zxFracX-{\pi}{2}
-  }
+}
+\zx{
+  \zxFracX-{\pi}{2}
 }
 \end{codeexample}
 Note that we must use |user post preparation labels| and not |/zx/user overlay nodes| because this will be run after all the machinery for labels has been setup.
@@ -1673,6 +1740,20 @@ You can also change it on a per-diagram basis:
 The list of keys that can be changed will be given below in |/zx/styles/rounded style/*|.
 \end{stylekey}
 
+\begin{stylekey}{/zx/user overlay}
+  This key will be loaded like it if were inside the options of the picture |\zx[options]{...}|. To avoid always typing |\zx[content vertically centered]{...}|, you can therefore use:
+\begin{codeexample}[width=0pt]
+\tikzset{
+  /zx/user overlay/.style={
+    content vertically centered,
+  },
+}
+\begin{ZX}
+  \zxX{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi} & \zxX*{b'\pi} & \zxX*{'b\pi} & \zxZ{(a \oplus b )\pi}
+\end{ZX}
+\end{codeexample}
+\end{stylekey}
+
 \begin{stylekey}{/zx/default style wires}
   Default style for wires. Note that |/zx/wires definition/| is always loaded by default, and we don't add any other style for wires by default. But additional styles may use this functionality.
 \end{stylekey}
@@ -2451,7 +2532,6 @@ Now, we can also globally enable the |ui| style and the intersection only for so
 \end{codeexample}
 
 \end{pgfmanualentry}
-
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }

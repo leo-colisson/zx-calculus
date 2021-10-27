@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2021/10/23
+%%% Version: 2021/10/27
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1293,7 +1293,21 @@
       /tikz/commutative diagrams/end anchor=,
     },
   },
+  %% Will be loaded in tikzcd options directly.
+  /zx/styles/rounded style preload/.style={
+    content fixed baseline/.style={
+      /zx/user overlay nodes/.style={
+        zxShort/.append style={content fixed baseline}
+      },
+    },
+    content vertically centered/.style={
+      /zx/user overlay nodes/.style={
+        zxShort/.append style={content vertically centered}
+      },
+    },
+  },
   /zx/styles/rounded style/.style={
+    runWhenLoaded/.style={},
     %% Can be redefined by user
     % Style for empty nodes
     zxSpacingInsideNodes/.style={
@@ -1302,6 +1316,16 @@
     %% Normalize fonts to avoid different rendering when document has a different font shape.
     zxNormalFont/.style={
       font={\fontsize{10}{12}\selectfont},
+    },
+    % Practical styles to either vertically center the content, or fix the position of the baseline.
+    content fixed baseline/.style={
+      text height=1.5mm,%5.4pt,%1.5mm,%.45em,
+      text depth=0.1mm,%1.8pt,%0.1mm,%.15em,
+    },
+    % Style for empty nodes
+    content vertically centered/.style={
+      text height=,
+      text depth=,
     },
     zxAllNodes/.style={
       shape=rectangle, % Otherwise nodes are asymetrical rectangle, which is not practical in our case. Gives notably anchor "center" which is really centered compared to asymatrical rectangles
@@ -1530,23 +1554,23 @@
         }%
       }%
     },
-    pil/.style={phase in label=##1},
+    pil/.style={phase in label={##1}},
     phase in label below/.style={
       phase in label={label position=below,##1}
     },
-    pilb/.style={phase in label below=##1},
+    pilb/.style={phase in label below={##1}},
     phase in label above/.style={
       phase in label={label position=above,##1}
     },
-    pila/.style={phase in label above=##1},
+    pila/.style={phase in label above={##1}},
     phase in label right/.style={
       phase in label={label position=right,##1}
     },
-    pilr/.style={phase in label right=##1},
+    pilr/.style={phase in label right={##1}},
     phase in label left/.style={
       phase in label={label position=left,##1}
     },
-    pill/.style={phase in label left=##1},
+    pill/.style={phase in label left={##1}},
     %%% Was supposed to automatically find the good style depending on content... Can't find how to do.
     % Styles zxLong{X/Z} zxNoPhase{X/Z} are automatically selected by \zxZ4{...} and \zxX4{...} commands
     % and zxShort is selected for fractions only like in \zxFracZ-{\pi}{4}
@@ -1645,8 +1669,15 @@
   /zx/default style nodes/.style={
     /zx/styles/rounded style
   },
+  % Will be executed in tikzcd options. Useful to define a "global" option specific to a given style.
+  /zx/default style nodes preload/.style={
+    /zx/styles/rounded style preload,
+  },
   % User can put here any additional property
   /zx/user overlay nodes/.style={
+  },
+  % User can put here any global ZX options
+  /zx/user overlay/.style={
   },
   % Any additional property that needs to be loaded after add@Phase@Spider (by script, not by user).
   /zx/post preparation labels/.style={
@@ -1691,7 +1722,13 @@
     %%% Include a diagram in another diagram.
     use diagram/.style 2 args={
       execute at end picture={
-        \node[fit=##2,inner sep=0pt,yshift=-axis_height]{\zxUseDiagram{##1}};
+        \node[fit=##2,anchor=center,inner sep=0pt,yshift=-axis_height]{\zxUseDiagram{##1}};
+      }
+    },
+    %%% Include a diagram in another diagram.
+    use diagram advanced/.style n args={3}{
+      execute at end picture={
+        \node[fit=##2,anchor=center,inner sep=0pt,yshift=-axis_height,##3]{\zxUseDiagram{##1}};
       }
     },
     % Load (thanks ".search also") our own style
@@ -1733,35 +1770,38 @@
     },
     phase in label/.style={
       /zx/post preparation labels/.append style={
-        phase in label=##1,
+        phase in label={##1},
       }
     },
     phase in label above/.style={
       /zx/post preparation labels/.append style={
-        phase in label above=##1,
+        phase in label above={##1},
       }
     },
     phase in label below/.style={
       /zx/post preparation labels/.append style={
-        phase in label below=##1,
+        phase in label below={##1},
       }
     },
     phase in label right/.style={
       /zx/post preparation labels/.append style={
-        phase in label right=##1,
+        phase in label right={##1},
       }
     },
     phase in label left/.style={
       /zx/post preparation labels/.append style={
-        phase in label left=##1,
+        phase in label left={##1},
       }
     },
     % for "Phase In Label"
-    pil/.style={phase in label=##1},
-    pilb/.style={phase in label below=##1},
-    pila/.style={phase in label above=##1},
-    pilr/.style={phase in label right=##1},
-    pill/.style={phase in label left=##1},
+    pil/.style={phase in label={##1}},
+    pilb/.style={phase in label below={##1}},
+    pila/.style={phase in label above={##1}},
+    pilr/.style={phase in label right={##1}},
+    pill/.style={phase in label left={##1}},
+    % Load the global options style-specific
+    /zx/default style nodes preload,
+    /zx/user overlay,
   },
 }
 
@@ -1865,6 +1905,57 @@
   \usebox{#1}%
 }
 
+%%%%%%%%%%%%%%%%%%%%%
+%%% Main environments
+%%%%%%%%%%%%%%%%%%%%%
+
+% Quantikz has a bug which adds space automatically.
+% https://tex.stackexchange.com/questions/618330
+% Fixing that by copying the original (unpatched) functions, and reusing them later.
+% Warning: you must load this package **before** quantikz otherwise the fix will not work.
+\let\tikzcd@@originalCopyZx\tikzcd@
+\let\endtikzcd@originalCopyZx\endtikzcd
+
+%%%%% Main environment \begin{ZX}...\end{ZX}
+\NewDocumentEnvironment{ZX}{O{}}{%
+  \bgroup%
+  % Do not change the font size here or it will change axis_height... Use \fontsize{10}{12}\selectfont
+  % when drawing some texts instead.
+  % Add a switch in case someone really wants the current tikzcd version:
+  \ifdefined\doNotPatchQuantikz% Do not patch tikzcd.
+  \else% Restore locally original tikzcd.
+    \let\tikzcd@\tikzcd@@originalCopyZx%
+    \let\endtikzcd\endtikzcd@originalCopyZx%
+  \fi%
+  \pgfsetlayers{background,edgelayer,nodelayer,main,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
+  \begin{tikzcd}[%
+    /zx/defaultEnv,%
+    #1]%
+  }{\end{tikzcd}\egroup}
+
+%%%%% Shortcut macro \zx{...} equivalent to \begin{ZX}...\end{ZX}
+\newcommand\zx{%
+  \begingroup% To avoid ampersand issues https://tex.stackexchange.com/a/611535/116348
+  \NewDocumentCommand{\tmpZX}{O{}+m}{%
+    \endgroup%
+    \begin{ZX}[##1]%
+      ##2%
+    \end{ZX}%
+  }%
+  \catcode`&=13%
+  \tmpZX%
+}
+
+%%%%% Like \zx but uses \& instead of &. This is useful for instance in "align" environments
+%%%%% since \zx{} will given an error (even without using &, changing the catcode is enough to
+%%%%% break the function). However, \begin{ZX}...\end{ZX} seems to work in align without any issues here
+%%%%% but in other cases it can still cause troubles (like in \fbox{}) if you use &. So either use
+%%%%% \begin{ZX}[amp] ... \end{ZX} (amp is shortcut for "ampersand replacement=\&" or this function:
+\NewDocumentCommand{\zxAmp}{O{}+m}{%
+  \begin{ZX}[ampersand replacement=\&, #1]%
+    #2%
+  \end{ZX}%
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Practical macros to automatically choose appropriate style and arrows
@@ -1872,23 +1963,6 @@
 % /!\ Warning: you should add {} at the end of all macros (except arrows)!
 % Not using that may work for now, but it may break later...
 % TODO: define them only in \zx environment.
-
-% % Example: \leftManyDots{n}
-% Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
-% First optional argument is scale of text, second is scale of =.
-\NewExpandableDocumentCommand{\leftManyDots}{O{1}O{\zxScaleDots}m}{%
-  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdotsCenterMathline$}} \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
-}
-
-% Useful to link two nodes and put a vdots in between.
-\NewExpandableDocumentCommand{\middleManyDots}{}{%
-  \ar[r,3 vdots] \ar[o',r] \ar[o.,r]%
-}
-
-% Like \leftManyDots but on the right. Do *not* create a new node, like in |[zxShortZ]| \alpha \rightManyDots{m}
-\NewExpandableDocumentCommand{\rightManyDots}{O{1}O{\zxScaleDots}m}{%
-  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdotsCenterMathline$}}\scalebox{#1}{\,$#3$}
-}
 
 % A swap on one line... Practical mostly to gain space. Must be used with large nodes tough...
 % \NewExpandableDocumentCommand{\OneLineSwap}{}{%
@@ -1995,42 +2069,54 @@
   |[zxEmptyDiagram]| {}%
 }
 
-% Quantikz has a bug which adds space automatically.
-% https://tex.stackexchange.com/questions/618330
-% Fixing that by copying the original (unpatched) functions, and reusing them later.
-% Warning: you must load this package **before** quantikz otherwise the fix will not work.
-\let\tikzcd@@originalCopyZx\tikzcd@
-\let\endtikzcd@originalCopyZx\endtikzcd
 
-%%%%% Main environment \begin{ZX}...\end{ZX}
-\NewDocumentEnvironment{ZX}{O{}}{%
-  \bgroup%
-  % Do not change the font size here or it will change axis_height... Use \fontsize{10}{12}\selectfont
-  % when drawing some texts instead.
-  % Add a switch in case someone really wants the current tikzcd version:
-  \ifdefined\doNotPatchQuantikz% Do not patch tikzcd.
-  \else% Restore locally original tikzcd.
-    \let\tikzcd@\tikzcd@@originalCopyZx%
-    \let\endtikzcd\endtikzcd@originalCopyZx%
-  \fi%
-  \pgfsetlayers{background,edgelayer,nodelayer,main,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
-  \begin{tikzcd}[%
-    /zx/defaultEnv,%
-    #1]%
-  }{\end{tikzcd}\egroup}
-
-%%%%% Shortcut macro \zx{...} equivalent to \begin{ZX}...\end{ZX}
-\newcommand\zx{%
-  \begingroup% To avoid ampersand issues https://tex.stackexchange.com/a/611535/116348
-  \NewDocumentCommand{\tmpZX}{O{}+m}{%
-    \endgroup%
-    \begin{ZX}[##1]%
-      ##2%
-    \end{ZX}%
-  }%
-  \catcode`&=13%
-  \tmpZX%
+% % Example: \leftManyDots{n}
+% Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
+% First optional argument is scale of text, second is scale of =.
+\NewExpandableDocumentCommand{\leftManyDots}{O{1}O{\zxScaleDots}m}{%
+  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdotsCenterMathline$}} \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
 }
+
+% Useful to link two nodes and put a vdots in between.
+\NewExpandableDocumentCommand{\middleManyDots}{}{%
+  \ar[r,3 vdots] \ar[o',r] \ar[o.,r]%
+}
+
+% Like \leftManyDots but on the right. Do *not* create a new node, like in |[zxShortZ]| \alpha \rightManyDots{m}
+\NewExpandableDocumentCommand{\rightManyDots}{O{1}O{\zxScaleDots}m}{%
+  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdotsCenterMathline$}}\scalebox{#1}{\,$#3$}
+}
+
+% Shortcut for frequent wires
+\NewExpandableDocumentCommand{\zxDoubleO}{O{}m}{%
+  \ar[r,o.,#1] \ar[r,o',#1]
+}
+
+% Version going down
+\NewExpandableDocumentCommand{\zxDoubleOD}{O{}m}{%
+  \ar[r,o-,#1] \ar[r,-o,#1]
+}
+
+\NewExpandableDocumentCommand{\zxTtripleO}{O{}m}{%
+  \rar \ar[r,o.,#1] \ar[r,o',#1]
+}
+
+\NewExpandableDocumentCommand{\zxTripleOD}{O{}m}{%
+  \rar \ar[r,-.,#1] \ar[r,o-,#1]
+}
+
+
+\NewExpandableDocumentCommand{\zxOneOverSqrtTwo}{O{}m}{%
+  \zxZ{} \rar[#1] \ar[r,o.,#1] \ar[r,o',#1] \pgfmatrixnextcell \zxX{}
+}
+
+\NewExpandableDocumentCommand{\zxSqrtTwo}{O{}m}{%
+  \zxZ{} \rar[#1] \pgfmatrixnextcell \zxX{}
+}
+
+\zxSaveDiagram{\zxCteOneOverSqrtTwo}{\zxZ{} \rar \ar[r,o.] \ar[r,o'] \pgfmatrixnextcell \zxX{}}
+\zxSaveDiagram{\zxCteSqrtTwo}{\zxZ{} \rar \pgfmatrixnextcell \zxX{}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Old code that tried to automatically find if zxShort or zxLong should be used...
