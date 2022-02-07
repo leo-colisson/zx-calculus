@@ -1297,7 +1297,14 @@
   /zx/styles/rounded style preload/.style={
     content fixed baseline/.style={
       /zx/user overlay nodes/.style={
-        zxShort/.append style={content fixed baseline}
+        zxShort/.append style={content fixed baseline},
+        % fixed baseline gives poor result in fractions, so we disable it here
+        zxSpecificFrac/.append style={content vertically centered},
+      },
+    },
+    content fixed baseline also frac/.style={
+      /zx/user overlay nodes/.style={
+        zxShort/.append style={content fixed baseline},
       },
     },
     content vertically centered/.style={
@@ -1305,9 +1312,21 @@
         zxShort/.append style={content vertically centered}
       },
     },
+    /zx/styles/rounded style common nodes and ZX,
+  },
+  % These styles make sense both in "ZX" options and in nodes options.
+  /zx/styles/rounded style common nodes and ZX/.style={
+    small minus/.code={
+      \def\zxMinus{\zxShortMinus}%
+      \def\zxMinusInShort{\zxShortMinus}%
+    },
+    big minus/.code={
+      \def\zxMinus{-}%
+      \def\zxMinusInShort{-}%
+    },
   },
   /zx/styles/rounded style/.style={
-    runWhenLoaded/.style={},
+    /zx/styles/rounded style common nodes and ZX,
     %% Can be redefined by user
     % Style for empty nodes
     zxSpacingInsideNodes/.style={
@@ -1438,6 +1457,9 @@
     stylePhaseInLabelX/.style={
       stylePhaseInLabel,
       fill=red!20!white
+    },
+    % Some styles should be applied only on frac
+    zxSpecificFrac/.style={
     },
     %%%%%%%%%%% Style defined depending on above ones. Feel free to redefine.
     zxNoPhaseZ/.style={zxNoPhase,fill=colorZxZ},
@@ -1640,11 +1662,11 @@
     %% These take 6 arguments: additional style, sign (string "-" for minus, nothing for "+",
     %% otherwise inserted directly), above fraction (no parens), below fraction (no parens), above fraction (parens), below fraction (parens).
     zxFracZ6/.style n args={6}{
-      add@Phase@Spider@Frac={zxNoPhaseZ}{zxShortZ}{stylePhaseInLabelZ}{##2}{##3}{##4}{##5}{##6},
+      add@Phase@Spider@Frac={zxNoPhaseZ}{zxShortZ,zxSpecificFrac}{stylePhaseInLabelZ}{##2}{##3}{##4}{##5}{##6},
       /zx/post preparation labels,
       /zx/user post preparation labels,
       ##1,
-      zx@Execute@Very@End@Frac={zxNoPhaseZ}{zxShortZ}{stylePhaseInLabelZ}{##2}{##3}{##4}{##5}{##6},
+      zx@Execute@Very@End@Frac={zxNoPhaseZ}{zxShortZ,zxSpecificFrac}{stylePhaseInLabelZ}{##2}{##3}{##4}{##5}{##6},
     },
     zxFracX6/.style n args={6}{
       add@Phase@Spider@Frac={zxNoPhaseX}{zxShortX}{stylePhaseInLabelX}{##2}{##3}{##4}{##5}{##6},
@@ -1692,6 +1714,7 @@
   /zx/user overlay wires/.style={
   },
   /zx/defaultEnv/.style={
+    nodes in empty cells=true, %% To avoid errors about single ampersand when matrix does not start with None.
     %tiny depends on the size of the font... which we want to keep consistent look
     column sep=\zxDefaultColumnSep,
     row sep=\zxDefaultRowSep,
@@ -1832,7 +1855,8 @@
 \def\node@on@layer{\aftergroup\node@@on@layer}
 
 %%% Declare a symbol for a short minus (useful in fractions)
-\DeclareMathSymbol{\zxMinus}{\mathbin}{AMSa}{"39}% Requires amssymb
+\DeclareMathSymbol{\zxShortMinus}{\mathbin}{AMSa}{"39}% Requires amssymb. This version should not be redefined by the user to obtain a normal minus (or "small minus" won't work anymore)
+\def\zxMinus{\zxShortMinus}
 
 %%% Checks if a function is a point or a node.
 %%% Not sure if best solution (needed to dig into source of TeX), but can't find anything better in manual
@@ -1992,9 +2016,9 @@
         |[zxNoneI,#4]| #5%
       }{% \zxNone
         |[zxNone,#4]| #5%
-      }
-    }
-  }
+      }%
+    }%
+  }%
 }
 
 % Usage: alias of \zxNone... To bad token can't be easily forwarded to another function.
@@ -2009,10 +2033,22 @@
         |[zxNoneI,#4]| #5%
       }{% \zxNone
         |[zxNone,#4]| #5%
-      }
-    }
-  }
+      }%
+    }%
+  }%
 }
+
+% Usage: can be used without {}
+\def\zxNL{
+  \zxN{} \rar \pgfmatrixnextcell[\zxwCol]%
+}
+
+% Usage: can be used without {}
+\def\zxNR{
+  \pgfmatrixnextcell[\zxwCol] \zxN{}  \ar[l]
+}
+
+
 
 % Cf \zxNone, but with larger space.
 \NewExpandableDocumentCommand{\zxNoneDouble}{t+t-t|O{}m}{

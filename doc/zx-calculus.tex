@@ -365,10 +365,12 @@ The following commands are useful to create different kinds of nodes. Always add
 \begin{pgfmanualentry}
   \extractcommand\zxNone\opt{+}\opt{-}\marg{text}\@@
   \extractcommand\zxN\opt{+}\opt{-}\marg{text}\@@
+  \extractcommand\zxNL\@@
+  \extractcommand\zxNR\@@
   \pgfmanualbody
   Adds an empty node with |\zxNone{}| (alias |\zxN{}|). The \verb#-|+# decorations are used to add a bit of horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
 
-  |\zxNone| is just a coordinate (when possible this node should be preferred over the other versions), but |\zxNone-{}| and \verb#\zxNone|{}# are actually nodes with |inner sep=0| along one direction. For that reason, they still have a tiny height or width (impossible to remove as far as I know). If you don't want to get holes when connecting multiple wires to them, it is therefore necessary to use the |wire centered| style (alias |wc|) (if you are using the |IO| mode, see also the |between none| style).
+  |\zxNone| is just a coordinate (and therefore can't have any text inside, but when possible this node should be preferred over the other versions since it has really zero width), but |\zxNone-{}| and \verb#\zxNone|{}# are actually nodes with |inner sep=0| along one direction. For that reason, they still have a tiny height or width (impossible to remove as far as I know). If you don't want to get holes when connecting multiple wires to them, it is therefore necessary to use |\zxNone{}| or the |wire centered| style (alias |wc|) (if you are using the |IO| mode, see also the |between none| style). But anyway you should mostly use |\zxNone|.
 
   Moreover, you should also add column and row spacing |&[\zxWCol]| and |\\[\zxWRow]| to avoid too shrinked diagrams when only wires are involved.
 \begin{codeexample}[width=3cm]
@@ -385,7 +387,22 @@ Compare \begin{ZX}
   \zxN{} \rar &[\zxwCol] \zxZ{} \rar &[\zxwCol] \zxN{}
 \end{ZX}
 \end{codeexample}
-Note also that when the top left cell is empty, you can get an error at the compilation (no idea why) |Single ampersand used with wrong catcode|. To prevent that, you can add a none node at this position:
+This kind of code is so common that there is an alias for it: |\zxNL| and |\zxNR| automatically add a |\zxN{}| node, configure the column space (for this reson don't add an additional |&|, and be aware that emacs won't align them properly. Note also that the space will only be taken into account if it is on the first line) and add a straight arrow. The |L/R| part of the name is just to specify if the node is on the right or left of the diagram to put the column and arrow on the right side:
+\begin{codeexample}[]
+\zx{\zxNL \zxX{} \zxNR}
+\end{codeexample}
+Note that these two alias can be used without |{}|. But they are the only ones.
+
+The \verb!\zxN|{text}! and \verb!\zxN-{text}! may be useful to display some texts:
+\begin{codeexample}[]
+  \begin{ZX}[content fixed baseline]
+    & \zxN|{\dots} \dar                                                                 \\
+    \zxZ{\theta_i} \rar & \zxZ{} \dar \rar & \zxZ{-(\delta_i+\theta_i+r\pi)}\rar & \zxH{} \rar & \zxX{a\pi} \\
+    & \zxN|{\dots}                                                                      \\
+  \end{ZX}
+\end{codeexample}
+
+When the top left cell is empty, you may get an error at the compilation |Single ampersand used with wrong catcode| (this error should be fixed in latest released) or |<symbol> allowed only in math mode| (not sure why). To solve this issue, you can add an empty node on the very first cell:
 \begin{codeexample}[]
 \begin{ZX}
   \zxN{}         &[\zxwCol] \zxN{} \ar[d]\\[\zxwRow]
@@ -393,7 +410,8 @@ Note also that when the top left cell is empty, you can get an error at the comp
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
-You may also get this error when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|:
+
+You may also get the error |Single ampersand used with wrong catcode| when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|:
 \begin{codeexample}[vbox]
 \begin{align}
   \begin{ZX}[ampersand replacement=\&]
@@ -554,21 +572,24 @@ The |*| optional argument is to force a condensed style, no matter what is the t
   \extractkey/zx/styles/rounded style/content fixed baseline\@nil%
   \extractkey/zx/styles/rounded style preload/content vertically centered\@nil%
   \extractkey/zx/styles/rounded style preload/content fixed baseline\@nil%
+  \extractkey/zx/styles/rounded style preload/content fixed also frac\@nil%
   \makeatother
   \pgfmanualbody
   By default the content of the nodes are vertically centered. This can be nice to have as much space as possible around the text, but when using several nodes with letters having different height or depth, the baseline of each node won't be aligned (this is particularly visible on nodes with very high text, like |b'|):
 \begin{codeexample}[width=0pt]
 \begin{ZX}
   \zxX[a=start]{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi}
-  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
+  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxFracX-{\pi}{4}
+  & \zxFracZ{\pi}{4} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
    \ar[from=start,to=end,on layer=background]
 \end{ZX}
 \end{codeexample}
-Using |content fixed baseline|, it is however possible to fix the height and depth of the text to make sure the baselines are aligned (|content vertically centered| is use to come back to the default behavior):
+Using |content fixed baseline|, it is however possible to fix the height and depth of the text to make sure the baselines are aligned (|content vertically centered| is use to come back to the default behavior). When used as a ZX option, it avoids setting this on fractions since it renders poorly. Use |content fixed baseline also frac| if you also want to fix the baseline of all fractions as well (this last style is useful only as a ZX option, since |content fixed baseline| works on all nodes).
 \begin{codeexample}[width=0pt]
 \begin{ZX}[content fixed baseline]
   \zxX[a=start]{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi}
-  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
+  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxFracX-{\pi}{4}
+  & \zxFracZ{\pi}{4} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
    \ar[from=start,to=end,on layer=background]
 \end{ZX}
 \end{codeexample}
@@ -581,8 +602,16 @@ Note however that the height is really hardcoded (not sure how to avoid that) an
 }
 \begin{ZX}
   \zxX[a=start]{\alpha} & \zxX{\beta} & \zxX{a} & \zxX{b} & \zxX*{a\pi} & \zxX*{b\pi}
-  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
+  & \zxX*{b'\pi} & \zxZ*{'b\pi} & \zxZ{(a \oplus b )\pi} & \zxFracX-{\pi}{4}
+  & \zxFracZ{\pi}{4} & \zxZ-{\delta} & \zxZ[a=end]-{\gamma}
    \ar[from=start,to=end,on layer=background]
+\end{ZX}
+\end{codeexample}
+It can also be practical to combine it with |small minus|:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ-{\delta_j} & \zxZ[content fixed baseline]-{\delta_j} &
+  \zxZ[small minus]-{\delta_j} & \zxZ[content fixed baseline,small minus]-{\delta_j}
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
@@ -1868,8 +1897,20 @@ We present now all the properties that a new node style must have (and that can 
 This is used to change how the library does the conversion between |\zxFrac| and the actual written text (either in the node content or in the label depending on the function). The first argument is the sign (string |-| for minus, anything else must be written in place of the minus), the second and third argument are the numerator and denominator of the fraction when used in |\frac{}{}| while the last two arguments are the same except that they include the parens which should be added when using an inline version. For instance, one could get a call |\zxConvertToFracInLabel{-}{a+b}{c+d}{(a+b)}{(c+d)}|. See part on labels to see an example of use.
 \end{pgfmanualentry}
 
-\begin{command}{\zxMinusInShort}
-  Sign used in |\zxZ-{\alpha}| and |\zxX-{\alpha}|-like patterns. You can redefine it, for instance:
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxMinusUnchanged\@@
+  \extractcommand\zxMinus\@@
+  \extractcommand\zxMinusInShort\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/defaultEnv/zx column sep=length\@nil%
+  \extractkey/zx/styles/rounded style preload/small minus\@nil%
+  \extractkey/zx/styles/rounded style preload/big minus\@nil%
+  \extractkey/zx/styles/rounded style/small minus\@nil%
+  \extractkey/zx/styles/rounded style/big minus\@nil%
+  \makeatother
+  \pgfmanualbody
+  |\zxMinus| is the minus sign used in fractions, |\zxMinusInShort| is used in |\zxZ-{\alpha}| and |\zxMinusUnchanged| is a minus sign shorter than $-$. You can redefine them, for instance:
 \begin{codeexample}[]
 Compare {\def\zxMinusInShort{-}
   \zx{\zxZ-{\alpha}}
@@ -1878,7 +1919,20 @@ Compare {\def\zxMinusInShort{-}
   \zx{\zxZ-{\alpha}}
 }
 \end{codeexample}
-\end{command}
+You can also choose to always use a big or a small minus, either on a per-node, per-figure, or document-wise.
+\begin{codeexample}[]
+\begin{ZX}
+  \zxFracZ-{\pi}{4} & \zxZ-{\alpha} & \zxZ-{\delta_i} & \zxZ[small minus]-{\delta_i}
+\end{ZX} Picture-wise %
+\begin{ZX}[small minus]
+  \zxZ-{\alpha} & \zxZ-{\delta_i} & \zxZ-{\delta_i} & \zxFracZ-{\pi}{4}
+\end{ZX} Document-wise %
+\tikzset{/zx/user overlay/.style={small minus}}%
+\begin{ZX}
+  \zxZ-{\alpha} & \zxZ-{\delta_i} & \zxZ[big minus]-{\delta_i} & \zxFracZ[big minus]-{\pi}{4}
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
 
 \noindent We also define several spacing commands that can be redefined to your needs:
 \begin{pgfmanualentry}
@@ -1938,10 +1992,6 @@ Note that you can add multiple of them by separating with commas (see |\pgfmatri
   \pgfmanualbody
   Default opening angles of |S|, |o| and |v|/|<| wires. Defaults to respectively $30$, $40$ and $45$.
 \end{pgfmanualentry}
-
-\begin{command}{\zxMinus{}}
-  The minus sign used in fractions.
-\end{command}
 
 \subsection{Wire customization}\label{subsec:wirecustom}
 
@@ -2625,6 +2675,33 @@ $x = \begin{ZX}[use diagram={\myZXconstant}{(start)(end)}, math baseline=myb]
 \end{codeexample}
 Note that if you need more space to insert the drawing, you can use |\zxN+[a=start,minimum width=2cm]{}| instead of |\zxN|.
 \end{pgfmanualentry}
+
+Sometimes, you may also find useful to stack diagram (for instance because the matrix of the first diagram is not related to the matrix of the second diagram), or position multiple diagrams relative to each others. You can use arrays to do that, but it will not preserve the baseline. Another solution is to put the |ZX| environment inside nodes contained in |tikzpicture| (I know that tikz does not like nesting\dots{} but it works nice for what I tried. I will also try to provide an helper function to do that later). For example here we use it to add the constants below the second diagram:
+\begin{codeexample}[width=0pt]
+\begin{equation*}
+  \begin{ZX}
+    &[\zxwCol]       &                                      &[\zxwCol] \zxN{} \ar[dd,3 vdots] \\[\zxNCol]
+    \zxN{} \rar & \zxZ{\pi} \rar & \zxX{\alpha} \ar[ru,N'-] \ar[rd,N.-] &                        \\[\zxNCol]
+    &                &                                      & \zxN{}
+  \end{ZX} =
+  \begin{tikzpicture}[
+    baseline=(A.base)
+    ]
+    \node[inner sep=0pt](A){%
+      \begin{ZX}
+        &[\zxwCol]                              & \zxZ{\pi} \ar[dd,3 vdots] \rar &[\zxwCol] \zxN{} \\[\zxNCol]
+        \zxN{} \rar & \zxX-{\alpha} \ar[ru,N'-] \ar[rd,N.-] &                                        \\[\zxNCol]
+        &                                       & \zxZ{\pi} \rar & \zxN{}
+      \end{ZX}
+    };
+    \node[inner sep=0pt,below=\zxDefaultColumnSep of A](B){
+      \begin{ZX}
+        \zxOneOverSqrtTwo{} & \zxX{\alpha} \rar & \zxZ{\pi}
+      \end{ZX}
+    };
+  \end{tikzpicture}
+\end{equation*}
+\end{codeexample}
 
 \subsection{Further customization}
 
