@@ -10,7 +10,7 @@
 % directly load this library using \usepackage{zx}.
 
 \RequirePackage{amssymb} % For short minus
-\RequirePackage{etoolbox}
+\RequirePackage{etoolbox} % \AfterEndPreamble...
 \RequirePackage{ifthen} % For conditions
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
@@ -674,7 +674,7 @@
           \pgfmathapproxequalto{##52}{\n1}%
         }%
         \ifpgfmathcomparison\else -- (\TargetPoint)\fi
-        \tikztonodes% All to path finishes with that to deal with futur nodes I think
+        \tikztonodes% All to path finishes with that to deal with future nodes I think
       }
     },
     % At the first version, styles were defined using in=... out=... looseness=... However
@@ -1922,7 +1922,12 @@
 
 \NewDocumentCommand{\zxSaveDiagram}{mO{}m}{
   \newsavebox{#1}%
-  \savebox{#1}{\begin{ZX}[ampersand replacement=\&,#2]#3\end{ZX}}%
+  \savebox{#1}{%
+    \ifdefined\tikz@library@external@loaded% Library external is loaded...
+      \tikzset{external/optimize=false}% Otherwise, tikz will try to optimize and replace the box with a text
+    \fi%
+    \begin{ZX}[#2]#3\end{ZX}
+  }%
 }
 
 \NewDocumentCommand{\zxUseDiagram}{m}{
@@ -1940,8 +1945,9 @@
 \let\tikzcd@@originalCopyZx\tikzcd@
 \let\endtikzcd@originalCopyZx\endtikzcd
 
-%%%%% Main environment \begin{ZX}...\end{ZX}
-\NewDocumentEnvironment{ZX}{O{}}{%
+%%%%% Main environment \begin{ZX}...\end{ZX}. However, we call it ZXNoExt because when using
+%%%%% externalization (to save compilation time), we need to wrap it around a figure.
+\NewDocumentEnvironment{ZXNoExt}{O{}}{%
   \bgroup%
   % Do not change the font size here or it will change axis_height... Use \fontsize{10}{12}\selectfont
   % when drawing some texts instead.
@@ -1957,24 +1963,164 @@
     #1]%
   }{\end{tikzcd}\egroup}
 
-%%%%% Shortcut macro \zx{...} equivalent to \begin{ZX}...\end{ZX}
-\newcommand\zx{%
-  \begingroup% To avoid ampersand issues https://tex.stackexchange.com/a/611535/116348
-  \NewDocumentCommand{\tmpZX}{O{}+m}{%
-    \endgroup%
-    \begin{ZX}[##1]%
-      ##2%
-    \end{ZX}%
-  }%
-  \catcode`&=13%
-  \tmpZX%
+% https://tex.stackexchange.com/a/619983/116348
+\ExplSyntaxOn
+%%%%% Shortcut macro \zxNoExt{...} equivalent to \begin{ZX}...\end{ZX}
+%%%%% We will create an alias \zx, but when we use externalization we
+%%%%% wrap it around a figure.
+\NewDocumentCommand{\zxNoExt}{O{}+m}{% Warning, expl syntax removes space.
+  \tl_rescan:nn { \char_set_catcode_active:N \& } { \begin{ZXNoExt}[#1] #2 \end{ZXNoExt} }
+}
+\ExplSyntaxOff
+
+%% Version to use when using externalize (it wraps it around a 
+\NewDocumentCommand{\zxExt}{O{}O{}O{}+m}{% Warning, expl syntax removes space.
+  \begin{tikzpicture}[baseline=(zxlibrarymainnode.base),#2]%
+    \node(zxlibrarymainnode)[inner sep=0pt,outer sep=0pt,#3]{\zxNoExt[#1]{#4}};%
+  \end{tikzpicture}%
 }
 
-%%%%% Like \zx but uses \& instead of &. This is useful for instance in "align" environments
-%%%%% since \zx{} will given an error (even without using &, changing the catcode is enough to
-%%%%% break the function). However, \begin{ZX}...\end{ZX} seems to work in align without any issues here
-%%%%% but in other cases it can still cause troubles (like in \fbox{}) if you use &. So either use
-%%%%% \begin{ZX}[amp] ... \end{ZX} (amp is shortcut for "ampersand replacement=\&" or this function:
+\NewDocumentEnvironment{ZXExt}{O{}O{}O{}+b}{%
+  \zxExt[#1][#2][#2]{#4}%
+}{}%
+
+\NewDocumentEnvironment{ZX}{O{}O{}O{}+b}{%
+  \zx[#1][#2][#3]{#4}%
+}{}
+
+% The external library is not compatible with tikzcd directly.
+% So if:
+% \zx@external@mode is enabled, we wrap the figure into another figure to be compatible with tikz externalize
+% otherwise, we check if the external library is loaded, and disable it temporarily.
+\NewDocumentCommand\zx{O{}O{}O{}+m}{%
+  \ifdefined\zx@external@mode%
+    \ifthenelse{\equal{\zx@external@mode}{wrap}}{% We wrap everything around figures to be compatible with external
+      \zxExt[#1][#2][#3]{#4}%
+    }{% We don't wrap anything inside figures, so we lose external compatibility.
+      \ifthenelse{\equal{\zx@external@mode}{nowrapnoext}}{%
+        % We disable the tikz external library temporarily (tikzcd is not compatible with it)
+        \ifdefined\tikz@library@external@loaded% Library external is loaded...
+          \tikzexternaldisable%
+          \message{WARNING: you chose to disable temporarily the tikz external library.}%
+        \fi%
+      }{}
+      \zxNoExt[#1]{#4}%
+    }%
+  \else% Mode auto enabled
+    {% If the tikz library is loaded:
+      \ifdefined\tikz@library@external@loaded% Library external is loaded...
+        \zxExt[#1][#2][#3]{#4}%
+      \else%
+        \zxNoExt[#1]{#4}%      
+      \fi%
+    }%
+  \fi%
+}
+
+%% By default, the error displayed when compiling using "external"
+%% is not meaningful and does not stop if a picture already exists.
+%% https://tex.stackexchange.com/questions/633100/stop-at-error-meaningfull-errors-with-shell-escape-and-tikz-externalize/633121#633121
+%% See also this bug, that shows that if you have an error and compile twice, the error disappears, but the old file is used instead.
+%% https://github.com/pgf-tikz/pgf/issues/1137
+\NewDocumentCommand\zxConfigureExternalSystemCall{O{}}{
+  %% Code inspired by https://github.com/pgf-tikz/pgf/blob/a7b45b35e99af11bf7156aa3697b897b98870e5b/tex/generic/pgf/frontendlayer/tikz/libraries/tikzexternalshared.code.tex#L277
+  \expandafter\def\csname zx@driver@pgfsys-luatex.def\endcsname{%
+    \pgfkeyssetvalue{/tikz/external/system call}{%
+      lualatex \tikzexternalcheckshellescape #1 -jobname "\image" "\texsource"%
+    }%
+  }%
+  \expandafter\def\csname zx@driver@pgfsys-pdftex.def\endcsname{%
+    \pgfutil@IfUndefined{directlua}{%
+      \pgfkeyssetvalue{/tikz/external/system call}{%
+        pdflatex \tikzexternalcheckshellescape #1 -jobname "\image" "\texsource"%
+      }%
+    }{%
+      \pgfkeyssetvalue{/tikz/external/system call}{%
+        lualatex \tikzexternalcheckshellescape #1 -jobname "\image" "\texsource"%
+      }%
+    }%
+  }%
+  \expandafter\def\csname zx@driver@pgfsys-xetex.def\endcsname{%
+    \pgfkeyssetvalue{/tikz/external/system call}{%
+      xelatex \tikzexternalcheckshellescape #1 -jobname "\image" "\texsource"%
+    }%
+  }%
+  \expandafter\def\csname zx@driver@pgfsys-dvips.def\endcsname{%
+    \pgfkeyssetvalue{/tikz/external/system call}{%
+      latex \tikzexternalcheckshellescape #1 -jobname "\image" "\texsource" %
+      && dvips -o "\image".ps "\image".dvi %
+    }%
+  }%
+  % Auto-select a suitable default value fo 'system call':
+  \pgfutil@ifundefined{tikzexternal@driver@\pgfsysdriver}{%
+    % fallback. We do not know the driver here.
+    \csname zx@driver@pgfsys-pdftex.def\endcsname
+  }{%
+    \csname zx@driver@\pgfsysdriver\endcsname
+  }%
+}
+
+% Call zxConfigureExternalSystemCall with the same system call as the calling program
+% Useful otherwise the error may be missed (for instance errorstopmode works in pdflatex but not in
+% emacs, and nonstopmode works in emacs, but not in pdflatex).
+% The current mode is stored in \interactionmode, 0, 1, 2, 3 corresponding respectively to batch, nonstop, scroll or errorstop. 
+% https://tex.stackexchange.com/questions/91592/where-to-find-official-and-extended-documentation-for-tex-latexs-commandlin
+\NewDocumentCommand\zxConfigureExternalSystemCallAuto{}{%
+  \message{XXX Configuring auto.}
+  \ifnum\interactionmode=0 %
+  \message{XXX Configuring auto 0.}
+    \zxConfigureExternalSystemCall[-interaction=batchmode]%
+  \fi%
+  \ifnum\interactionmode=1 %
+  \message{XXX Configuring auto 1.}
+    \zxConfigureExternalSystemCall[-interaction=nonstopmode]% emacs
+  \fi%
+  \ifnum\interactionmode=2 %
+  \message{XXX Configuring auto 2.}
+    \zxConfigureExternalSystemCall[-interaction=scrollmode]%
+  \fi%
+  \ifnum\interactionmode=3 %
+  \message{XXX Configuring auto 3.}
+    \zxConfigureExternalSystemCall[-interaction=errorstopmode]% pdflatex by default
+  \fi%
+}
+
+
+\ifdefined\zxDoNotPatchSystemCall\else%
+  \zxConfigureExternalSystemCallAuto
+\fi
+
+% \zx@external@mode can be undefined (=auto), wrap or nowrap.
+
+%% Automatically check if the external library is loaded, and use it.
+\NewDocumentCommand\zxExternalAuto{}{%
+  \let\zx@external@mode\undefined%
+}
+
+%% Force to wrap the ZX figures around a figure to ensure compatibility with external.
+\NewDocumentCommand\zxExternalWrap{}{%
+  \def\zx@external@mode{wrap}%
+}
+
+%% Do not wrap the ZX figures around another figure (not compatible with external)
+\NewDocumentCommand\zxExternalNoWrap{}{%
+  \def\zx@external@mode{nowrap}%
+}
+
+%% Do not wrap the ZX figures, but disable external for these figures (semi-compatible with external)
+\NewDocumentCommand\zxExternalNoWrapNoExt{}{%
+  \def\zx@external@mode{nowrapnoext}%
+}
+
+% Mode auto is enabled by default
+\zxExternalAuto
+
+%%%%% Like \zx but uses \& instead of &. This WAS useful for instance in "align" environments
+%%%%% since \zx{} was given an error (even without using &, changing the catcode was enough to
+%%%%% break the function). However, in recent versions, \zx should work as it in align, and
+%%%%% \begin{ZX}...\end{ZX} seems to always work in align without any issues.
+%%%%% Anyway, if at some points you have troubles, either use
+%%%%% \begin{ZX}[amp] ... \end{ZX} (amp is shortcut for "ampersand replacement=\&") or this function:
 \NewDocumentCommand{\zxAmp}{O{}+m}{%
   \begin{ZX}[ampersand replacement=\&, #1]%
     #2%
@@ -2029,7 +2175,7 @@
     \IfBooleanTF{#2}{% \zxNone-
       |[zxNone-,#4]| #5%
     }{
-      \IfBooleanTF{#3}{% \zxNone
+      \IfBooleanTF{#3}{% \zxNone|
         |[zxNoneI,#4]| #5%
       }{% \zxNone
         |[zxNone,#4]| #5%
@@ -2037,6 +2183,7 @@
     }%
   }%
 }
+
 
 % Usage: can be used without {}
 \def\zxNL{
@@ -2150,9 +2297,12 @@
   \zxZ{} \rar[#1] \pgfmatrixnextcell \zxX{}
 }
 
-\zxSaveDiagram{\zxCteOneOverSqrtTwo}{\zxZ{} \rar \ar[r,o.] \ar[r,o'] \pgfmatrixnextcell \zxX{}}
-\zxSaveDiagram{\zxCteSqrtTwo}{\zxZ{} \rar \pgfmatrixnextcell \zxX{}}
 
+%% Need AfterEndPreamble otherwise there is an error when using tikzexternalize.
+\AfterEndPreamble{
+  \zxSaveDiagram{\zxCteOneOverSqrtTwo}{\zxZ{} \rar \ar[r,o.] \ar[r,o'] \pgfmatrixnextcell \zxX{}}
+  \zxSaveDiagram{\zxCteSqrtTwo}{\zxZ{} \rar \pgfmatrixnextcell \zxX{}}
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Old code that tried to automatically find if zxShort or zxLong should be used...

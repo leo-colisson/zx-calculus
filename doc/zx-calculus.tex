@@ -1,6 +1,5 @@
 \documentclass[a4paper]{ltxdoc}
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Packages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +38,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2021/10/27}\\[3mm]
+  {Léo Colisson \quad Version 2022/02/09}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -93,11 +92,11 @@ You can create a diagram either with |\zx[options]{matrix}|, |\zxAmp[options]{ma
 \end{verse}
 The matrix is composed of rows separated by |\\| and columns separated by |&| (except in |\zxAmp| where columns are separated with |\&|).
 
-\alertwarning{ % Can't use |...| or \verb|...| in this environment :'(
-  Due to \LaTeX{} restrictions, \texttt{\&} can sometimes cause some troubles. \texttt{\textbackslash{}zxAmp} is always guaranteed to work (just make sure to use \texttt{\textbackslash{}\&} instead of \texttt{\&}). See \cref{subsec:addDiagram} for more details.
-}
+% \alertwarning{ % Can't use |...| or \verb|...| in this environment :'(
+%   Due to \LaTeX{} restrictions, \texttt{\&} can sometimes cause some troubles. \texttt{\textbackslash{}zxAmp} is always guaranteed to work (just make sure to use \texttt{\textbackslash{}\&} instead of \texttt{\&}). See \cref{subsec:addDiagram} for more details.
+% }
 
-This matrix is basically a \tikzname{} matrix of nodes (even better, a |tikz-cd| matrix, so you can use all the machinary of |tikz-cd|), so cells can be created using \verb#|tikz style| content#. However, the users does not usually need to use this syntax since many nodes like |\zxZ{spider phase}| have been created for them (including |\zxN{}| which is an empty node):
+This matrix is basically a \tikzname{} matrix of nodes (even better, a |tikz-cd| matrix, so you can use all the machinary of |tikz-cd|), so cells can be created using \verb#|[tikz style]| content#. However, the users does not usually need to use this syntax since many nodes like |\zxZ{spider phase}| have been created for them (including |\zxN{}| which is an empty node):
 
 \begin{codeexample}[width=0pt]
 \begin{ZX}
@@ -155,7 +154,7 @@ Similarly |o'| is a style for wires that have the shape of the top part of the c
   \zxZ{\beta}
 \end{ZX}
 \end{codeexample}
-Note that the position of the embellishments (|'|, |-|, |.|\dots{}) tries to graphically represent the shape of the node. That way |-o| means ``take the left part (position of |-|) or the circle |o|''. Applied to |C|, this gives:
+Note that the position of the embellishments (|'|, |-|, |.|\dots{}) tries to graphically represent the shape of the node. That way |-o| means ``take the left part (position of |-|) of the circle |o|''. Applied to |C|, this gives:
 \begin{codeexample}[]
 \begin{ZX}
   \zxX{} \ar[d,C] \ar[r,C']  & \zxZ{} \ar[d,C-]\\
@@ -191,7 +190,7 @@ The reason for this is that it is hard to always get exactly the good spacing by
 \end{codeexample}
 
 
-When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that:
+When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that (|a=blabla| gives the alias name |blabla| to the node, and configure tools useful for debugging):
 \begin{codeexample}[]
   $\zx[math baseline=myZ]{
     \zxX{}\\
@@ -316,7 +315,7 @@ If you have some questions, suggestions, or bugs, please report them on \texttt{
   \extractenvironement{ZX}\opt{\oarg{options}}\@@
   \extractcommand\zxAmp\opt{\oarg{options}}\marg{your diagram}\@@
   \pgfmanualbody
-  You can create a new ZX-diagram either with a macro (quicker for inline diagrams) or with an environment. All these commands are mostly equivalent, except that in |\zxAmp| columns are separated with |\&| instead of |&| (practical to use inside |align| or inside macros). The \meta{options} can be used to locally change the style of the diagram, using the same options as the |{tikz-cd}| environment (from the \mylink{https://www.ctan.org/pkg/tikz-cd}{\texttt{tikz-cd} package}). The \meta{your diagram} argument, or the content of |{ZX}| environment is a \tikzname{} matrix of nodes, exactly like in the |tikz-cd| package: rows are separated using |\\|, columns using |&| (except for |\zxAmp| where columns are separated using |\&|), and nodes are created using \verb#|[tikz style]| node content# or with shortcut commands presented later in this document (recommended). Wires can be added like in |tikz-cd| (see more below) using |\arrow| or |\ar|: we provide later recommended styles to quickly create different kinds of wires which can change with the configured style. Content is typeset in math mode by default, and diagrams can be included in any equation.
+  You can create a new ZX-diagram either with a macro (quicker for inline diagrams) or with an environment. All these commands are mostly equivalent, except that in |\zxAmp| columns are separated with |\&| instead of |&| (this was useful before as |&| was not usable in |align| or inside macros. Not it should be fixed.). The \meta{options} can be used to locally change the style of the diagram, using the same options as the |{tikz-cd}| environment (from the \mylink{https://www.ctan.org/pkg/tikz-cd}{\texttt{tikz-cd} package}). The \meta{your diagram} argument, or the content of |{ZX}| environment is a \tikzname{} matrix of nodes, exactly like in the |tikz-cd| package: rows are separated using |\\|, columns using |&| (except for |\zxAmp| where columns are separated using |\&|), and nodes are created using \verb#|[tikz style]| node content# or with shortcut commands presented later in this document (recommended). Wires can be added like in |tikz-cd| (see more below) using |\arrow| or |\ar|: we provide later recommended styles to quickly create different kinds of wires which can change with the configured style. Content is typeset in math mode by default, and diagrams can be included in any equation.
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 % Do not indent not to put space in final code
 \begin{codeexample}[]
@@ -331,20 +330,17 @@ and custom diagram: %
 \end{pgfmanualentry}
 
 \begin{stylekey}{/tikz/defaultEnv/amp}
-  Due to \LaTeX{} limitations, |&| can't be used inside macros, and the macro |\zx| does not work in the |align| environment. To solve that, in macros either use the |ampersand replacement=\&| option (whose shortcut is |amp|) or |\zxAmp| (in any case, replace |&| with |\&|). In the |align| environment, don't use |\zx| (other math environments don't have this limitation for what I tried):
+  In a previous version (before 2022/02/09), it was not possible to use |&| inside macros and |align| due to \LaTeX{} limitations. However, we found a solution by re-scanning the tokens, so now no special care should be taken in align or macros. But in case you need to deal with an environment having troubles with |&|, either use the |ampersand replacement=\&| option (whose shortcut is |amp|) or |\zxAmp| (in any case, replace |&| with |\&|).
 \begin{codeexample}[vbox]
 An aligned equation:
 \begin{align}
   \zxAmp{\zxZ{} \arrow[r] \& \zxX{}} &= \begin{ZX}[amp] \zxX{} \arrow[r] \& \zxZ{} \end{ZX}
 \end{align}
-% In a macro use \setlength{\fboxsep}{0pt} % removes padding around fbox
-% \fbox{\zxAmp{\zxZ{} \rar \& \zxX{}}} or
-% \fbox{%
-%   \begin{ZX}[amp] % amp is a shortcut for "ampersand replacement=\&"
-%     %  See \ here ---v
-%     \zxX{} \arrow[r] \& \zxZ{}
-%   \end{ZX}%
-% }
+This limitation does not apply anymore:
+\begin{align}
+  \zx{\zxZ{} \arrow[r] & \zxX{}} &= \begin{ZX} \zxX{} \arrow[r] & \zxZ{} \end{ZX}
+\end{align}
+even in macros: {\setlength{\fboxsep}{0pt} \fbox{\zx{\zxZ{} \rar & \zxX{}}}}
 \end{codeexample}
 \end{stylekey}
 
@@ -387,13 +383,14 @@ Compare \begin{ZX}
   \zxN{} \rar &[\zxwCol] \zxZ{} \rar &[\zxwCol] \zxN{}
 \end{ZX}
 \end{codeexample}
-This kind of code is so common that there is an alias for it: |\zxNL| and |\zxNR| automatically add a |\zxN{}| node, configure the column space (for this reson don't add an additional |&|, and be aware that emacs won't align them properly. Note also that the space will only be taken into account if it is on the first line) and add a straight arrow. The |L/R| part of the name is just to specify if the node is on the right or left of the diagram to put the column and arrow on the right side:
+This kind of code is so common that there is an alias for it: |\zxNL| and |\zxNR| automatically add a |\zxN{}| node, configure the column space (for this reason don't add an additional |&|, and be aware that emacs won't align them properly. Note also that the space will only be taken into account if it is on the first line) and add a straight arrow. The |L/R| part of the name is just to specify if the node is on the right or left of the diagram to put the column and arrow on the right side:
 \begin{codeexample}[]
 \zx{\zxNL \zxX{} \zxNR}
 \end{codeexample}
 Note that these two alias can be used without |{}|. But they are the only ones.
 
 The \verb!\zxN|{text}! and \verb!\zxN-{text}! may be useful to display some texts:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[]
   \begin{ZX}[content fixed baseline]
     & \zxN|{\dots} \dar                                                                 \\
@@ -401,8 +398,9 @@ The \verb!\zxN|{text}! and \verb!\zxN-{text}! may be useful to display some text
     & \zxN|{\dots}                                                                      \\
   \end{ZX}
 \end{codeexample}
+}
 
-When the top left cell is empty, you may get an error at the compilation |Single ampersand used with wrong catcode| (this error should be fixed in latest released) or |<symbol> allowed only in math mode| (not sure why). To solve this issue, you can add an empty node on the very first cell:
+When the top left cell is empty, you may get an error at the compilation |Single ampersand used with wrong catcode| (this error should be fixed in latest releases) or |<symbol> allowed only in math mode| (not sure why). To solve this issue, you can add an empty node on the very first cell:
 \begin{codeexample}[]
 \begin{ZX}
   \zxN{}         &[\zxwCol] \zxN{} \ar[d]\\[\zxwRow]
@@ -411,11 +409,11 @@ When the top left cell is empty, you may get an error at the compilation |Single
 \end{codeexample}
 \end{pgfmanualentry}
 
-You may also get the error |Single ampersand used with wrong catcode| when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|:
+You may also get the error |Single ampersand used with wrong catcode| when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|. Note however that in recent versions ($\geq$ 2022/02/09) this should not happen anymore.
 \begin{codeexample}[vbox]
 \begin{align}
   \begin{ZX}[ampersand replacement=\&]
-    \zxN{} \rar \&[\zxwCol] \zxN{}
+    \zxN{} \rar \&[\zxWCol] \zxN{}
   \end{ZX}
   &= \begin{ZX}[ampersand replacement=\&]
     \zxN{} \rar \&[\zxwCol] \zxZ{} \rar \&[\zxwCol] \zxN{}
@@ -428,15 +426,17 @@ You may also get the error |Single ampersand used with wrong catcode| when |&| h
 
 \begin{command}{\zxNoneDouble\opt{+-}\marg{text}}
   Like |\zxNone|, but the spacing for \verb#+-|# is large enough to fake two lines in only one. Not extremely useful (or one needs to play with |start anchor=south,end anchor=north|).
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxNoneDouble|{} \ar[r,s,start anchor=north,end anchor=south] \ar[r,s,start anchor=south,end anchor=north] &[\zxWCol] \zxNoneDouble|{}
 \end{ZX}
 \end{codeexample}
+}
 \end{command}
 
 \begin{command}{\zxFracZ\opt{-}\marg{numerator}\opt{\oarg{numerator with parens}\oarg{denominator with parens}}\marg{denominator}}
-  Adds a Z node with a fraction, use the minus decorator to add a small minus in front (the default minus is very big).
+  Adds a Z node with a fraction, use the minus decorator to add a small minus in front (a normal minus would be too big, but you can configure the symbol).
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxFracZ{\pi}{2} & \zxFracZ-{\pi}{2}
@@ -467,7 +467,7 @@ Compare
   Adds a Z node. \meta{other styles} are optional \tikzname{} arguments (the same as the one provided to |tikz-cd|) They should be use with care, and if possible moved to the style directly to keep a consistent look across the paper.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
-  \zxZ{} & \zxZ{\alpha} & \zxZ{\alpha + \beta} & \zxZ[text=red]{(a \oplus b)\pi}
+  \zxZ{} & \zxZ{\alpha} & \zxZ{\alpha + \beta} & \zxZ[fill=blue!50!white,text=red]{(a \oplus b)\pi}
 \end{ZX}
 \end{codeexample}
 The optional |-| optional argument is to add a minus sign (customizable, see |\zxMinusInShort|) in front of a very short expression and try to keep a circular shape. This is recommended notably for single letter expressions.
@@ -530,7 +530,7 @@ The |*| optional argument is to force a condensed style, no matter what is the t
 \end{command}
 
 \begin{command}{\middleManyDots{}}
-  Shortcut to add a dots and a text next to it. It automatically adds the new column, see more examples below.
+  Shortcut to add a dots and a text next to it, see more examples below.
 \begin{codeexample}[width=3cm]
 \begin{ZX}
   \zxX{\alpha} \middleManyDots{} & \zxX{\beta}
@@ -745,7 +745,7 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 \begin{codeexample}[width=3cm]
   Compare $\begin{ZX}
     \zxZ{} \rar[o'] \rar[o.]      & \zxX{}\\
-    \zxZ{} \rar[o'] \rar[o.] \rar & \zxX{}\\ %% <--- remove last |\\|
+    \zxZ{} \rar[o'] \rar[o.] \rar & \zxX{}\\ %% <--- remove last \\
   \end{ZX} = \zx{\zxEmptyDiagram}$ with $\begin{ZX}
     \zxZ{} \rar[o'] \rar[o.]      & \zxX{}\\
     \zxZ{} \rar[o'] \rar[o.] \rar & \zxX{}
@@ -1498,7 +1498,7 @@ Note that the |IO| version cannot really be used when nodes are not aligned (usi
   Normal \begin{ZX}
     \zxX{\alpha} \ar[dr,C]\\
     & \zxNone{}
-  \end{ZX}, and |IO| \begin{ZX}
+  \end{ZX}, and IO \begin{ZX}
     \zxX{\alpha} \ar[dr,IO,C]\\
     & \zxNone{}
   \end{ZX}
@@ -1733,6 +1733,29 @@ A swapped Bell pair is %
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
+
+\subsection{Externalize}
+
+Since 2022/02/08, it is possible to use the tikz |external| library to save compilation time. To load it, you need to add the following tikz libraries:
+\begin{verse}
+  |\usetikzlibrary{external}|\\
+  |\usetikzlibrary{zx-calculus}|\\
+  |\tikzexternalize|\\
+  |\zxConfigureExternalSystemCallAuto|\\
+\end{verse}
+Then, compile with shell-escape, for instance using |pdflatex -shell-escape yourfile.tex|.
+
+\textbf{WARNING}: if |external| is loaded before |zx-calculus|, you don't need to run |\zxConfigureExternalSystemCallAuto|. This command is only useful to ensure the system call used by |external| displays errors appropriately by configuring the interaction mode to match the one used by the parent compilation command. If you prefer to disable this feature to use |external|'s default, define `\def\zxDoNotPatchSystemCall{}` before loading the |zx-calculus| library.
+
+\alertwarning{Note however that this has not yet being extensively tested, and the \texttt{external} library has a few caveats presented below}
+\begin{itemize}
+\item If you change the order of the diagrams, or add a diagram in the middle of the document, all subsequent diagrams will be recompiled. This issue has been reported \mylink{https://github.com/pgf-tikz/pgf/issues/758}{here} and is caused by the fact that the figures are called \texttt{figure0},\dots,\texttt{figureN}. To limit this issue, you can regularly insert \texttt{\textbackslash{}tikzsetfigurename\{nameprefix\}} in your document with different names to avoid a full recompilation of the file (or using groups to change it for a single newly added equation).
+\item The \texttt{external} library uses the main file to recompile each picture, so if your file is large or loads a lot of libraries, it may \mylink{https://tex.stackexchange.com/questions/633175/tikz-externalize-is-much-slower-than-tikz-on-first-run}{take a while to compile a single diagram} (to give an example, this library takes 41 seconds to compile without the externalize library, with the externalize library it takes 14mn for the first run and 3 seconds for the next runs). For this reason, you may want to use \texttt{\textbackslash{}tikzset\{external/export=false\}} in a group to disable temporarily the external library while you are writing your diagram.
+\item If you compile once a diagram without any error, and recompile it after inserting an error, you will see an error while compiling. But if you recompile again, the error will disappear and the diagram that lastly succeeded to build will be inserted instead of the newly buggy diagram. This has been reported \mylink{https://github.com/pgf-tikz/pgf/issues/1137}{here}.
+\item The library |external| forces us to wrap our diagrams into a basically empty tikz-pictures to make it work. The current library will automatically wrap the diagrams when the |external| library is enabled, but you can customize how diagrams are wrapped manually: |\zxExternalAuto| (default) will wrap it automatically if |external| is enabled, |\zxExternalWrap| will always wrap it, |\zxExternalNoWrap| will never wrap it (you will get errors if you use |external|) and |\zxExternalNoWrapNoExt| will not wrap the figure, but will disable temporary the externalization for diagrams to avoid errors.
+\item Sometimes, it seems that |external| cuts some parts of the picture, I guess when parts are drawn outside of the bounding box. I've not experienced that with the |zx-library| directly, but the example below with the |double copy shadow| has such issues, where a part of the shadow is cut (I guess the shadow is drawn outside of the bounding box).
+\item I experienced issues when using \texttt{external} with subfiles and biblatex. I will need to investigate it further at some points. Also, it seems that sometimes the inner sep of some labels in |external| mode defaults to zero (see the CNOT example below), I'm not sure why. Adding explicitly the value of the label fixes this.
+\end{itemize}
 
 \section{Advanced styling}
 
@@ -2636,11 +2659,12 @@ You can see that the constant looks much wider in the second picture, due to the
 %% Create a new box
 \newsavebox{\myZXbox}
 %% Save our small diagram.
-%% Warning: the char '&' cause troubles in functions, so use ampersand replacement
-%% and \& instead:
+%% Warning: on older versions, you needed to use \& instead of &
+%% (the char '&' cause troubles in functions), but I fixed it 2022/02/09
 \sbox{\myZXbox}{%
-  \zx[ampersand replacement=\&]{ %<-- strange font? this is just an ampersand.
-    \zxX{} \rar \ar[r,o'] \ar[r,o.] \& \zxZ{}
+  % add \tikzset{external/optimize=false} if you use tikz "external" library %
+  \zx{ % you may need 
+    \zxX{} \rar \ar[r,o'] \ar[r,o.] & \zxZ{}
   }%
 }
 
@@ -2664,10 +2688,10 @@ Note that this has the advantage of preserving the baseline of the big drawing. 
   \extractkey/zx/wires definition/use diagram=\marg{name with \textbackslash}\marg{(nodes)(to)(fit)}\@nil%
   \makeatother
   \pgfmanualbody
-  Use |\zxSaveDiagram| to save and name a diagram (must be done before the diagram you want to insert this diagram into, also \textbf{do not forget the backslash before the name} and \textbf{replace all} |&| \textbf{in the first diagram with} |\&|. Then, |use diagram| to insert it inside a diagram (the second argument is a list of nodes given to the |fit| library):
+  Use |\zxSaveDiagram| to save and name a diagram (must be done before the diagram you want to insert this diagram into, also \textbf{do not forget the backslash before the name} (note that before 2022/09/02, you needed to use |\&| instead of |&|, but this has been fixed after 2022/02/09. In case you really care about backward compatibility, either download the sty file in your folder, or add |ampersand replacement=\&| in the options of the |\zxSaveDiagram| function and use |\&| as before). Then, |use diagram| to insert it inside a diagram (the second argument is a list of nodes given to the |fit| library):
 \begin{codeexample}[width=0pt]
-%%             v---- note the backslash      note the \&   ---v
-\zxSaveDiagram{\myZXconstant}{\zxX{} \rar \ar[r,o'] \ar[r,o.] \& \zxZ{}}
+%%             v---- note the backslash
+\zxSaveDiagram{\myZXconstant}{\zxX{} \rar \ar[r,o'] \ar[r,o.] & \zxZ{}}
 $x = \begin{ZX}[use diagram={\myZXconstant}{(start)(end)}, math baseline=myb]
                      &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]\\
   \zxN[a=myb]{} \rar & \zxFracZ{\pi}{2} \rar      & \zxFracX{\pi}{2} \rar & \zxFracZ{\pi}{2} \rar & \zxN{}
@@ -2677,7 +2701,7 @@ Note that if you need more space to insert the drawing, you can use |\zxN+[a=sta
 \end{pgfmanualentry}
 
 Sometimes, you may also find useful to stack diagram (for instance because the matrix of the first diagram is not related to the matrix of the second diagram), or position multiple diagrams relative to each others. You can use arrays to do that, but it will not preserve the baseline. Another solution is to put the |ZX| environment inside nodes contained in |tikzpicture| (I know that tikz does not like nesting\dots{} but it works nice for what I tried. I will also try to provide an helper function to do that later). For example here we use it to add the constants below the second diagram:
-\begin{codeexample}[width=0pt]
+\begin{codeexample}[vbox]
 \begin{equation*}
   \begin{ZX}
     &[\zxwCol]       &                                      &[\zxwCol] \zxN{} \ar[dd,3 vdots] \\[\zxNCol]
@@ -2750,7 +2774,7 @@ We can also use for instance |fit|, |alias|, |execute at end picture| and layers
       fill=blue!50!white,
       opacity=.5,
       fit=(cnot1)(cnot2), %% position of the node, thanks fit library
-      "\textsc{cnot}" above %% Adds label, thanks quote library
+      "\textsc{cnot}" {above, inner sep=1mm} %% Adds label, thanks quote library. Not sure why, inner sep is set to 0 when using tikz "external" library.
     ] {};
   }
   ]
@@ -2759,36 +2783,25 @@ We can also use for instance |fit|, |alias|, |execute at end picture| and layers
 \end{ZX}
 \end{codeexample}
 }
-This can also be used to fake multi-columns nodes (I need to check later if I can facilitate this kind of operation from the library directly):
-{\catcode`\|=12 % Ensures | is not anymore \verb|...|
-\begin{codeexample}[width=3cm]
-% \usetikzlibrary{fit}
-\tikzset{
-  my box/.style={inner sep=4pt, draw, thick, fill=white,anchor=center},
-}
-\begin{ZX}[
-  execute at end picture={
-    \node[
-      my box,
-      node on layer=box, %% Ensure the node is above the wires
-      fit=(f1)(f2), %% position of the node, thanks fit library
-      label={[node on layer=box]center:$f$},
-    ] {};
-  }
-  ]
-  \zxNoneDouble+[alias=f1]{} \rar &[1mm] |[my box]| g \rar & \zxNone{}\\
-  \zxNoneDouble+[alias=f2]{} \rar &[1mm] \zxZ{} \rar       & \zxNone{}\\
-\end{ZX}
-\end{codeexample}
-}
 
-\section{Futur works}
+\section{Future works}
 
-There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. I also would like to provide externalization to boost compilation time. But |tikz-cd| is not really compatible with externalization, so it would need a bit of work (of course, you can always compile your images in a separate file, but it is cumbersome). See potential solutions here: \mylink{https://tex.stackexchange.com/questions/171931/}{here}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it), or even write a dedicated graphical tool (why not based on tikzit itself, or \mylink{https://tikzcd.yichuanshen.de/}{this tool}). I also want to find a nicer way to merge cells (for now I propose to use the |fit| library but it's not very robust against overlays) and to nest ZX diagrams (see ). And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that!
+There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it), or even write a dedicated graphical tool (why not based on tikzit itself, or \mylink{https://tikzcd.yichuanshen.de/}{this tool}). I also want to find a nicer way to merge cells (for now I propose to use the |fit| library but it's not very robust against overlays) and to nest ZX diagrams. And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that, or to submit bug reports to explain uncovered use-cases!
 
 \section{Acknowledgement}
 
 I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav\dots{}). I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
+
+\section{Changelog}
+
+\begin{itemize}
+\item 2022/02/09:
+  \begin{itemize}
+  \item Added compatibility with external tikz library
+  \item More robust handling of |&|: align and macros does not need |\&| anymore.
+  \item |\&| in |\zxSaveDiagram| is replaced with |&|. This introduces a small backward incompatibility, but hey, I said it was still subject to changes :-)
+  \end{itemize}
+\end{itemize}
 
 \printindex
 
