@@ -1,4 +1,4 @@
-\documentclass[a4paper]{ltxdoc}
+\documentclass[a4paper,doc2]{ltxdoc} % doc2 is needed to force the old version, or links get colored in a weird red way even with hidelinks. https://github.com/latex3/latex2e/issues/822
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Packages
@@ -618,7 +618,7 @@ It can also be practical to combine it with |small minus|:
 \end{codeexample}
 \end{pgfmanualentry}
 
-\subsection{Phase in label style}
+\subsubsection{Phase in label style}
 
 We also provide styles to place the phase on a label next to an empty node (not yet very well tested):
 
@@ -754,6 +754,55 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
   \end{ZX}  = \zx{\zxEmptyDiagram}$
 \end{codeexample}
 \end{stylekey}
+
+\subsubsection{Ground}
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxGround\oarg{parent style}\marg{picture style}\@@
+  \extractcommand\zxGroundCreate\oarg{parent style}\marg{picture style}\@@
+  \extractcommand\zxGroundAbove\oarg{parent style}\marg{picture style}\@@
+  \extractcommand\zxGroundBelow\oarg{parent style}\marg{picture style}\@@
+  \extractcommand\zxGroundScale\@@
+  \pgfmanualbody
+The ground symbol can be used to denote a discarding operation… but is also useful to compute the norm of a state or denote a measurement by first copying the state and discarding one copy. This way, a measurement in the computational basis can be represented as:
+\begin{codeexample}[width=0pt]
+  \begin{ZX}
+              & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+    \zxN \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\[\zxZeroRow]
+              &                              & \zxGround{}              
+  \end{ZX}
+\end{codeexample}
+You can also change the direction using the alternative names:
+\begin{codeexample}[]
+  \begin{ZX}
+    \zxGroundCreate{}\rar & \zxGround{} \\
+    \zxGroundAbove{}\dar\\
+    \zxGroundBelow{}
+  \end{ZX}
+\end{codeexample}
+Internally, the ground symbol is drawn using a |pic|, so you can customize it as any other pic:
+\begin{codeexample}[]
+  \begin{ZX}
+    \zxN{} \rar &[\zxwCol] \zxGround{scale=1.5,red,rotate=45}
+  \end{ZX}
+\end{codeexample}
+Note that you can also redefine |\def\zxGroundScale{1.8}| to change the default scale on a whole document.
+Moreover, by default the |pic| takes some space (this way it will not overlap with the next symbol), but you might prefer to make it |overlay| to preserve the symmetry with an empty wire:
+\begin{codeexample}[width=0pt]
+  Compare
+  \begin{ZX}
+    \zxN      & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+    \zxN \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                \\
+    \zxN      &                              & \zxGround{overlay}              
+  \end{ZX}
+  with
+  \begin{ZX}
+    \zxN      & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+    \zxN \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                \\
+    \zxN      &                              & \zxGround{}              
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
 
 \subsection{Wires}
 
@@ -1786,6 +1835,45 @@ it is likely that you have an element that is not handled by tikz external, like
 or wrap your element around |\begin{tikzpicture}\node{your figure};\end{tikzpicture}| (people usually don't like nested tikz pictures\dots{} but it often works nicely). In case you also care about the baseline, you may prefer to wrap it using:\\
 |\begin{tikzpicture}[baseline=(mynode.base)]\node(mynode){your figure};\end{tikzpicture}|
 
+\subsection{Decorations}\label{subsec:decoration}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxNamedBox\oarg{style}\oarg{color}\marg{nodes to fit}\oarg{label style}\marg{Text of label}\@@
+  \pgfmanualbody
+  This command is used to highlight a part of a diagram, like:
+\begin{codeexample}[width=0cm]
+  \begin{ZX}[
+    execute at end picture={
+      \zxNamedBox{(cnot1)(cnot2)}{
+        below:\textsc{cnot}
+      }
+    }
+    ]
+    \zxN{} \rar &[\zxwCol] \zxZ[alias=cnot1]{} \dar \rar &[\zxwCol] \zxN{}\\
+    \zxN{} \rar & \zxX[alias=cnot2]{} \rar      &[\zxwCol] \zxN{}\\
+  \end{ZX}
+\end{codeexample}
+
+Note that the |fit| library cannot fit a wire. So if you want to include the wires around a node, the simpler thing might be to manually increase the size of the box in the style. We provide for that an helper command |fit margins={top=1mm,bottom=2mm,right=2.2mm,left=2.2mm}| (the |inner sep| and |shift| commands of tikz are not really practical to move a single border).
+\begin{codeexample}[width=0cm]
+  \begin{ZX}[
+    execute at end picture={
+      \zxNamedBox[fit margins={right=2.2mm}]{(measX)(measZ)}{
+        below:\footnotesize Bell measurement
+      }
+      \zxNamedBox[fit margins={bottom=2pt,top=2pt,left=2.0mm}][green!80!black]{(bellA)(bellB)}{
+        left:\footnotesize Bell pair:
+      }
+    }
+    ]
+    \zxN[a=bellA]{} \rar \dar[C] & [\zxwCol] \zxX*{x\pi} \rar   & \zxZ*{z\pi} \rar & \zxN{} \\[\zxwCol]
+    \zxN[a=bellB]{} \rar         & \zxX[a=measX]{x\pi} \dar[C-] &                           \\
+    \zxN{} \rar                  & \zxZ[a=measZ]{z\pi}
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
 \section{Advanced styling}
 
 \subsection{Overlaying or creating styles}
@@ -2021,7 +2109,21 @@ You can also choose to always use a big or a small minus, either on a per-node, 
  \zxN{} \ar[ru,-N']               &  & \zxN{}
 \end{ZX}
 \end{codeexample}
-Note that you can add multiple of them by separating with commas (see |\pgfmatrixnextcell|'s documentation for more details). For instance to have a column separation of exactly |2mm|, do |&[\zxZeroCol,2mm]| (if you just do |&[2mm]| the column will be |2mm| larger).
+Note that you can add multiple of them by separating with commas (see |\pgfmatrixnextcell|'s documentation for more details). For instance to have a column separation of exactly |2mm|, do |&[\zxZeroCol,2mm]| (if you just do |&[2mm]| the column will be |2mm| larger). This can also be useful to avoid having a huge space when nodes have multiple empty outputs:
+\begin{codeexample}[]
+  Compare:
+  \begin{ZX}
+    \zxN{}      &                              & \zxN{} \\
+    \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &        \\
+                &                              & \zxN{} \\
+  \end{ZX}
+  with
+  \begin{ZX}
+    \zxN{}      &                              & \zxN{} \\[\zxZeroRow]
+    \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &        \\[\zxZeroRow]
+                &                              & \zxN{} 
+  \end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -2811,6 +2913,7 @@ We can also use for instance |fit|, |alias|, |execute at end picture| and layers
   \zxNone{} \rar & \zxX[alias=cnot2]{} \rar      & \zxNone{}\\
 \end{ZX}
 \end{codeexample}
+Because this code is quite lengthy and useful, we provide in \cref{subsec:decoration} a shorter syntax.
 }
 
 \section{Future works}
