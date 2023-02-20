@@ -92,6 +92,8 @@
 \def\zxDefaultSoftAngleO{40}
 \def\zxDefaultSoftAngleChevron{60}
 
+\def\zxGroundScale{1.8}
+
 % Styles for O,N,... (new bezier version)
 \tikzset{
   /zx/args/-andL/.cd,
@@ -1256,8 +1258,10 @@
       N.-/.default=\zxDefaultSoftAngleN,
     },
     % No line but vdots/dots in between.
-    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
+    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1\,}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
     3 vdots/.default={},
+    3 vdotsr/.style={draw=none, "\makebox[0pt][l]{\ ##1}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
+    3 vdotsr/.default={},
     3 dots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\chdots$}" {anchor=center,zxNormalFont}},
     3 dots/.default={},
     % Add a Hadmard/Z/X (no phase) in the middle of the line. Practical to add small nodes without creating
@@ -1686,6 +1690,53 @@
       minimum width=1.5mm,
       shape=rectangle},
     zxHSmall/.style={zxH},
+    %% Ground style
+    groundpic/.pic={
+      % Code for a "seagull". Do you see it?...
+      \draw[line width=\zxDefaultLineWidth]
+      (0,0) -- (1mm,0)
+      -- +(0,1mm) -- +(0,-1mm)
+      ++(.4mm,0)
+      -- +(0,.7mm) -- +(0,-.7mm)
+      ++(.4mm,0)
+      -- +(0,.35mm) -- +(0,-.35mm)
+      ;
+    },
+    ground/.style={
+      zxAllNodes,
+      shape=coordinate, % Otherwise the arrow will not point to the center
+      append after command={
+        pic[scale=\zxGroundScale,##1] {groundpic}
+      },
+    },
+    ground-/.style={
+      zxAllNodes,
+      shape=coordinate, % Otherwise the arrow will not point to the center
+      append after command={
+        pic[scale=\zxGroundScale,##1] {groundpic}
+      },
+    },
+    -ground/.style={
+      zxAllNodes,
+      shape=coordinate, % Otherwise the arrow will not point to the center
+      append after command={
+        pic[scale=\zxGroundScale,,rotate=180,##1] {groundpic}
+      },
+    },
+    ground'/.style={
+      zxAllNodes,
+      shape=coordinate, % Otherwise the arrow will not point to the center
+      append after command={
+        pic[scale=\zxGroundScale,rotate=90,##1] {groundpic}
+      },
+    },
+    ground./.style={
+      zxAllNodes,
+      shape=coordinate, % Otherwise the arrow will not point to the center
+      append after command={
+        pic[scale=\zxGroundScale,rotate=-90,##1] {groundpic}
+      },
+    },
   },
   % Default style. Can be changed by user
   /zx/default style nodes/.style={
@@ -1714,7 +1765,7 @@
   /zx/user overlay wires/.style={
   },
   /zx/defaultEnv/.style={
-    nodes in empty cells=true, %% To avoid errors about single ampersand when matrix does not start with None.
+    nodes in empty cells=true, %% To avoid errors about single ampersand when matrix does not start with None.… Arg, but now it adds some spacing when a line starts with an empty node…
     %tiny depends on the size of the font... which we want to keep consistent look
     column sep=\zxDefaultColumnSep,
     row sep=\zxDefaultRowSep,
@@ -1756,6 +1807,13 @@
     },
     % Load (thanks ".search also") our own style
     /tikz/every node/.style={%
+      % Otherwise, the empty nodes take some space… and create weird bugs. But I don't know how to add empties
+      % https://tex.stackexchange.com/questions/675958/tikz-empty-nodes-with-different-style-coordinate
+      nodes={
+        zxAllNodes,
+        inner sep=0pt,
+        outer sep=0mm,
+      },
       % For quickly adding alias, and displaying this alias in debug mode.
       a/.code={%
         \pgfkeysalso{%
@@ -2185,7 +2243,7 @@
 }
 
 
-% Usage: can be used without {}
+% Usage: can be used without {}. Wait, actually it MUST be used without {} which is disturbing… to fix
 \def\zxNL{
   \zxN{} \rar \pgfmatrixnextcell[\zxwCol]%
 }
@@ -2252,6 +2310,23 @@
   |[zxEmptyDiagram]| {}%
 }
 
+\NewExpandableDocumentCommand{\zxGround}{O{}m}{
+  |[ground={#2},#1]| {}%
+}
+
+\NewExpandableDocumentCommand{\zxGroundCreate}{O{}m}{
+  |[-ground={#2},#1]| {}%
+}
+
+\NewExpandableDocumentCommand{\zxGroundAbove}{O{}m}{
+  |[ground',#1]| {}%
+}
+
+\NewExpandableDocumentCommand{\zxGroundBelow}{O{}m}{
+  |[ground.,#1]| {}%
+}
+
+
 
 % % Example: \leftManyDots{n}
 % Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
@@ -2303,6 +2378,48 @@
   \zxSaveDiagram{\zxCteOneOverSqrtTwo}{\zxZ{} \rar \ar[r,o.] \ar[r,o'] \pgfmatrixnextcell \zxX{}}
   \zxSaveDiagram{\zxCteSqrtTwo}{\zxZ{} \rar \pgfmatrixnextcell \zxX{}}
 }
+
+%% Useful to give name to box
+%% \namedBox{(node1)(node2)}{text}
+%% \namedBox[additional style][color]{(node1)(node2)}[additional label options]{optional position:text}
+%% \begin{ZX}[
+%%   execute at end picture={
+%%     \zxNamedBox{(measZ)(measZ)}{right:Bell measure}
+%%   }
+%%   ]
+%%   \zxN{} \dar[C] \ar[rrr] & & & \zxN{} \\
+%%   \zxN{} \ar[rr] &&\zxX[a=measX]{x\pi} \dar[C-]\\
+%%   & \zxX{r\pi} \rar& \zxZ[a=measZ]{z\pi}
+%% \end{ZX}
+
+%% Helper
+%% https://tex.stackexchange.com/questions/523579/tikz-fit-inner-sep-seperate-values-for-all-4-directions
+% \tikzset{fit margins/.style={
+%     /tikz/afit/.cd,
+%     #1,
+%     /tikz/.cd,
+%     inner xsep=\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
+%     inner ysep=\pgfkeysvalueof{/tikz/afit/top}+\pgfkeysvalueof{/tikz/afit/bottom},
+%     xshift=-\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
+%     yshift=-\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top},
+%     afit/.cd,
+%     left/.initial=1pt,right/.initial=1pt,bottom/.initial=1pt,top/.initial=1pt
+%   }}
+
+\tikzset{fit margins/.style={/tikz/afit/.cd,#1,
+    /tikz/.cd,
+    inner xsep=\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
+    inner ysep=\pgfkeysvalueof{/tikz/afit/top}+\pgfkeysvalueof{/tikz/afit/bottom},
+    xshift=-\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
+    yshift=-\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top}},
+    afit/.cd,left/.initial=1pt,right/.initial=1pt,bottom/.initial=1pt,top/.initial=1pt,/tikz/.cd}
+
+\NewExpandableDocumentCommand{\zxNamedBox}{O{}O{blue}mO{}m}{
+  \node[inner sep=2pt, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
+  %\node[fit margins={}, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
+  %\node[inner sep=2pt, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Old code that tried to automatically find if zxShort or zxLong should be used...
