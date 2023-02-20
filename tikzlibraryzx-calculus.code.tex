@@ -1993,28 +1993,42 @@
 % \zx@external@mode is enabled, we wrap the figure into another figure to be compatible with tikz externalize
 % otherwise, we check if the external library is loaded, and disable it temporarily.
 \NewDocumentCommand\zx{O{}O{}O{}+m}{%
-  \ifdefined\zx@external@mode%
-    \ifthenelse{\equal{\zx@external@mode}{wrap}}{% We wrap everything around figures to be compatible with external
-      \zxExt[#1][#2][#3]{#4}%
-    }{% We don't wrap anything inside figures, so we lose external compatibility.
-      \ifthenelse{\equal{\zx@external@mode}{nowrapnoext}}{%
-        % We disable the tikz external library temporarily (tikzcd is not compatible with it)
-        \ifdefined\tikz@library@external@loaded% Library external is loaded...
-          \tikzexternaldisable%
-          \message{WARNING: you chose to disable temporarily the tikz external library.}%
-        \fi%
-      }{}
-      \zxNoExt[#1]{#4}%
-    }%
-  \else% Mode auto enabled
-    {% If the tikz library is loaded:
-      \ifdefined\tikz@library@external@loaded% Library external is loaded...
-        \zxExt[#1][#2][#3]{#4}%
-      \else%
-        \zxNoExt[#1]{#4}%      
+  {%
+    % Suffix for pictures made only with zx when using the external library
+    \ifdefined\tikz@library@external@loaded% Library external is loaded...
+      \ifdefined\zx@external@suffix%
+        \tikzappendtofigurename{\zx@external@suffix}%
       \fi%
-    }%
-  \fi%
+    \fi%
+    \ifdefined\zx@external@mode%
+      % We wrap everything around figures and enable tikz external (useful when many figures
+      % are not compatible with external):
+      \ifthenelse{\equal{\zx@external@mode}{wrapForceExt}}{%
+        {\tikzexternalenable\zxExt[#1][#2][#3]{#4}}%
+      }{
+        \ifthenelse{\equal{\zx@external@mode}{wrap}}{% We wrap everything around figures to be compatible with external
+          \zxExt[#1][#2][#3]{#4}%
+        }{% We don't wrap anything inside figures, so we lose external compatibility.
+          \ifthenelse{\equal{\zx@external@mode}{noWrapNoExt}}{%
+            % We disable the tikz external library temporarily (tikzcd is not compatible with it)
+            \ifdefined\tikz@library@external@loaded% Library external is loaded...
+              \tikzexternaldisable%
+              \message{WARNING: you chose to disable temporarily the tikz external library.}%
+            \fi%
+          }{}
+          \zxNoExt[#1]{#4}%
+        }%
+      }%
+    \else% Mode auto enabled
+      {% If the tikz library is loaded:
+        \ifdefined\tikz@library@external@loaded% Library external is loaded...
+          \zxExt[#1][#2][#3]{#4}%
+        \else%
+          \zxNoExt[#1]{#4}%      
+        \fi%
+      }%
+    \fi%
+  }%
 }
 
 %% By default, the error displayed when compiling using "external"
@@ -2109,11 +2123,27 @@
 
 %% Do not wrap the ZX figures, but disable external for these figures (semi-compatible with external)
 \NewDocumentCommand\zxExternalNoWrapNoExt{}{%
-  \def\zx@external@mode{nowrapnoext}%
+  \def\zx@external@mode{noWrapNoExt}%
+}
+
+%% Wrap the ZX figures, and enable external for these figures (useful when most other environments
+%% are not compatible with tikz external)
+\NewDocumentCommand\zxExternalWrapForceExt{}{%
+  \def\zx@external@mode{wrapForceExt}%
 }
 
 % Mode auto is enabled by default
 \zxExternalAuto
+
+\NewDocumentCommand\zxExternalSuffix{m}{
+  \ifthenelse{\equal{#1}{}}{% Nothing submitted: we erase the suffix
+    \let\zx@external@suffix\undefined%
+  }{%
+    \def\zx@external@suffix{#1}
+  }%
+}
+
+\zxExternalSuffix{zx}
 
 %%%%% Like \zx but uses \& instead of &. This WAS useful for instance in "align" environments
 %%%%% since \zx{} was given an error (even without using &, changing the catcode was enough to

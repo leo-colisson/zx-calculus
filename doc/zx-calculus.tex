@@ -3,6 +3,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Packages
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Warning: if you compile and get:
+%% ERROR: Argument of \tikz@lib@matrix@with@options has an extra }.
+%% make sure to fix catcodes around it as | is given a different meaning in ltxdoc.
 
 \usepackage{amsmath}
 \usepackage[margin=3cm]{geometry}
@@ -59,7 +62,6 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
     \zxFracX-{\pi}{4}
   \end{ZX}
 \end{codeexample}
-
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
@@ -282,7 +284,7 @@ Now you should know enough to start your first diagrams. The rest of the documen
   \end{ZX}
 } \ (of course it only helps during the construction).\\
 
-You will also see how you can customize the styles, and how you can easily extand this library to get any custom diagram:
+You will also see how you can customize the styles, and how you can easily extend this library to get any custom diagram:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 { % \usetikzlibrary{shadows}
@@ -1750,12 +1752,39 @@ Then, compile with shell-escape, for instance using |pdflatex -shell-escape your
 \alertwarning{Note however that this has not yet being extensively tested, and the \texttt{external} library has a few caveats presented below}
 \begin{itemize}
 \item If you change the order of the diagrams, or add a diagram in the middle of the document, all subsequent diagrams will be recompiled. This issue has been reported \mylink{https://github.com/pgf-tikz/pgf/issues/758}{here} and is caused by the fact that the figures are called \texttt{figure0},\dots,\texttt{figureN}. To limit this issue, you can regularly insert \texttt{\textbackslash{}tikzsetfigurename\{nameprefix\}} in your document with different names to avoid a full recompilation of the file (or using groups to change it for a single newly added equation).
-\item The \texttt{external} library uses the main file to recompile each picture, so if your file is large or loads a lot of libraries, it may \mylink{https://tex.stackexchange.com/questions/633175/tikz-externalize-is-much-slower-than-tikz-on-first-run}{take a while to compile a single diagram} (to give an example, this library takes 41 seconds to compile without the externalize library, with the externalize library it takes 14mn for the first run and 3 seconds for the next runs). For this reason, you may want to use \texttt{\textbackslash{}tikzset\{external/export=false\}} in a group to disable temporarily the external library while you are writing your diagram.
+\item The \texttt{external} library uses the main file to recompile each picture, so if your file is large or loads a lot of libraries, it may \mylink{https://tex.stackexchange.com/questions/633175/tikz-externalize-is-much-slower-than-tikz-on-first-run}{take a while to compile a single diagram} (to give an example, this library takes 41 seconds to compile without the externalize library, with the externalize library it takes 14mn for the first run and 3 seconds for the next runs). For this reason, you may want to use \texttt{\textbackslash{}tikzset\{external/export=false\}} or |\tikzexternaldisable| (the latter won't fail if your elements are not parsable by tikz external) in a group to disable temporarily the external library while you are writing your diagram. You may like the |list and make| option of tikz external that produces a Makefile that one can compile separately to build in parallel all pictures.
 \item If you compile once a diagram without any error, and recompile it after inserting an error, you will see an error while compiling. But if you recompile again, the error will disappear and the diagram that lastly succeeded to build will be inserted instead of the newly buggy diagram. This has been reported \mylink{https://github.com/pgf-tikz/pgf/issues/1137}{here}.
-\item The library |external| forces us to wrap our diagrams into a basically empty tikz-pictures to make it work. The current library will automatically wrap the diagrams when the |external| library is enabled, but you can customize how diagrams are wrapped manually: |\zxExternalAuto| (default) will wrap it automatically if |external| is enabled, |\zxExternalWrap| will always wrap it, |\zxExternalNoWrap| will never wrap it (you will get errors if you use |external|) and |\zxExternalNoWrapNoExt| will not wrap the figure, but will disable temporary the externalization for diagrams to avoid errors.
-\item Sometimes, it seems that |external| cuts some parts of the picture, I guess when parts are drawn outside of the bounding box. I've not experienced that with the |zx-library| directly, but the example below with the |double copy shadow| has such issues, where a part of the shadow is cut (I guess the shadow is drawn outside of the bounding box).
-\item I experienced issues when using \texttt{external} with subfiles and biblatex. I will need to investigate it further at some points. Also, it seems that sometimes the inner sep of some labels in |external| mode defaults to zero (see the CNOT example below), I'm not sure why. Adding explicitly the value of the label fixes this.
+\item Sometimes, |external| cuts some parts of the picture, namely when parts are drawn outside of the bounding box. I've not experienced that with zx diagrams directly (we don't go beyond the bounding box), but the example at the end of this document with the |double copy shadow| has such issues because the shadow is drawn outside of the bounding box. One should therefore disable the externalization (or increase the bounding box) in these cases.
+\item It seems that sometimes the inner sep of some labels in |external| mode defaults to zero (see the CNOT example below), I'm not sure why. Adding explicitly the value of the label fixes this.
 \end{itemize}
+
+\begin{pgfmanualentry}
+  \extractcommand\zxExternalAuto\@@
+  \extractcommand\zxExternalWrap\@@
+  \extractcommand\zxExternalNoWrap\@@
+  \extractcommand\zxExternalNoWrapNoExt\@@
+  \extractcommand\zxExternalWrapForceExt\@@
+  \pgfmanualbody
+  Also, the library |external| forces us to wrap our diagrams into a basically empty tikz-pictures to make it work. The current library will automatically wrap the diagrams when the |external| library is enabled, but you can customize how diagrams are wrapped manually: |\zxExternalAuto| (default) will wrap it automatically if |external| is enabled, |\zxExternalWrap| will always wrap it, |\zxExternalNoWrap| will never wrap it (you will get errors if you use |external|), |\zxExternalNoWrapNoExt| will not wrap the figure, but will disable temporary the externalization for diagrams to avoid errors and |\zxExternalWrapForceExt| will wrap the figures and enable tikz |external| locally only for zx-diagrams (using |\tikzexternalenable|). This last option is particularly useful when using |external| while most other environments are not compatible with externalization (like tikzcd, quantikz, blochsphere, maybe cryptocode\dots{}): the idea is to disable tikzexternalize everywhere, except for zx diagrams:
+\begin{verse}
+|\tikzexternalize|\\
+|\tikzexternaldisable|\\
+|\zxExternalWrapForceExt|
+\end{verse}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \extractcommand\zxExternalSuffix\marg{suffix}\@@
+  \pgfmanualbody
+By default, the library adds a suffix |zx| to figures corresponding to zx diagrams (it avoids to recompile diagrams when a normal figure is added in between two zx diagrams). You can change (or remove) this suffix using |\zxExternalSuffix{yoursuffix}|, where the suffix can also be empty.
+\end{pgfmanualentry}
+
+Note that if you get an error:\\
+|Argument of \tikzexternal@laTeX@collect@until@end@tikzpicture has an extra }|\\
+it is likely that you have an element that is not handled by tikz external, like a raw |tikzcd| environment, a |blochsphere| environment\dots{} Either disable temporary tikz external around it:\\
+|{\tikzexternaldisable your code not compatible with external}|\\
+or wrap your element around |\begin{tikzpicture}\node{your figure};\end{tikzpicture}| (people usually don't like nested tikz pictures\dots{} but it often works nicely). In case you also care about the baseline, you may prefer to wrap it using:\\
+|\begin{tikzpicture}[baseline=(mynode.base)]\node(mynode){your figure};\end{tikzpicture}|
 
 \section{Advanced styling}
 
