@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2021/10/27
+%%% Version: 2023/04/24
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2378,6 +2378,37 @@
       ##4}, ##5]|%
   }%
 }%
+
+%% Useful to increase or decrease the bounding box of a custom node.
+%% Parameters are like extend=5mm (that extends on all directions), and similarly for top/bottom/left/right/horizontal/vertical
+\NewExpandableDocumentCommand{\zxExtendBoundingBox}{m}{%
+  \pgfkeys{
+    /zx/.cd,
+    left/.store in=\zx@left,
+    left=0pt,
+    right/.store in=\zx@right,
+    right=0pt,
+    top/.store in=\zx@top,
+    top=0pt,
+    bottom/.store in=\zx@bottom,
+    bottom=0pt,
+    horizontal/.style={
+      left=##1,
+      right=##1,
+    },
+    vertical/.style={
+      /zx/top=##1,
+      /zx/bottom=##1,
+    },
+    extend/.style={
+      vertical=##1,
+      horizontal=##1,
+    },
+    #1,
+  }%
+  \path[use as bounding box] ([xshift=-\zx@left,yshift=\zx@top]current bounding box.north west)
+    rectangle ([xshift=\zx@right,yshift=-\zx@bottom]current bounding box.south east);%
+}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

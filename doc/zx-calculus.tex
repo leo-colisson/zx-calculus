@@ -41,7 +41,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2022/02/09}\\[3mm]
+  {Léo Colisson \quad Version 2023/04/24}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -1861,14 +1861,12 @@ We can similarly put the |name=| on the other node to point to the other node by
 \end{codeexample}
 }
 
-\paragraph{Add margin around nodes.} You might want to add empty paths to increase the ``margin'' around your picture, or |overlay| some nodes if you don't want them to be counted when computing the bounding box. For instance, below we increase the box by 1cm on each side on the x axis, and by 3mm on each side on the y axis:
+\paragraph{Add margin around nodes.} You might want to add empty paths to increase the ``margin'' around your picture, or |overlay| some nodes if you don't want them to be counted when computing the bounding box. For simplicity, we provide a command |\zxExtendBoundingBox| that extends the current bounding box. This command takes as argument a list of arguments like |left|, |right|, |top|, |right|, |horizontal|, |vertical|, |extend|, where each argument takes a distance and extends to the corresponding direction (|extend| extends in all directions). For instance, below we increase the box by 1cm horizontally and by 3mm on each side on the y axis:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
     \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=] at (0,0) {};
-    % Empty path to increase the bounding box, just to add some space around the node:
-    \path ([xshift=-1cm,yshift=3mm]current bounding box.north west)
-          rectangle ([xshift=1cm,yshift=-3mm]current bounding box.south east);
+    \zxExtendBoundingBox{horizontal=1cm, vertical=3mm}
   }
   \begin{ZX}
     A \rar & \zxMyNode{} \rar & B\\
@@ -1955,10 +1953,10 @@ To avoid that issue, we will undo the default rotation, and apply on the node of
   \end{ZX}
 \end{codeexample}
 }
-Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\zxMyNode'| (for instance, it might be more natural to denote |'| in place of |.| and |.| in place |'|, since these symbols visually represent the top/bottom place of the node). In that case, you just need to apply the style |invert top bottom| or |invert right left| in your \emph{style before user} and it will invert them automatically.
+Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\zxMyNode.| (for instance, it might be more natural to denote |'| in place of |.| and |.| in place |'|, since these symbols visually represent the top/bottom place of the node). In that case, you just need to apply the style |invert top bottom| or |invert right left| in your \emph{style before user} and it will invert them automatically.
 
 
-\paragraph{Add anchors to node.} Finally, we can automatically (and easily) add multiple anchors to our nodes (the |fake center east/…| anchor is used for instance used by shapes like |\ar[<']| to see where the node should start from): just add coordinates with the name of the desired anchor in your graph (say |anchorA| and |anchorB|), and in \emph{style \textbf{after} user} add thi list of anchor like: |zx create anchors={anchorA,anchorB}| (actually this list is expanded using the |\foreach| syntax so you can use more advanced syntax like |anchor1,anchor...,anchor10| to avoid repeating the 10 names of the anchor). For instance, we can do this way:
+\paragraph{Add anchors to node.} We can automatically (and easily) add multiple anchors to our nodes (the |fake center east/…| anchor is used for instance by shapes like |\ar[<']| to see where the node should start from): just add coordinates with the name of the desired anchor in your graph (say |anchorA| and |anchorB|), and in \emph{style \textbf{after} user} add this list of anchor like: |zx create anchors={anchorA,anchorB}| (actually this list is expanded using the |\foreach| syntax so you can use more advanced syntax like |anchor1,anchor...,anchor10| to avoid repeating the 10 names of the anchor). For instance, we can do this way:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyStar}[][
@@ -2002,16 +2000,15 @@ You can even dynamically add anchors depending on the input of the user. For ins
 Note that this library uses some anchors called |fake center {east,west,north,south}|, to indicate for some curve style where the line should start and stop (|\ar| alone does not use any anchor, and not all curves use them: |S| for instance does not use it, while |s| does: in any case, you can force it for any curve with |force left to right| and alike, see the corresponding documentation Note also that in this mode the curve is drawn by default below the shapes, but this can be changed, see the corresponding section for details). 
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
-  \zxNewNodeFromPic{MyNode}[][zx create anchors/.expanded={fake center west}]{
-    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {};
-    \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
-    \coordinate(fake center west) at (mynode.north east);
-  }
-  \begin{ZX}
-    \zxZ{} \ar[r,s] &             \\
-                    & \zxMyNode{} \\
-    
-  \end{ZX}
+\zxNewNodeFromPic{MyNode}[][zx create anchors/.expanded={fake center west}]{
+  \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {};
+  \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
+  \coordinate(fake center west) at (mynode.north east);
+}
+\begin{ZX}
+  \zxZ{} \ar[rd,s] & \\
+  A \rar           & \zxMyNode{}  
+\end{ZX}
 \end{codeexample}
 }
 
