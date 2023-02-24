@@ -134,11 +134,11 @@ The name of the style usually tries to graphically represent the shape of a node
                                    & \zxZ{\gamma}
 \end{ZX}
 \end{codeexample}
-Or |s| for wires that arrive and leave at sharp angles (the |\zxN{}| is used because it seems that the first cell of a matrix can't be empty):
+Or |s| for wires that arrive and leave at sharp angles\footnote{Note: on older versions, a |\zxN{}| might be needed on the first cell as it seems that the first cell of a matrix can't be empty… this should be fixed in latest versions.}:
 \begin{codeexample}[]
 \begin{ZX}
-  \zxN{}                           & \zxZ{\beta}\\
-  \zxZ{\alpha} \ar[ru,s] \ar[rd,s] &\\
+                                   & \zxZ{\beta} \\
+  \zxZ{\alpha} \ar[ru,s] \ar[rd,s] &             \\
                                    & \zxZ{\gamma}
 \end{ZX}
 \end{codeexample}
@@ -787,19 +787,19 @@ Internally, the ground symbol is drawn using a |pic|, so you can customize it as
   \end{ZX}
 \end{codeexample}
 Note that you can also redefine |\def\zxGroundScale{1.8}| to change the default scale on a whole document.
-Moreover, by default the |pic| takes some space (this way it will not overlap with the next symbol), but you might prefer to make it |overlay| to preserve the symmetry with an empty wire:
+Moreover, by default the |pic| takes some space (this way it will not overlap with the next symbol, or the text below/after), but you want sometimes to make it |overlay|, for instance to preserve the symmetry with an empty wire (then, you might need to add some column space |&[yourspace]| or row space |\\[yourspace]| to avoid overlap with text around it):
 \begin{codeexample}[width=0pt]
   Compare
   \begin{ZX}
-    \zxN      & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
-    \zxN \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                \\
-    \zxN      &                              & \zxGround{overlay}              
+                & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+    \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\
+                &                              & \zxGround{overlay}              
   \end{ZX}
   with
   \begin{ZX}
-    \zxN      & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
-    \zxN \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                \\
-    \zxN      &                              & \zxGround{}              
+                & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+    \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\
+                &                              & \zxGround{}              
   \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
@@ -1053,7 +1053,7 @@ When the nodes are too far appart, the default angle of |30| may produce strange
   \extractkey/zx/wires definition/no fake center\@nil%
   \makeatother
   \pgfmanualbody
-  Usually each wire should properly use these functions, so the end user should not need that too often (during a first reading, you can skip this paragraph). We added 4 anchors to nodes: |fake center north|, |fake center south|, |fake center east| and |fake center west|. These anchors are used to determine the starting point of the wires depending on the direction of the wire (I tried to use more complex methods to ensure the wires would start on the boundary, but \mylink{https://tex.stackexchange.com/questions/619274}{they all fail}). Because some nodes may not have these anchors, we can't directly set |start anchor=fake center north, on layer=edgelayer| (but the user can do that if they are using only nodes with these anchors) or the code may fail on some nodes. For that reason, we check that these anchors exist while drawing our wires (which, at the best of my knowledge, can only be done while drawing the path). The |start/end fake center *| code is responsible to configure that properly (|start real center| will use the real center), and |left to right| (and similar) just configure both the |start| and |end| point to ensure the node starts at the appropriate anchor. However this won't work for style not defined in this library: in case you are sure that these anchors exists and want to use your own wire styles, you can then set the anchors manually and use |on layer=edgelayer|, or use |force left to right| (and similar) which will automatically do that for the |start| and |end| points.
+  Usually each wire should properly use these functions, so the end user should not need that too often (during a first reading, you can skip this paragraph). We added 4 anchors to nodes: |fake center north|, |fake center south|, |fake center east| and |fake center west|. These anchors are used to determine the starting point of the wires depending on the direction of the wire. Because some nodes may not have these anchors, we can't directly set |start anchor=fake center north, on layer=edgelayer| (but the user can do that if they are using only nodes with these anchors) or the code may fail on some nodes. For that reason, we check that these anchors exist while drawing our wires (which, at the best of my knowledge, can only be done while drawing the path). The |start/end fake center *| code is responsible to configure that properly (|start real center| will use the real center), and |left to right| (and similar) just configure both the |start| and |end| point to ensure the node starts at the appropriate anchor. However this won't work for style not defined in this library: in case you are sure that these anchors exists and want to use your own wire styles, you can then set the anchors manually and use |on layer=edgelayer|, or use |force left to right| (and similar) which will automatically do that for the |start| and |end| points.
 \begin{codeexample}[]
 \begin{ZX}
   \zxX{\alpha+\beta} \ar[r,o',no fake center] & \zxZ{\alpha+\beta}\\
@@ -1785,6 +1785,255 @@ A swapped Bell pair is %
 \end{codeexample}
 \end{pgfmanualentry}
 
+
+\subsection{Custom nodes}
+
+\textbf{NB}: this functionality was added on 24/02/2023.
+
+Technically, there is nothing preventing a user to create any style to create custom nodes like:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \begin{ZX}
+    \zxN{} \rar & |[draw,fill=blue!50,draw=blue,inner sep=3mm]| \text{my custom node}
+  \end{ZX}
+\end{codeexample}
+}
+possibly using |\tikzset| and/or |\NewExpandableDocumentCommand| to avoid repetitions:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \tikzset{
+    my custom node/.style={
+      draw,fill=blue!50,draw=blue,inner sep=3mm
+    },
+  }
+  \NewExpandableDocumentCommand{\myCustomNode}{m}{|[my custom node]| \text{#1}}
+  \begin{ZX}
+    \zxN{} \rar & \myCustomNode{Hey}
+  \end{ZX}
+\end{codeexample}
+}
+However, this method has several limitations: first, it is non-trivial to define complex shapes this way (you have a single node, so you need to use more advanced tikz primitives to make it right), it is even harder to create variations of this shape without repeating yourself (like different rotations of the same shape), and it is quite hard to define anchors to start/stop arrows like |\rar[<']| at the right position\footnote{In that case, the center of the shape will be used even if it might not be desirable}… not even mentioning multiple anchors. We therefore provide below some helper functions.
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxNewNodeFromPic\marg{name new node}\oarg{style before user}\oarg{style after user}\marg{code}\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/tikz/zx create anchors=\marg{list, of, coordinates, to, turn, in, anchor}\@nil%
+  \extractkey/tikz/invert top bottom\@nil%
+  \extractkey/tikz/start subnode=\marg{name of subnode}\@nil%
+  \extractkey/tikz/stop subnode=\marg{name of subnode}\@nil%
+  \makeatother
+  \pgfmanualbody
+  |\zxNewNodeFromPic{Name}[style before][style after]{code}| is used to create a new command with name |\zxName|. |code| is the code to draw the node (that you would use in a |\pic| environment, and that will be centered on |(0,0)|):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyNode}{
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {};
+    \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
+  }
+  \begin{ZX}
+    \zxN{} \rar & \zxMyNode{} \rar & \zxMyNode{}
+  \end{ZX}
+\end{codeexample}
+}
+Note how giving an empty name |name=| to a node makes it the target of arrows. Without this, the lines would go to the coordinate |(0,0)|, and go through all the nodes:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyNode}{
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, alias=mynode] at (0,0) {};
+    \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
+  }
+  \begin{ZX}
+    \zxN{} \rar & \zxMyNode{}
+  \end{ZX}
+\end{codeexample}
+}
+We can similarly put the |name=| on the other node to point to the other node by default:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyNode}{
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, alias=mynode] at (0,0) {};
+    \node[draw,fill=red!50,draw=blue,inner sep=1mm, name=] at (mynode.north east) {};
+  }
+  \begin{ZX}
+    A \rar[end anchor=center,on layer=main] & \zxMyNode{} \rar & B & \zxMyNode{} & \zxMyNode{}
+  \end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Add margin around nodes.} You might want to add empty paths to increase the ``margin'' around your picture, or |overlay| some nodes if you don't want them to be counted when computing the bounding box. For instance, below we increase the box by 1cm on each side on the x axis, and by 3mm on each side on the y axis:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyNode}{
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=] at (0,0) {};
+    % Empty path to increase the bounding box, just to add some space around the node:
+    \path ([xshift=-1cm,yshift=3mm]current bounding box.north west)
+          rectangle ([xshift=1cm,yshift=-3mm]current bounding box.south east);
+  }
+  \begin{ZX}
+    A \rar & \zxMyNode{} \rar & B\\
+  \end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Give text as argument.} It is also possible to pass text as an argument by simply adding |\tikzpictext| where you want the text to appear, and calling then |\zxMyNode{your text}|:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyNode}{
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {\tikzpictext};
+    \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
+  }
+  \begin{ZX}
+    \zxMyNode{Hello} & \zxMyNode{do you see} & \zxMyNode{the text} & ?
+  \end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Pass arbitrary arguments.} You can actually pass virtually any argument(s) by using the optional argument of the created |\zxMyNode| (that is just an additional argument to the pic options, inserted before \emph{style after user}, but after \emph{style before user} that we can use to create additional arguments with default values using the tikz/pgf power):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+% Requires \usetikzlibrary {shapes.geometric} for the star shape
+\zxNewNodeFromPic{MyStar}[
+  nb spikes/.store in=\myNbSides, % When users type nb spikes=42, this puts 42 into \myNbSides
+  nb spikes=5, % <- Default value
+]{
+  \node[star, star points=\myNbSides, minimum size=6mm, draw, fill=red] at (0,0) {};
+}
+\begin{ZX}
+  \text{Default:} & \zxMyStar{} & \text{More !} & \zxMyStar[nb spikes=8]{} & \zxMyStar[nb spikes=12]{}
+\end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Rotations.} Note that often, we want to rotate the nodes. The automatically generated macro to add new nodes comes with multiple flavors by adding the usual symbols |-|,|'|,|'|: by default, |\myNode-| will ``rotate'' by 180 degrees the pic, |\myNode'| will rotate it by 270 degrees to fake a node put ``above'', and |\myNode'| will rotate it by 90 degrees to fake a node put below. Importantly, by default tikz rotates/scales the coordinates, but \textbf{not the nodes or text}, so you might want to specify \textbf{transform shape} on each node you want to rotate and scale according to the parent transform, or using the |every node/.style={transform shape}| option to apply it on all nodes:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyTriangle}[
+    % To also rotate/scale the node, otherwise only it's coordinate is rotated
+    every node/.style={transform shape},
+    % Just to show how to quickly scale a node by default, to quickly update the size of a whole picture:
+    scale=1.3
+  ]{
+      \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, inner sep=1mm,rounded corners, name=] {};
+  }
+  \begin{ZX}
+    \zxMyTriangle{} \rar & \zxMyTriangle-{} & \zxMyTriangle'{} \dar \\
+                         &                  & \zxMyTriangle.{}
+  \end{ZX}
+\end{codeexample}
+}
+Note however that you can customize how rotations is applied. By default, the |'-.| variants sets |\zxCurrentRotationMode| to the rotation angle (0,90,180,270), and do |rotate=\zxCurrentRotationMode|. You can however easily change that behavior, by first undoing this rotation (in the \emph{style before user}) with |rotate=-\zxCurrentRotationMode| and do any action you like depending on the value of |\zxCurrentRotationMode|. Here is a nice use-case: if you rotate a node with |transform shape|, it will also rotate the text inside:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyTriangle}[
+    every node/.style={transform shape},
+  ]{
+      \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, font=\footnotesize,inner sep=1pt,rounded corners, name=] {\tikzpictext};
+  }
+  \begin{ZX}
+    \zxMyTriangle{A} \rar   & \zxMyTriangle-{A}   & \zxMyTriangle'{A} \dar   \\
+                            &                     & \zxMyTriangle.{A}        \\
+  \end{ZX}
+\end{codeexample}
+}
+To avoid that issue, we will undo the default rotation, and apply on the node of interest a rotation with |shape border rotate| (that rotates the border but not the text inside):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyTriangle}[
+    % We undo the default rotation:
+    rotate=-\zxCurrentRotationMode,
+  ]{
+    \node[
+      regular polygon, regular polygon sides=3, draw=black,fill=blue!50, font=\footnotesize,
+      inner sep=1pt,rounded corners, name=,
+      shape border rotate=90+\zxCurrentRotationMode, % Rotates the shape but not the text
+    ] {\tikzpictext};
+  }
+  \begin{ZX}
+    \zxMyTriangle{A} \rar   & \zxMyTriangle-{A}   & \zxMyTriangle'{A} \dar   \\
+                            &                     & \zxMyTriangle.{A}        \\
+  \end{ZX}
+\end{codeexample}
+}
+Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\zxMyNode'| (for instance, it might be more natural to denote |'| in place of |.| and |.| in place |'|, since these symbols visually represent the top/bottom place of the node). In that case, you just need to apply the style |invert top bottom| or |invert right left| in your \emph{style before user} and it will invert them automatically.
+
+
+\paragraph{Add anchors to node.} Finally, we can automatically (and easily) add multiple anchors to our nodes (the |fake center east/…| anchor is used for instance used by shapes like |\ar[<']| to see where the node should start from): just add coordinates with the name of the desired anchor in your graph (say |anchorA| and |anchorB|), and in \emph{style \textbf{after} user} add thi list of anchor like: |zx create anchors={anchorA,anchorB}| (actually this list is expanded using the |\foreach| syntax so you can use more advanced syntax like |anchor1,anchor...,anchor10| to avoid repeating the 10 names of the anchor). For instance, we can do this way:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyStar}[][
+    % Note that this is the SECOND optional argument!
+    zx create anchors={anchorA,anchorB},
+  ]{
+      \node[star, minimum size=6mm, draw, alias=mystar, fill=red, name=] at (0,0) {};
+      \coordinate (anchorA) at (mystar.outer point 1);
+      \coordinate (anchorB) at (mystar.outer point 2);
+  }
+  \begin{ZX}
+    A \rar \rar[->,end anchor=anchorA,bend left] \rar[->,end anchor=anchorB,bend left]  &[5mm] \zxMyStar{}
+  \end{ZX}
+\end{codeexample}
+}
+You can even dynamically add anchors depending on the input of the user. For instance, if the user can choose the number of spikes of the star, you might want to create as many anchors as there are spikes:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\zxNewNodeFromPic{MyStar}[
+  nb spikes/.store in=\myNbSides,
+  nb spikes=5,
+  every node/.style={transform shape},
+  ][
+    % zx create anchors is parsed ultimately by \foreach so we can use lists like
+    % this to create anchors spike-1, spike-2...
+    zx create anchors/.expanded={spike-1,spike-...,spike-\myNbSides},
+  ]{%
+    \node[star, fill=red, star points=\myNbSides, minimum size=1cm, draw, alias=mystar]
+      at (0,0) {\tikzpictext};
+    % We need to place coordinates where we want to final anchors to be.
+    \foreach \i in {1,...,\myNbSides}{
+      \coordinate (spike-\i) at (mystar.outer point \i);
+    }%
+}
+\begin{ZX}
+  B \foreach \i in {1,...,8}{\expanded{\noexpand\rar[->,end anchor=spike-\i,bend left]}}  &[5cm] \zxMyStar[nb spikes=8]{?!?}
+\end{ZX}
+\end{codeexample}
+}
+
+Note that this library uses some anchors called |fake center {east,west,north,south}|, to indicate for some curve style where the line should start and stop (|\ar| alone does not use any anchor, and not all curves use them: |S| for instance does not use it, while |s| does: in any case, you can force it for any curve with |force left to right| and alike, see the corresponding documentation Note also that in this mode the curve is drawn by default below the shapes, but this can be changed, see the corresponding section for details). 
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyNode}[][zx create anchors/.expanded={fake center west}]{
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {};
+    \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
+    \coordinate(fake center west) at (mynode.north east);
+  }
+  \begin{ZX}
+    \zxZ{} \ar[r,s] &             \\
+                    & \zxMyNode{} \\
+    
+  \end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Link to a sub-node.} Sometimes, we might prefer to draw a link to a node instead of an anchor (an anchor can only be a single coordinate). To that end, just name your nodes as usual, and use |from subnode| or |to subnode| to do the link
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \zxNewNodeFromPic{MyDoubleNode}{
+      \node[fill=blue!20, name=, inner sep=3mm] at (0,0) {};
+      \node[circle,fill=red!70, inner sep=.8mm,name=redNode] at (0,1.5mm) {};
+      \node[circle,fill=orange!70, inner sep=.8mm,name=orangeNode] at (0,-1.5mm) {};
+  }
+  \begin{ZX}
+    A \rar[end subnode=redNode] \rar[end subnode=orangeNode] &[5mm] \zxMyDoubleNode{}\\
+    B \ar[ru, end subnode=orangeNode]
+  \end{ZX}
+\end{codeexample}
+}
+
+\end{pgfmanualentry}
+
+
+
 \subsection{Externalize}
 
 Since 2022/02/08, it is possible to use the tikz |external| library to save compilation time. To load it, you need to add the following tikz libraries:
@@ -1835,7 +2084,7 @@ it is likely that you have an element that is not handled by tikz external, like
 or wrap your element around |\begin{tikzpicture}\node{your figure};\end{tikzpicture}| (people usually don't like nested tikz pictures\dots{} but it often works nicely). In case you also care about the baseline, you may prefer to wrap it using:\\
 |\begin{tikzpicture}[baseline=(mynode.base)]\node(mynode){your figure};\end{tikzpicture}|
 
-\subsection{Decorations}\label{subsec:decoration}
+\subsection{How to visually group multiple nodes}\label{subsec:decoration}
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
@@ -2197,7 +2446,7 @@ By default the lines will be drawn behind the node and the starting and ending p
   \zx{\zxZ{\alpha+\beta} \ar[dr,edge above,s] \\
                          & \zxZ{\alpha+\beta}}
 \end{codeexample}
-(you can node the fact that the wire does not start at the center but at a |fake center *| anchor to provide a nicer look)
+(you can note the fact that the wire does not start at the center but at a |fake center *| anchor to provide a nicer look)
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -2922,7 +3171,7 @@ There is surely many things to improve in this library, and given how young it i
 
 \section{Acknowledgement}
 
-I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav\dots{}). I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
+I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav, Qrrbrbirlbel\dots{}). I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
 
 \section{Changelog}
 

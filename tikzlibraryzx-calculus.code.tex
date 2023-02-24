@@ -3,11 +3,14 @@
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+  
 % A tikzlibrary[libraryName].code.tex is loaded automatically by tikz when using
 % \usetikzlibrary{libraryName}. Therefore, you should just use
 % \usetikzlibrary{zx} to load this library. We also provide a package to
 % directly load this library using \usepackage{zx}.
+
+%%% Some random notes for myself:
+%%% - \tikz@pp@name{X} outputs the name prefix + X + the name suffix, where these prefix are local prefix assigned to all node names. While they are often empty, it might not be always the case.
 
 \RequirePackage{amssymb} % For short minus
 \RequirePackage{etoolbox} % \AfterEndPreamble...
@@ -18,9 +21,11 @@
 \usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections}
 % Declare layers.
 \pgfdeclarelayer{background} % Fox boxes using "fit" to group parts of the graph.
-\pgfdeclarelayer{edgelayer} % For edges that are explicitely defined "wc"
-\pgfdeclarelayer{nodelayer} % For nodes... in theory, this fails for now. https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd
+\pgfdeclarelayer{belownodelayer} % For nodes that always want to stay below any arrow...
+\pgfdeclarelayer{edgelayer} % For nodes that always want to stay below any arrow...
+\pgfdeclarelayer{nodelayer} % For nodes... in theory, this fails for now.
 \pgfdeclarelayer{main}
+\pgfdeclarelayer{abovenodelayer} % For nodes that want to stay above others.
 \pgfdeclarelayer{box} % For boxes using "fit" to fake multi-column boxes
 \pgfdeclarelayer{labellayer} % For labels... in theory, this fails for now. https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd
 \pgfdeclarelayer{foreground} % For the user, if they want to put anything really above everything.
@@ -170,9 +175,8 @@
 % center does not exists), but then the wire will be hidden behind the node (it is a problem
 % mostly if you use H nodes a lot, otherwise we recommend this solution):
 \def\zxWireInsideIfNoIntersectionName{}
-% If you prefer to start the wire on the surface of the node, do that instead...
-% but be aware that the shape of the wire will be changed a lot, since we can't use anymore the
-% fake anchors... You could also define a style that does that.
+% If you prefer to start the wire on the surface of the node, do that instead... but it will take longer to compute. See also our ui style
+% as the default styles are not meant to work in that setting.
 % \let\zxWireInsideIfNoIntersectionName\undefined
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -873,21 +877,30 @@
       % ##2: fake center north...
       % ##3 name of result. e.g. \tikztostart
       \ifPgfpointOrNode{##1}{%
-        %%% Sometimes, ##1 is not 1pt,2pt but "tikz-1-2.north east". Since later we use
+        %%% Sometimes, ##1 is not (1pt,2pt) but "tikz-1-2.north east". Since later we use
         %%% a parsing mechanism which assumes that we have a coordinate... this is a problem.
         \edef##3{##1}%
         % This is a great explaination of how parsing is done in tikz:
         % https://tex.stackexchange.com/a/516897/116348
       }{% This is a node, not a point:
-        \ifAnchorExists{##1}{##2}{%
-          \pgfpointanchor{##1}{##2}%
-        }{%
-          \pgfpointanchor{##1}{center}%
-        }%
-        %%% Whoo, pgfpoint only redefine pgf@x/pgf@y, but in no way it stores it!!!
-        %%% So can't do \pgfpoint{\pgf@x}{\pgf@y}...
-        %%% I needed to create my own system... see \zx@parse@coordx.
-        \edef##3{\the\pgf@x,\the\pgf@y}%
+        % "zx add anchor to node" might define per-node anchors, and they are stored in
+        % a macro called like \pgf@sh@ma@tikz@f@3-2-2, so we need to read this first:
+        % TODO: maybe use pp@name everywhere? (see comment beginning of this file)
+        \begingroup% This group avoids pollution done by executing pgf@sh@ma@NODENAME
+          \pgfutil@ifundefined{pgf@sh@ma@\tikz@pp@name{##1}}{}{%
+            % We the per-node macro exists, we run it.
+            \csname pgf@sh@ma@\tikz@pp@name{##1}\endcsname%
+          }%
+          \ifAnchorExists{##1}{##2}{%
+            \pgfpointanchor{##1}{##2}%
+          }{%
+            \pgfpointanchor{##1}{center}%
+          }%
+          %%% Whoo, pgfpoint only redefine pgf@x/pgf@y, but in no way it stores it!!!
+          %%% So can't do \pgfpoint{\pgf@x}{\pgf@y}...
+          %%% I needed to create my own system... see \zx@parse@coordx.
+          \xdef##3{\the\pgf@x,\the\pgf@y}%
+        \endgroup%
       }%
     },
     % Directions: configure start/end points to the intersection between
@@ -971,6 +984,9 @@
       start anchor=,
       end anchor=,
     },
+    %% To go to a subnode defined in a pic with from subnode=mysubnode.
+    start subnode/.code={\edef\tikzcd@ar@start{\tikzcd@ar@start##1}},
+    end subnode/.code={\edef\tikzcd@ar@target{\tikzcd@ar@target##1}},
     %% Forced versions are versions which do not nicely fallback to center if shape does not
     %% have "fake center XXX". This is used mostly for wires based on in/out (our function b.
     %% Not sure how to have a code which always fallback to center if shape does not.
@@ -1692,7 +1708,7 @@
     zxHSmall/.style={zxH},
     %% Ground style
     groundpic/.pic={
-      % Code for a "seagull". Do you see it?...
+      % Code for the ground
       \draw[line width=\zxDefaultLineWidth]
       (0,0) -- (1mm,0)
       -- +(0,1mm) -- +(0,-1mm)
@@ -1765,7 +1781,6 @@
   /zx/user overlay wires/.style={
   },
   /zx/defaultEnv/.style={
-    nodes in empty cells=true, %% To avoid errors about single ampersand when matrix does not start with None.… Arg, but now it adds some spacing when a line starts with an empty node…
     %tiny depends on the size of the font... which we want to keep consistent look
     column sep=\zxDefaultColumnSep,
     row sep=\zxDefaultRowSep,
@@ -1842,6 +1857,26 @@
       /zx/default style wires,
       /zx/user overlay wires,
     },
+    %% We add an empty coordinate in every node. This has multiple advantages: first this avoids errors about
+    %% single ampersand when the matrix does not start with None, and it also avoids using \zxN{} everywhere.
+    %% However, we can't just use 'nodes in empty cells=true' or it will add nodes that might take some space:
+    /tikz/execute at empty cell={
+      \coordinate[
+        % yshift=axis_height, % We already do that elsewhere
+        name=\tikzmatrixname
+      -\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];
+    },
+    % When an arrow is present, it will not detect it as an empty cell… The below code tries to avoid this issue, but actually has another issue as it removes all nodes without text in it, like |[circle, draw, inner sep=3pt]|, so
+    % we disable it for now.
+    %% https://tex.stackexchange.com/questions/675958/tikz-empty-nodes-with-different-style-coordinate/675971#675971
+    % /tikz/every node/.append code={%
+    %   \tikz@addoption{%
+    %     \ifdim\wd\pgfnodeparttextbox=0pt
+    %       \pgfutil@ifx\tikz@shape\tikz@coordinate@text{}{%
+    %         \def\tikz@shape{coordinate}%
+    %         \pgftransformyshift{axis_height}}%
+    %     \fi}%
+    % },
     %%% To be used only in \zx{...} environment.
     %%% Exemple:
     phase in content/.style={
@@ -1929,7 +1964,7 @@
 
 % shape anchor name if exists if not. Works, while doing \pgfutil@ifundefined{pgf@anchor@\shapenode{}@#2} fails.
 % I guess it has to do with the way macro are expanded...
-\def\ifAnchorExistsFromShape#1#2#3#4{
+\def\ifAnchorExistsFromShape#1#2#3#4{%
   \pgfutil@ifundefined{pgf@anchor@#1@#2}{%
     #4%
   }{%
@@ -1941,8 +1976,8 @@
 \def\ifAnchorExists#1#2#3#4{%
   %%% First we extract the shape of the node:
   \edef\pgf@node@name{#1}%
-  \edef\shapenode{\csname pgf@sh@ns@\pgf@node@name\endcsname}%
-  \ifAnchorExistsFromShape{\shapenode}{#2}{#3}{#4}
+  \edef\shapenode{\csname pgf@sh@ns@\pgf@node@name\endcsname}% e.g. rectangle
+  \ifAnchorExistsFromShape{\shapenode}{#2}{#3}{#4}%
 }
 
 %%% Create different kinds of dots...
@@ -2015,7 +2050,7 @@
     \let\tikzcd@\tikzcd@@originalCopyZx%
     \let\endtikzcd\endtikzcd@originalCopyZx%
   \fi%
-  \pgfsetlayers{background,edgelayer,nodelayer,main,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
+  \pgfsetlayers{background,belownodelayer,edgelayer,nodelayer,main,abovenodelayer,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
   \begin{tikzcd}[%
     /zx/defaultEnv,%
     #1]%
@@ -2202,6 +2237,154 @@
 }
 
 \zxExternalSuffix{zx}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Custom nodes from Pic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+%% It is quite complicated to define custom node shapes, especially when using anchors. Here, we define a
+%% Way to easily create a custom node from a picture.
+
+%% This code allows to add a new anchor to a given node:
+%% https://tex.stackexchange.com/a/676090/116348
+\tikzset{
+  zx add anchor to node/.code n args={3}{%
+    \edef\tikz@temp##1{% \tikz@pp@name/\tikzlastnode needs to be expanded
+      %% This codes does the following thing:
+      %% First, it modifies the "\pgf@anchor@rectangle@fake center west" macro (rectangle might be another shape,
+      %% same for anchor). But since this macro might be different between nodes sharing the same shape,
+      %% it adds it to a per-node macro called like \pgf@sh@ma@tikz@f@3-2-2 (tikz@f@3-2-2 is the name of the
+      %% node).
+      \noexpand\pgfutil@g@addto@macro\expandafter\noexpand\csname pgf@sh@ma@\tikz@pp@name{#1}\endcsname{%
+        \def\expandafter\noexpand\csname pgf@anchor@\csname pgf@sh@ns@\tikz@pp@name{#1}\endcsname @#2\endcsname{##1}%
+      }%
+    }%
+    \tikz@temp{#3}%
+  },
+  zx add anchor to pic default/.style={/tikz/zx add anchor to pic={#1}{#1}},
+  zx add anchor to pic/.code 2 args={%
+    % If base coordinate isn't created yet, do so at (0,0)
+    % in the current coordinate system!
+    \pgfutil@ifundefined{pgf@sh@ns@\tikz@pp@name{}}{%
+      \pgfcoordinate{\tikz@pp@name{}}{\pgfpointorigin}%
+    }{}%
+    \begingroup
+      % What is the distance between coordinate and base?
+      % We have to do this in the coordinate system of the base coordinate.
+      \pgfsettransform{\csname pgf@sh@nt@\tikz@pp@name{}\endcsname}%
+      \pgf@process{\pgfpointdiff{\pgfpointanchor{\tikz@pp@name{}}{center}}
+                                {\pgfpointanchor{\tikz@pp@name{#2}}{center}}}%
+      % This distance is the new anchors coordinate
+      % in the base's coordinate system.
+      % Adding an anchor to a node must be global
+      % which is why we can do this inside the group.
+      \pgfkeysalso{
+        /tikz/zx add anchor to node/.expanded=%
+          {}{#1}{\noexpand\pgfqpoint{\the\pgf@x}{\the\pgf@y}}
+      }%
+    \endgroup
+  }%
+}
+
+%%% Create automatically a new pic-based node
+%%% \zxNewNodeFromPic{nameOfNode}[default style before user][default style after user]{content of the pic}
+%%% - In 'default style before user', we can put any style that is given to the pic (e.g. colors, rotate, scale…)
+%%% or even custom properties that will be read by the pic (e.g. to allow the define the number of spikes of a
+%%% star). This style can notably have "zx create anchors={a, list, of, coordinates, to, turn, into, anchors}"
+%%% that will automatically turn any coordinate in the pic in the list of coordinates into an anchor of the
+%%% parent node.
+%%% - In 'default style after user', the style is run after the code provided by the user. In particular, you can
+%%% use "invert top bottom"  to invert the "top" version with the "bottom" version (rotation is minus 90 instead
+%%% of 90 for instance).
+\NewDocumentCommand{\zxNewNodeFromPic}{mO{}O{}O{}m}{%
+  \tikzset{%
+    #1Pic/.pic={%
+      % Code for the ground
+      #5%
+      \tikzset{%
+        % We store the list of anchors to create into \zxListOfNewAnchors. If it does not exist we create it:
+        /utils/exec={\ifdefined\zxListOfNewAnchors\else\def\zxListOfNewAnchors{}\fi},
+        % We add the coordinates in \zxListOfNewAnchors as anchors for the node
+        zx add anchor to pic default/.list/.expanded={\zxListOfNewAnchors}}%
+    },%
+    #1/.style={%
+      %shape=coordinate, %yshift=axis_height, %% already applied
+      #4,
+      append after command={%
+        pic[
+        % We configure the name and position of the pic
+        at=(\tikzlastnode), name=\tikzlastnode,
+        % We create a command to add anchors via zx create anchors={my, list, of, anchors}. This way, it also allows dynamic anchors using
+        % the default style after user.
+        zx create anchors/.store in={\zxListOfNewAnchors},
+        zx create anchors={},
+        % We load the other default arguments and per-instance arguments:
+        #2, ##1, #3
+        ]{#1Pic}%
+      },
+    }%
+  }%
+  %% \ExpandArgs{c} is an equivalent of expandafter + csname, to expand the first argument before evaluating the function:
+  %% https://tex.stackexchange.com/a/676103/116348
+  %% ##1: pic additional style
+  %% ##2: node additional style
+  %% ##3: text to consume with \tikzpictext
+  % \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t'O{}O{}m}{%
+  %   |[#1={pic text={##6}, ##4}, ##5]|%
+  % }%
+  \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t'O{}O{}m}{%
+    |[#1={
+      pic text={##6},
+      %% The mode stored in \zxRotationMode contains the current rotation mode (i.e. the angle between 0 and 359, typically 0,90,180,270),
+      %% to allow further tweaks (for instance, a pic might be mirrored instead of rotated by 180° when using the parameter -, and this
+      %% can be configured by reading this variable).
+      /utils/exec={%
+        \def\zxCurrentRotationMode{0}%
+        \IfBooleanT{##1}{\def\zxCurrentRotationMode{90}}%
+        \IfBooleanT{##2}{\def\zxCurrentRotationMode{180}}%
+        \IfBooleanT{##3}{\def\zxCurrentRotationMode{270}}%
+      },
+      rotate=\zxCurrentRotationMode,%
+      %%% Sometimes it can be quite handy to invert the top and the bottom version if it does not match with the
+      %%% intuitive position it should have.
+      %%% Make sure to call this in the second optional parameter (after user style)
+      invert top bottom/.style={
+        rotate=-\zxCurrentRotationMode,
+        /utils/exec={%
+          \ifnum\zxCurrentRotationMode=90\relax
+            \def\zxCurrentRotationMode{270}%
+          \else
+            \ifnum\zxCurrentRotationMode=270\relax
+              \def\zxCurrentRotationMode{90}%
+            \fi
+          \fi
+        },
+        rotate=\zxCurrentRotationMode,%        
+      },%
+      invert right left/.style={
+        rotate=-\zxCurrentRotationMode,
+        /utils/exec={%
+          \ifnum\zxCurrentRotationMode=0\relax
+            \def\zxCurrentRotationMode{180}%
+          \else
+            \ifnum\zxCurrentRotationMode=180\relax
+              \def\zxCurrentRotationMode{0}%
+            \fi
+          \fi
+        },
+        rotate=\zxCurrentRotationMode,%        
+      },%
+      ##4}, ##5]|%
+  }%
+}%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% 
+%%% Now using a special command for fractions (easier to code, and more customizable)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%% Like \zx but uses \& instead of &. This WAS useful for instance in "align" environments
 %%%%% since \zx{} was given an error (even without using &, changing the catcode was enough to
