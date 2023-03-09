@@ -25,6 +25,29 @@
 \newcommand{\mylink}[2]{\href{#1}{#2}\footnote{\url{#1}}}
 \usepackage{verbatim}
 \usepackage{cleveref}
+\usepackage{mathtools}
+
+%%%% Bibliography
+% I want to have separate references for appendix and main body
+% https://tex.stackexchange.com/questions/98660/
+\usepackage[style=trad-alpha,
+  sortcites=true,
+  doi=false,
+  url=false,
+  giveninits=true, % Bob Foo --> B. Foo
+  isbn=false,
+  url=false,
+  eprint=false,
+  sortcites=false, % \cite{B,A,C}: [A,B,C] --> [B,A,C]
+]{biblatex}
+\renewcommand{\multicitedelim}{, } % [ABC96; DEF12] -> [ABC96, DEF12]
+% [unknown_ref] => [??]
+% https://tex.stackexchange.com/a/352573
+\makeatletter
+\protected\def\abx@missing#1{\textbf{??}}
+\makeatother
+\renewcommand*{\bibfont}{\normalfont\small} % BibLatex font seems bigger than Bibtex?
+\addbibresource{biblio.bib}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Documentation
@@ -49,7 +72,7 @@
 
 \section{Introduction}
 
-This library (based on the great \tikzname{} and \tikzname-cd packages) allows you to typeset ZX-calculus directly in \LaTeX{}. It comes with a default---but highly customizable---style:
+This library (based on the great \tikzname{} and \tikzname-cd packages) allows you to typeset ZX-calculus and diagrams for diagrammatic reasoning~\cite{CK17_PicturingQuantumProcesses,van20_ZXcalculusWorkingQuantum} directly in \LaTeX{}. It comes with a default---but highly customizable---style:
 \begin{codeexample}[]
   \begin{ZX}
     \zxZ{\alpha} \arrow[r] & \zxFracX-{\pi}{4}
@@ -62,6 +85,30 @@ Even if this has not yet been tested a lot, you can also use a ``phase in label'
     \zxFracX-{\pi}{4}
   \end{ZX}
 \end{codeexample}
+
+Since 24/02/2023, we also provide ways to easily create new, highly customizable shapes, with text, anchors, sub-nodes, rotations, and more:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+% Define a reusable node
+\zxNewNodeFromPic{MyDivider}[][zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast},
+  every node/.style={transform shape}
+  ]{
+  \node[regular polygon, regular polygon sides=3,shape border rotate=90,%shape border rotate=90,
+        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+  \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
+  \coordinate(\zxVirtualCenterWest) at (-1mm,0);
+}
+% Use the node
+\begin{ZX}
+                            & [2mm]                           & [3mm] \zxN{} \\[\zxZeroRow]
+ \zxZ[B]{} \rar[Bn'=n+m, wc] & \zxMyDivider{}
+                              \rar[<',ru,Bn'Args={n}{pos=.7}]
+                              \rar[Bn.Args={m}{pos=.7},<.,rd] &\\[\zxZeroRow]
+                            &                                 & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
@@ -192,7 +239,15 @@ The reason for this is that it is hard to always get exactly the good spacing by
 \end{codeexample}
 
 
-When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that (|a=blabla| gives the alias name |blabla| to the node, and configure tools useful for debugging):
+When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that (since march 2023):
+\begin{codeexample}[]
+  $\zx[math baseline row=2]{
+    \zxX{}\\
+    \zxZ[a=myZ]{}
+  }
+  = \zx{\zxX{} & \zxZ{}}$
+\end{codeexample}
+You can also specify (this works on older versions) a specific node like that (|a=blabla| gives the alias name |blabla| to the node, and configure tools useful for debugging):
 \begin{codeexample}[]
   $\zx[math baseline=myZ]{
     \zxX{}\\
@@ -347,7 +402,7 @@ even in macros: {\setlength{\fboxsep}{0pt} \fbox{\zx{\zxZ{} \rar & \zxX{}}}}
 \end{stylekey}
 
 \subsection{Nodes}
-
+\subsubsection{Spiders}
 The following commands are useful to create different kinds of nodes. Always add empty arguments like |\example{}| if none are already present, otherwise if you type |\example| we don't guarantee backward compatibility.
 
 \begin{command}{\zxEmptyDiagram{}}
@@ -756,12 +811,10 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 \end{stylekey}
 
 \subsubsection{Ground}
+
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxGround\oarg{parent style}\marg{picture style}\@@
-  \extractcommand\zxGroundCreate\oarg{parent style}\marg{picture style}\@@
-  \extractcommand\zxGroundAbove\oarg{parent style}\marg{picture style}\@@
-  \extractcommand\zxGroundBelow\oarg{parent style}\marg{picture style}\@@
+  \extractcommand\zxGround\opt{.}\opt{-}\opt{'}\oarg{picture style}\marg{}\@@
   \extractcommand\zxGroundScale\@@
   \pgfmanualbody
 The ground symbol can be used to denote a discarding operation… but is also useful to compute the norm of a state or denote a measurement by first copying the state and discarding one copy. This way, a measurement in the computational basis can be represented as:
@@ -775,15 +828,15 @@ The ground symbol can be used to denote a discarding operation… but is also us
 You can also change the direction using the alternative names:
 \begin{codeexample}[]
   \begin{ZX}
-    \zxGroundCreate{}\rar & \zxGround{} \\
-    \zxGroundAbove{}\dar\\
-    \zxGroundBelow{}
+    \zxGround-{}\rar & \zxGround{} \\
+    \zxGround'{}\dar\\
+    \zxGround.{}
   \end{ZX}
 \end{codeexample}
 Internally, the ground symbol is drawn using a |pic|, so you can customize it as any other pic:
 \begin{codeexample}[]
   \begin{ZX}
-    \zxN{} \rar &[\zxwCol] \zxGround{scale=1.5,red,rotate=45}
+    \zxN{} \rar &[\zxwCol] \zxGround[scale=1.5,red,rotate=45]{}
   \end{ZX}
 \end{codeexample}
 Note that you can also redefine |\def\zxGroundScale{1.8}| to change the default scale on a whole document.
@@ -793,7 +846,7 @@ Moreover, by default the |pic| takes some space (this way it will not overlap wi
   \begin{ZX}
                 & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
     \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\
-                &                              & \zxGround{overlay}              
+                &                              & \zxGround[overlay]{}           
   \end{ZX}
   with
   \begin{ZX}
@@ -802,6 +855,182 @@ Moreover, by default the |pic| takes some space (this way it will not overlap wi
                 &                              & \zxGround{}              
   \end{ZX}
 \end{codeexample}
+\end{pgfmanualentry}
+
+\subsubsection{Scalable ZX}
+
+We provide some notations coming from the scalable ZX calculus~\cite{CHP19_SZXcalculusScalableGraphical}. 
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxDivider\opt{.}\opt{-}\opt{'}\marg{}\@@
+  \pgfmanualbody
+  Dividers can be used to split (or gather) groups of wires. The |.|,|-|,|'| modifiers are used, respectively, to denote the bottom/right/top versions:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+We provide some pre-defined symbols in both horizontal: %
+\begin{ZX}
+  \zxZ[B]{} \rar[Bn'=n+m, wc] &[\zxwCol] \zxDivider{} 
+                                  \rar[o',Bn'Args={n}{}]
+                                  \rar[o.,Bn.Args={m}{}] &[\zxWCol] \zxDivider-{} \rar[B,wc] & \zxZ[B]{}
+\end{ZX}
+ and vertical mode:
+\begin{ZX}
+  \zxZ[B]{} \dar[Bn=n+m, wc] \\[\zxwRow]
+  \zxDivider'{} \dar[-o,BnArgs={n}{}] \dar[o-,Bn-Args={m}{}] \\[\zxWRow]
+  \zxDivider.{} \dar[B,wc]\\
+  \zxZ[B]{}
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxMatrix\opt{.}\opt{-}\opt{'}\opt{/}\opt{*}\opt{\_\{text in pmatrix\}}\oarg{pic style}\oarg{node style}\marg{matrix name}\@@
+  \pgfmanualbody
+  Matrices are represented using arrows: |matrix name| is the content of the label of the node:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{} \rar & \zxMatrix{A} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+The |*| option is used to reverse the direction of the arrow, typically for the transpose (note how we can give an alias (with |a| in |node style|) to combine with |math baseline| to properly vertically align the node):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+We define %
+$\begin{ZX}[math baseline=myf]
+  \zxN{} \rar[B] & \zxMatrix*[][a=myf]{A} \rar[B] & \zxN{}
+\end{ZX} \coloneqq
+\begin{ZX}[math baseline=myA]
+            & [\zxWCol] \zxN{} \ar[B,dr,s]                 & [\zxWCol] \zxN{} \\[\zxZeroCol+.3mm]
+\ar[B,dr,s] & \zxMatrix[][a=myA]{A} \ar[B,u,C] \ar[B,d,C-] &                  \\
+            &                                              & \zxN{}           \\
+\end{ZX}$.
+\end{codeexample}
+}
+The position of the label can be changed with |-| is in horizontal wires, and in vertical wires we use |'| and |.| (putting the label respectively on right and left).
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxN{} \rar & \zxMatrix{} \rar & \zxMatrix{A} \rar & \zxMatrix*{A} \rar
+  & \zxMatrix-{A} \rar & \zxMatrix-*{A} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+Similarly in horizontal wires:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{} \dar \\
+  \zxMatrix'{} \dar \\
+  \zxMatrix.{A} \dar \\
+  \zxMatrix'*{A} \dar \\
+  \zxMatrix'{A} \dar \\
+  \zxMatrix.*{A} \dar \\
+  \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+If you want to change the position of the label to a more advanced position (e.g.\ with an angle), the simpler solution is to add |yourAngle:| in front of the label (see tikz labels for more details):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}
+  \zxZ{} \rar & \zxMatrix{45:A} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+Note that it might be useful to put the label as an overlay using |/| (i.e. it is not counted in the bounding box of the cell, and might overlap with content around) in order to reduce space if we know there is nothing on the nearby cell: (we can also manually change the row/colum sep with negative values… but it might be better to avoid this kind of manual tweaks):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+Compare %
+\begin{ZX}
+  \zxZ{} \rar \dar & \zxMatrix-{A} \rar & \zxN{} \\
+  \zxX{}
+\end{ZX} with %
+\begin{ZX}
+  \zxZ{} \rar \dar & \zxMatrix-/{A} \rar & \zxN{} \\
+  \zxX{}
+\end{ZX}
+\end{codeexample}
+}
+It is also useful to put a |pmatrix| inside. While it is possible to write the full |pmatrix|, we can use the |_{}| embelishment to automatically wrap the text with |\begin{bmatrix} \end{bmatrix}|:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+This %
+\begin{ZX}[mbr]
+  \zxN{} \rar & \zxMatrix_{A & B \\ C & D}{} \rar & \zxN{}
+\end{ZX} %
+is a shortcut for %
+\begin{ZX}[math baseline row=1]
+  \zxN{} \rar & \zxMatrix{\begin{bmatrix} A & B \\ C & D \end{bmatrix}} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+Note that it seems that some environment does not play well with the way we handle |&| (our changes were needed to make them compatible with |align|, and to provide an easy interface with the |external| library… but it seems to not fit well with all environments, e.g.\ arrays). In that case you should use |\begin{ZXNoExt}| together with |[ampersand replacement=\&]| (of course, use |\&| instead of |&| in the rest of the matrix):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+$\begin{ZXNoExt}[ampersand replacement=\&]
+  \zxN{} \rar \& \zxMatrix{
+    \begin{bmatrix}
+      \begin{array}{c|c}
+        A & B \\
+        \hline
+        C & D
+      \end{array}
+    \end{bmatrix}} \rar \& \zxN{}
+\end{ZXNoExt}$
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/picCustomStyleMatrixMainNode\@nil%
+  \extractkey/zx/picCustomStyleMatrixLabel\@nil%
+  \extractkey/zx/picCustomStyleBeforeUserMatrix\@nil%
+  \extractkey/zx/picCustomStyleAterUserMatrix\@nil%
+  \extractkey/zx/picCustomStyleLastPicMatrix\@nil%
+  \makeatother
+  \pgfmanualbody
+If you would like to override some settings, note that you can use all customization options provided by our custom node system (\cref{subsec:customNodes}). In particular, you can use |pic style| to change the options of the pic used to draw the node, including scale, rotation…, |node style| to style the parent node of the pic (less used, mostly to give alias names to the shape). We additionally provide special styles to configure the nodes more precisely: |/zx/picCustomStyleMatrixMainNode| and |/zx/picCustomStyleMatrixLabel| to configure more specifically the :
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxN{} \rar & \zxMatrix{A} \rar &
+  \zxMatrix[
+    scale=2,
+    /zx/picCustomStyleMatrixMainNode/.style={fill=blue!50},
+    /zx/picCustomStyleMatrixLabel/.style={red}]{A}
+  \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+You can also set globally the styles like |/zx/picCustomStyleBeforeUserMatrix| (automatically provided, see details in \cref{subsec:customNodes}) to automatically add a style to your picture :
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\tikzset{
+  /zx/picCustomStyleBeforeUserMatrix/.style={
+    scale=2,
+    /zx/picCustomStyleMatrixMainNode/.style={fill=blue!50},
+    /zx/picCustomStyleMatrixLabel/.style={red,circle,draw,inner sep=1pt},
+    % \zxCustomPicAdditionalPic can be any tikz code to run after the creation of the pic:
+    /utils/exec={\def\zxCustomPicAdditionalPic{%
+        % the main node has empty name, so .center is the center of the main node
+        \node[draw,circle,inner sep=2pt,fill=pink] at (.center) {};%
+      }%
+    },
+  },
+}
+\begin{ZX}
+  \zxZ{} \rar & \zxMatrix{A} \rar & \zxMatrix*{B} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
 \end{pgfmanualentry}
 
 \subsection{Wires}
@@ -1785,8 +2014,48 @@ A swapped Bell pair is %
 \end{codeexample}
 \end{pgfmanualentry}
 
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/bold\@nil%
+  \extractkey/zx/wires definition/B\@nil%
+  \extractkey/zx/wires definition/non bold\@nil%
+  \extractkey/zx/wires definition/NB\@nil%
+  \extractkey/zx/wires definition/boldn\@nil%
+  \extractkey/zx/wires definition/boldn-\@nil%
+  \extractkey/zx/wires definition/boldn'\@nil%
+  \extractkey/zx/wires definition/boldn.\@nil%
+  \extractkey/zx/wires definition/Bn=message (default n)\@nil%
+  \extractkey/zx/wires definition/Bn-=message (default n)\@nil%
+  \extractkey/zx/wires definition/Bn'=message (default n)\@nil%
+  \extractkey/zx/wires definition/Bn.=message (default n)\@nil%
+  \extractkey/zx/wires definition/BnArgs=\{message\}\{style\} (default \{n\}\{\})\@nil%
+  \extractkey/zx/wires definition/Bn-Args=\{message\}\{style\} (default \{n\}\{\})\@nil%
+  \extractkey/zx/wires definition/Bn'Args=\{message\}\{style\} (default \{n\}\{\})\@nil%
+  \extractkey/zx/wires definition/Bn.Args=\{message\}\{style\} (default \{n\}\{\})\@nil%
+  \makeatother
+  \pgfmanualbody
+  Creates a bold (or non-bold) wire (|B| and |NB| being short aliases). The versions with a |n| at the end adds a $n$ on the right/left/above/below (for the respective symbols empty, |-|, |'|, |.|), that you can overwrite by providing an option:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxX[bold]{} \rar[Bn,o'] \rar[Bn.=m,o.] &[\zxwCol] \zxZ{} \rar &[\zxwCol] \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+Finally, the last variations with args like |BnArgs| allows you to provide an additional label style, notably arguments like |pos=.7| to change the position of the line in the path (when the lines are drawn from the middle of the nodes, which is the case for many styles by default for efficiency reasons, the middle of the path may appear poorly centered: using |pos| is one method to center it back, see also \cref{subsec:wiresInsideOutside}).
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxX[bold]{} \rar[<.,Bn.Args={n}{pos=.6},dr] &[\zxwCol] \\
+                                               & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
 
-\subsection{Custom nodes}
+
+\subsection{Custom nodes}\label{subsec:customNodes}
 
 \textbf{NB}: this functionality was added on 24/02/2023.
 
@@ -1848,6 +2117,25 @@ Note how giving an empty name |name=| to a node makes it the target of arrows. W
   \end{ZX}
 \end{codeexample}
 }
+Note that sometimes, one might want to draw lines to a fixed point, while leaving the line below the object (for instance if you use a |rounded corners| option and try to enter by the corner, tikz will actually stop before which is not beautiful). A simple solution is to use |wc| (short for |wire centered|) on the arrow, and it will automatically move the path on a layer behind (see also |wcs| and |wce| to configure only the starting or ending points, and some other nodes also use this, notably most styles based on |bezier|, like |s|):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\zxNewNodeFromPic{MyDivider}{
+  \node[regular polygon, regular polygon sides=3, shape border rotate=90,
+        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+}
+Compare %
+\begin{ZX}
+  \zxZ{} \rar[very thick]  &\zxMyDivider{} \rar[very thick] & \zxN{}
+\end{ZX} %
+and %
+\begin{ZX}
+  \zxZ{} \rar[very thick,wce]  &\zxMyDivider{} \rar[very thick] & \zxN{} 
+\end{ZX}
+\end{codeexample}
+}
+Note that I'm working on a better solutions to move nodes on different layers, or automatically see which anchor to choose depending on the custom node… but it's not that \mylink{https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd}{easy}.
+
 We can similarly put the |name=| on the other node to point to the other node by default:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
@@ -1861,7 +2149,7 @@ We can similarly put the |name=| on the other node to point to the other node by
 \end{codeexample}
 }
 
-\paragraph{Add margin around nodes.} You might want to add empty paths to increase the ``margin'' around your picture, or |overlay| some nodes if you don't want them to be counted when computing the bounding box. For simplicity, we provide a command |\zxExtendBoundingBox| that extends the current bounding box. This command takes as argument a list of arguments like |left|, |right|, |top|, |right|, |horizontal|, |vertical|, |extend|, where each argument takes a distance and extends to the corresponding direction (|extend| extends in all directions). For instance, below we increase the box by 1cm horizontally and by 3mm on each side on the y axis:
+\paragraph{Add margin around nodes.} You might want to add empty paths to increase the ``margin'' around your picture, or |overlay| some nodes if you don't want them to be counted when computing the bounding box. For simplicity, we provide a command |\zxExtendBoundingBox| that extends the current bounding box. This command takes as argument a list of arguments like |left|, |right|, |top|, |bottom|, |horizontal|, |vertical|, |extend|, where each argument takes a distance and extends to the corresponding direction (|extend| extends in all directions). For instance, below we increase the box by 1cm horizontally and by 3mm on each side on the y axis:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
@@ -1920,7 +2208,7 @@ We can similarly put the |name=| on the other node to point to the other node by
   \end{ZX}
 \end{codeexample}
 }
-Note however that you can customize how rotations is applied. By default, the |'-.| variants sets |\zxCurrentRotationMode| to the rotation angle (0,90,180,270), and do |rotate=\zxCurrentRotationMode|. You can however easily change that behavior, by first undoing this rotation (in the \emph{style before user}) with |rotate=-\zxCurrentRotationMode| and do any action you like depending on the value of |\zxCurrentRotationMode|. Here is a nice use-case: if you rotate a node with |transform shape|, it will also rotate the text inside:
+Note however that you can customize how rotations is applied. By default, the |'-.| variants updates |\zxCurrentRotationMode| to the rotation angle (from 0 to 90,180,270), and do |rotate=\zxCurrentRotationMode|. You can however easily change that behavior, by first undoing this rotation (in the \emph{style before user}) with |rotate=-\zxCurrentRotationMode| and do any action you like depending on the value of |\zxCurrentRotationMode|. Here is a nice use-case: if you rotate a node with |transform shape|, it will also rotate the text inside:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyTriangle}[
@@ -1955,7 +2243,6 @@ To avoid that issue, we will undo the default rotation, and apply on the node of
 }
 Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\zxMyNode.| (for instance, it might be more natural to denote |'| in place of |.| and |.| in place |'|, since these symbols visually represent the top/bottom place of the node). In that case, you just need to apply the style |invert top bottom| or |invert right left| in your \emph{style before user} and it will invert them automatically.
 
-
 \paragraph{Add anchors to node.} We can automatically (and easily) add multiple anchors to our nodes (the |fake center east/…| anchor is used for instance by shapes like |\ar[<']| to see where the node should start from): just add coordinates with the name of the desired anchor in your graph (say |anchorA| and |anchorB|), and in \emph{style \textbf{after} user} add this list of anchor like: |zx create anchors={anchorA,anchorB}| (actually this list is expanded using the |\foreach| syntax so you can use more advanced syntax like |anchor1,anchor...,anchor10| to avoid repeating the 10 names of the anchor). For instance, we can do this way:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
@@ -1972,6 +2259,34 @@ Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\
   \end{ZX}
 \end{codeexample}
 }
+The ZX library typically uses four special anchors |fake center east/…| to determine where some wires should start (not all kinds of wires follow this convention). Because the north anchor is not anymore in the north after applying a rotation, we provide also |\zxVirtualCenterWest| (same for |East|, |North|, |South|) that will ``counter balance'' the rotation, to ensure the real north anchor is always in the north, by renaming the anchors appropriately. This way, by using these ``virtual anchors'', you only need to place your anchor when the shape is not rotated, and it should automatically rotate the anchors appropriately when needed (see remarks regarding |every node/.style={transform shape}|):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+% Define a reusable node
+  \zxNewNodeFromPic{MyDivider}[][zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast},
+  every node/.style={transform shape}
+  ]{
+  \node[regular polygon, regular polygon sides=3,shape border rotate=90,%shape border rotate=90,
+        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+  \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
+  \coordinate(\zxVirtualCenterWest) at (-1mm,0);
+}
+% Use the node horizontally
+\begin{ZX}
+  \zxZ[B]{} \rar[Bn'=n+m, wc] & \zxMyDivider{} 
+                                  \rar[o',Bn'Args={n}{}]
+                                  \rar[o.,Bn.Args={m}{}] &[\zxWCol] \zxMyDivider-{} \rar[B,wc] & \zxZ[B]{}
+\end{ZX}
+% Use the node vertically                         
+\begin{ZX}
+  \zxZ[B]{} \dar[Bn=n+m, wc] \\
+  \zxMyDivider'{} \dar[-o,BnArgs={n}{}] \dar[o-,Bn-Args={m}{}] \\[\zxWRow]
+  \zxMyDivider.{} \dar[B,wc]\\
+  \zxZ[B]{}
+\end{ZX}
+\end{codeexample}
+}
+
 You can even dynamically add anchors depending on the input of the user. For instance, if the user can choose the number of spikes of the star, you might want to create as many anchors as there are spikes:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
@@ -2028,8 +2343,6 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 }
 
 \end{pgfmanualentry}
-
-
 
 \subsection{Externalize}
 
@@ -3168,7 +3481,7 @@ There is surely many things to improve in this library, and given how young it i
 
 \section{Acknowledgement}
 
-I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav, Qrrbrbirlbel\dots{}). I also thank Robert Booth for making me realize how my old style was bad, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration.
+I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav, Qrrbrbirlbel\dots{}). I also thank Robert Booth for making me realize how my old style was ugly, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration~\cite{van20_ZXcalculusWorkingQuantum}.
 
 \section{Changelog}
 
@@ -3183,5 +3496,6 @@ I'm very grateful of course to everybody that worked on these amazing field whic
 
 \printindex
 
+\printbibliography[heading=bibintoc]
 
 \end{document}

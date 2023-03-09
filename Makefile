@@ -1,4 +1,4 @@
-ctan_package: doc/zx-calculus.pdf doc/zx-calculus.tex tikzlibraryzx-calculus.code.tex zx-calculus.sty README.md
+ctan_package: doc/zx-calculus.pdf doc/zx-calculus.tex doc/biblio.bib tikzlibraryzx-calculus.code.tex zx-calculus.sty README.md
 	rm -rf build_ctan
 	mkdir -p build_ctan/zx-calculus
 	cp $^ build_ctan/zx-calculus/

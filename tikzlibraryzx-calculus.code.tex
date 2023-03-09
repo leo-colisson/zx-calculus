@@ -38,6 +38,7 @@
 \definecolor{colorZxZ}{RGB}{204,255,204}
 \definecolor{colorZxX}{RGB}{255,136,136}
 \definecolor{colorZxH}{RGB}{255,255,0}
+\definecolor{colorZxMatrix}{RGB}{200,200,200}
 
 %%% Some wires (the one having an intermediate H, X, or S gate) may need some additional space for
 %%% specific columns.
@@ -569,6 +570,41 @@
       looseness=1.2,
     },
     lw/.style={looseness wires only},
+    bold/.style={very thick},
+    non bold/.style={line width=\zxDefaultLineWidth,},
+    B/.style={bold},
+    NB/.style={non bold},
+    %% Adds a n above to denote the number of wires
+    Bn/.style={BnArgs={##1}{}},
+    Bn/.default={n},
+    boldn/.style={BnArgs={##1}{}},
+    boldn/.default={n},
+    Bn'/.style={Bn'Args={##1}{}},
+    Bn'/.default={n},
+    boldn'/.style={Bn'Args={##1}{}},
+    boldn'/.default={n},
+    Bn./.style={Bn.Args={##1}{}},
+    Bn./.default={n},
+    boldn./.style={Bn.Args={##1}{}},
+    boldn./.default={n},
+    Bn-/.style={Bn-Args={##1}{}},
+    Bn-/.default={n},
+    boldn-/.style={Bn-Args={##1}{}},
+    boldn-/.default={n},
+    %% For wires left to right
+    Bn'Args/.style 2 args={bold, "/" {anchor=center,##2}, "##1" {above,yshift=3pt,##2}},
+    Bn'Args/.default={n}{},
+    Bn.Args/.style 2 args={bold, "/" {anchor=center,##2}, "##1" {below,yshift=-3pt,##2}},
+    Bn.Args/.default={n}{},
+    %% for wires top/down (left,right)
+    BnArgs/.style 2 args={bold, "/" {rotate=90,anchor=center,##2}, "##1" {left,xshift=-2pt,##2}},
+    BnArgs/.default={n}{},
+    Bn-Args/.style 2 args={bold, "/" {rotate=90,anchor=center,##2}, "##1" {right,xshift=2pt,##2}},
+    Bn-Args/.default={n}{},
+    % boldnPos/.style={bold, "/" {anchor=center}, "##1" {yshift=3pt}},
+    % boldnPos/.default={n}{pos=50},
+    % boldn.Pos/.style={bold, "/" {anchor=center}, "##1" {below,yshift=-3pt}},
+    % boldn.Pos/.default={n}{pos=50},
     % Use this when you are drawing lines between none nodes only (like swap gates...) in IO mode
     between none/.style={
       looseness wires only,
@@ -1366,6 +1402,10 @@
       text height=,
       text depth=,
     },
+    bold/.style={very thick},
+    B/.style={bold},
+    non bold/.style={line width=\zxDefaultLineWidth,},
+    NB/.style={non bold},
     zxAllNodes/.style={
       shape=rectangle, % Otherwise nodes are asymetrical rectangle, which is not practical in our case. Gives notably anchor "center" which is really centered compared to asymatrical rectangles
       anchor=center, % Center cells
@@ -1805,6 +1845,10 @@
     1-row diagram/.style={},
     %% usage: math baseline=wantedBaseline, where you have somewhere \zxX[a=wantedBaseline]{\beta}
     math baseline/.style={baseline={([yshift=-axis_height]##1)}},
+    math baseline row/.style={math baseline=\tikzcdmatrixname-##1-1},
+    math baseline row/.default={1},
+    mbr/.style={math baseline row={##1}},
+    mbr/.default={1},
     amp/.style={
       ampersand replacement=\&,
     },
@@ -2297,11 +2341,12 @@
 %%% - In 'default style after user', the style is run after the code provided by the user. In particular, you can
 %%% use "invert top bottom"  to invert the "top" version with the "bottom" version (rotation is minus 90 instead
 %%% of 90 for instance).
-\NewDocumentCommand{\zxNewNodeFromPic}{mO{}O{}O{}m}{%
+\NewDocumentCommand{\zxNewNodeFromPic}{mO{}O{}O{}O{}m}{%
   \tikzset{%
     #1Pic/.pic={%
-      % Code for the ground
-      #5%
+      #6%
+      % The user can even add more stuff to draw after if needed by redefining this macro:
+      \ifdefined\zxCustomPicAdditionalPic\zxCustomPicAdditionalPic\fi%
       \tikzset{%
         % We store the list of anchors to create into \zxListOfNewAnchors. If it does not exist we create it:
         /utils/exec={\ifdefined\zxListOfNewAnchors\else\def\zxListOfNewAnchors{}\fi},
@@ -2319,8 +2364,20 @@
         % the default style after user.
         zx create anchors/.store in={\zxListOfNewAnchors},
         zx create anchors={},
-        % We load the other default arguments and per-instance arguments:
-        #2, ##1, #3
+        % We load the other default arguments:
+        #2,
+        % We try to load a potentially global style configured by the user (mostly used to override this library)
+        /zx/picCustomStyleBeforeUser#1/.append style={}, % Make sure it exists to avoid errors
+        /zx/picCustomStyleBeforeUser#1,
+        % We load the per-instance arguments:
+        ##1,
+        % We try to load a potentially global style configured by the user (mostly used to override this library)
+        /zx/picCustomStyleAfterUser#1/.append style={}, % Make sure it exists to avoid errors
+        /zx/picCustomStyleAfterUser#1,
+        #3,
+        % We try to load a potentially global style configured by the user (mostly used to override this library)
+        /zx/picCustomStyleLastPic#1/.append style={}, % Make sure it exists to avoid errors
+        /zx/picCustomStyleLastPic#1,
         ]{#1Pic}%
       },
     }%
@@ -2333,17 +2390,51 @@
   % \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t'O{}O{}m}{%
   %   |[#1={pic text={##6}, ##4}, ##5]|%
   % }%
-  \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t'O{}O{}m}{%
+  % The t are for modes
+  \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t't/t*e_O{}O{}m}{%
     |[#1={
-      pic text={##6},
+      pic text={##9},
       %% The mode stored in \zxRotationMode contains the current rotation mode (i.e. the angle between 0 and 359, typically 0,90,180,270),
       %% to allow further tweaks (for instance, a pic might be mirrored instead of rotated by 180° when using the parameter -, and this
       %% can be configured by reading this variable).
       /utils/exec={%
         \def\zxCurrentRotationMode{0}%
-        \IfBooleanT{##1}{\def\zxCurrentRotationMode{90}}%
-        \IfBooleanT{##2}{\def\zxCurrentRotationMode{180}}%
-        \IfBooleanT{##3}{\def\zxCurrentRotationMode{270}}%
+        %%% These anchor name are changed depending on the rotation: the north/… is before the rotation.
+        \def\zxVirtualCenterNorth{fake center north}%
+        \def\zxVirtualCenterSouth{fake center south}%
+        \def\zxVirtualCenterEast{fake center east}%
+        \def\zxVirtualCenterWest{fake center west}%
+        \IfBooleanT{##1}{%
+          \def\zxCurrentRotationMode{90}%
+          \def\zxVirtualCenterNorth{fake center west}%
+          \def\zxVirtualCenterSouth{fake center east}%
+          \def\zxVirtualCenterEast{fake center north}%
+          \def\zxVirtualCenterWest{fake center south}%
+        }%
+        \IfBooleanT{##2}{%
+          \def\zxCurrentRotationMode{180}%
+          \def\zxVirtualCenterNorth{fake center south}%
+          \def\zxVirtualCenterSouth{fake center north}%
+          \def\zxVirtualCenterEast{fake center west}%
+          \def\zxVirtualCenterWest{fake center east}%
+        }%
+        \IfBooleanT{##3}{%
+          \def\zxCurrentRotationMode{270}%
+          \def\zxVirtualCenterNorth{fake center east}%
+          \def\zxVirtualCenterSouth{fake center west}%
+          \def\zxVirtualCenterEast{fake center south}%
+          \def\zxVirtualCenterWest{fake center north}%
+        }%
+        \IfBooleanT{##4}{%
+          \def\zxModeSlash{}%
+        }%
+        \IfBooleanT{##5}{%
+          \def\zxModeStar{}%
+        }%
+        % Embellishments can contain something like \zxMynode_{Text A}{Text B}
+        \IfNoValueTF{##6}{}{%
+          \def\zxModeUnderscore{##6}%
+        }%
       },
       rotate=\zxCurrentRotationMode,%
       %%% Sometimes it can be quite handy to invert the top and the bottom version if it does not match with the
@@ -2375,7 +2466,7 @@
         },
         rotate=\zxCurrentRotationMode,%        
       },%
-      ##4}, ##5]|%
+      ##7}, #5, ##8]|%
   }%
 }%
 
@@ -2408,6 +2499,73 @@
   }%
   \path[use as bounding box] ([xshift=-\zx@left,yshift=\zx@top]current bounding box.north west)
     rectangle ([xshift=\zx@right,yshift=-\zx@bottom]current bounding box.south east);%
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Some special nodes based on \zxNewNodeFromPic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Ground symbol
+\zxNewNodeFromPic{Ground}[scale=\zxGroundScale][invert top bottom]{
+  \draw[line width=\zxDefaultLineWidth]
+  (0,0) -- (1mm,0)
+  -- +(0,1mm) -- +(0,-1mm)
+  ++(.4mm,0)
+  -- +(0,.7mm) -- +(0,-.7mm)
+  ++(.4mm,0)
+  -- +(0,.35mm) -- +(0,-.35mm);
+  \coordinate() at (0,0); % Empty coordinate make the center start at the right position
+}
+
+
+%% From scalable ZX calculus
+\zxNewNodeFromPic{Divider}[][zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast},
+  every node/.style={transform shape}
+]{
+  \node[regular polygon, regular polygon sides=3,shape border rotate=90, draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+  \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
+  \coordinate(\zxVirtualCenterWest) at (-1mm,0);
+}
+
+%% Matrix symbol
+\zxNewNodeFromPic{Matrix}
+  [
+    % As we want - to only swap the position of the label but not the rotation (we use * already for transpose)
+    % we disable the above rotation:
+    rotate=-\zxCurrentRotationMode,
+    % Otherwise the space between colums is too big
+    /utils/exec={\setlength\arraycolsep{1pt}}, 
+  ][]{
+  \node[name=, draw, signal, fill=colorZxMatrix, inner sep=1pt, minimum height=6pt, transform shape,
+    % The direction of the shape is turned when using the * symbol (transpose). 
+    signal to/.expanded={\ifdefined\zxModeStar west\else east\fi},
+    signal from/.expanded={\ifdefined\zxModeStar east\else west\fi},
+    % We disabled the default rotation (* is for transpose), but we still want to rotate it to read to/down:
+    rotate/.expanded={mod(-\zxCurrentRotationMode,180)},
+    % If we want the syntax \zxMatrix{45:f} to put f at 45 degrees, we want to expand \tikzpictext
+    % *before* to read the key, hence the need for expanded.
+    label/.expanded={[
+      inner sep=2pt,
+      % The position of the label is independent of the rotation, but depends on the rotation mode ('.-):
+      absolute,
+      label position=\ifdefined\zxLabelAngle \zxLabelAngle\else 90+\zxCurrentRotationMode\fi,
+      font=\noexpand\footnotesize, % We don't want to expand \footnotesize before defining the label
+      % we use the / decoration
+      overlay/.expanded={\ifdefined\zxModeSlash true\else false\fi},
+      % Math mode by default:
+      execute at begin node=$, execute at end node=$,
+      /zx/picCustomStyleMatrixLabel/.append style={}, % Make sure it exists to avoid errors
+      /zx/picCustomStyleMatrixLabel,
+      ]
+      % We put as the label the text directly. Note that \unexpanded\expandafter expands the next token only once
+      % as if it gets expanded further, we can get errors (e.g.\ with pmatrix)
+      \unexpanded\expandafter{\tikzpictext}
+      \ifdefined\zxModeUnderscore\noexpand\begin{bmatrix}\noexpand\zxModeUnderscore\noexpand\end{bmatrix}\fi
+    },
+    /zx/picCustomStyleMatrixMainNode/.append style={}, % Make sure it exists to avoid errors
+    /zx/picCustomStyleMatrixMainNode,
+    ]{};
 }
 
 
@@ -2553,23 +2711,6 @@
 \NewExpandableDocumentCommand{\zxEmptyDiagram}{}{
   |[zxEmptyDiagram]| {}%
 }
-
-\NewExpandableDocumentCommand{\zxGround}{O{}m}{
-  |[ground={#2},#1]| {}%
-}
-
-\NewExpandableDocumentCommand{\zxGroundCreate}{O{}m}{
-  |[-ground={#2},#1]| {}%
-}
-
-\NewExpandableDocumentCommand{\zxGroundAbove}{O{}m}{
-  |[ground',#1]| {}%
-}
-
-\NewExpandableDocumentCommand{\zxGroundBelow}{O{}m}{
-  |[ground.,#1]| {}%
-}
-
 
 
 % % Example: \leftManyDots{n}
