@@ -501,7 +501,7 @@ You may also get the error |Single ampersand used with wrong catcode| when |&| h
 \end{codeexample}
 The optional arguments are useful when the numerator or the denominator need parens when they are written inline (in that case optional arguments must be specified): it will prove useful when using a style that writes the fraction inline, for instance the default style for labels:
 \begin{codeexample}[]
-Compare
+Compare %
 \begin{ZX}
   \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
 \end{ZX} with %
@@ -812,6 +812,8 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 
 \subsubsection{Ground}
 
+\textbf{NB}: this functionality, based on custom nodes (\cref{subsec:customNodes}) was added on 13/03/2023.
+
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
   \extractcommand\zxGround\opt{.}\opt{-}\opt{'}\oarg{picture style}\marg{}\@@
@@ -1028,6 +1030,23 @@ You can also set globally the styles like |/zx/picCustomStyleBeforeUserMatrix| (
 }
 \begin{ZX}
   \zxZ{} \rar & \zxMatrix{A} \rar & \zxMatrix*{B} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+\subsubsection{Miscellaneous}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxBox\marg{box text}\@@
+  \pgfmanualbody
+  You can add simple boxes using |\zxBox{X}| (in math mode), possibly adding additional styling to the main box using |main={your style}|:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}
+  \zxBox{G} \rar[B]                    & [\zxwCol] \zxN{}\\
+  \zxBox[main={fill=green}]{G_A} \rar[B] & [\zxwCol] \zxN{}
 \end{ZX}
 \end{codeexample}
 }
@@ -2187,6 +2206,78 @@ We can similarly put the |name=| on the other node to point to the other node by
 }
 \begin{ZX}
   \text{Default:} & \zxMyStar{} & \text{More !} & \zxMyStar[nb spikes=8]{} & \zxMyStar[nb spikes=12]{}
+\end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Overriding existing parameters.}
+
+You might want to override a custom node, for instance because this custom node was provided by an external library (e.g.\ the ground and scalable ZX symbols are made using custom-nodes, and you might want to customize them). We provide for that a series of styles: if |XXXX| is the name on the node (e.g.\ |Ground|), the |/zx/picCustomStyleBeforeUserXXXX| style is sent to the picture style before loading the options of the user, |/zx/picCustomStyleAfterUserXXXX| is loaded after the input of the user, |/zx/picCustomStyleLastPicXXXX| is loaded as the last argument to the picture (after the default style). You can also set the command |\zxCustomPicAdditionalPic| to any code to draw at the end of the picture:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\tikzset{
+  /zx/picCustomStyleBeforeUserMatrix/.style={
+    scale=2,
+    % \zxCustomPicAdditionalPic can be any tikz code to run after the creation of the pic:
+    /utils/exec={\def\zxCustomPicAdditionalPic{%
+        % the main node has empty name, so .center is the center of the main node
+        \node[draw,circle,inner sep=2pt,fill=pink] at (.center) {};%
+      }%
+    },
+  },
+}
+\begin{ZX}
+  \zxZ{} \rar & \zxMatrix{A} \rar & \zxMatrix*{B} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+
+When designing your own custom nodes, you can also put:\\
+|NameOfYourStyle/.append style={}, NameOfYourStyle,|\\
+where you want to allow users to load |NameOfYourStyle| (|NameOfYourStyle/.append style={}| is used to create the style if it does not exist).
+
+If you want to change a create a new node style without overriding a style, you can of course create your own command that sets the parameters for you:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\tikzset{
+  /zx/picCustomStyleBeforeUserMatrix/.style={
+    scale=2,
+    % \zxCustomPicAdditionalPic can be any tikz code to run after the creation of the pic:
+    /utils/exec={\def\zxCustomPicAdditionalPic{%
+        % the main node has empty name, so .center is the center of the main node
+        \node[draw,circle,inner sep=2pt,fill=pink] at (.center) {};%
+      }%
+    },
+  },
+}
+\begin{ZX}
+  \zxZ{} \rar & \zxMatrix{A} \rar & \zxMatrix*{B} \rar & \zxN{}
+\end{ZX}
+\end{codeexample}
+}
+
+\paragraph{Local style.}
+
+Sometimes, you might want to define styles that are available only locally: for instance, you might prefer to type |main={fill=green}| instead of:\\
+|/zx/picCustomStyleBoxMainNode/.append style={fill=green}|\\
+Nothing prevents you from doing so directly in the default style. Just, make sure to use, e.g.\ |####1|, if you want to call an argument (internally we use nested styles and functions):
+
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\zxNewNodeFromPic{MyBox}[
+  main/.style={
+    /zx/picCustomStyleMyBoxMainNode/.append style={####1},
+  },
+]{%
+  \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,
+    /zx/picCustomStyleMyBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+    /zx/picCustomStyleMyBoxMainNode,
+  ]{\tikzpictext};%
+}
+
+\begin{ZX}
+  \zxMyBox{G} \rar[B]                    & [\zxwCol] \zxN{}\\
+  \zxMyBox[main={fill=green}]{G} \rar[B] & [\zxwCol] \zxN{}
 \end{ZX}
 \end{codeexample}
 }

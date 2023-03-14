@@ -1310,11 +1310,11 @@
       N.-/.default=\zxDefaultSoftAngleN,
     },
     % No line but vdots/dots in between.
-    3 vdots/.style={draw=none, "\makebox[0pt][r]{##1\,}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
+    3 vdots/.style={draw=none, "\makebox[0pt][r]{\footnotesize\smash{##1\,}}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
     3 vdots/.default={},
-    3 vdotsr/.style={draw=none, "\makebox[0pt][l]{\ ##1}\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}" {anchor=center,zxNormalFont}},
+    3 vdotsr/.style={draw=none, "\scalebox{\zxScaleDots}{$\cvdotsCenterMathline$}\makebox[0pt][l]{\footnotesize\smash{\,##1}}" {anchor=center,zxNormalFont}},
     3 vdotsr/.default={},
-    3 dots/.style={draw=none, "\makebox[0pt][r]{##1}\scalebox{\zxScaleDots}{$\chdots$}" {anchor=center,zxNormalFont}},
+    3 dots/.style={draw=none, "\makebox[0pt][r]{\footnotesize\smash{##1}}\scalebox{\zxScaleDots}{$\chdots$}" {anchor=center,zxNormalFont}},
     3 dots/.default={},
     % Add a Hadmard/Z/X (no phase) in the middle of the line. Practical to add small nodes without creating
     % a new column/row. However, make sure the corresponding row/column is larger, using &[\zxHCol]
@@ -1746,53 +1746,6 @@
       minimum width=1.5mm,
       shape=rectangle},
     zxHSmall/.style={zxH},
-    %% Ground style
-    groundpic/.pic={
-      % Code for the ground
-      \draw[line width=\zxDefaultLineWidth]
-      (0,0) -- (1mm,0)
-      -- +(0,1mm) -- +(0,-1mm)
-      ++(.4mm,0)
-      -- +(0,.7mm) -- +(0,-.7mm)
-      ++(.4mm,0)
-      -- +(0,.35mm) -- +(0,-.35mm)
-      ;
-    },
-    ground/.style={
-      zxAllNodes,
-      shape=coordinate, % Otherwise the arrow will not point to the center
-      append after command={
-        pic[scale=\zxGroundScale,##1] {groundpic}
-      },
-    },
-    ground-/.style={
-      zxAllNodes,
-      shape=coordinate, % Otherwise the arrow will not point to the center
-      append after command={
-        pic[scale=\zxGroundScale,##1] {groundpic}
-      },
-    },
-    -ground/.style={
-      zxAllNodes,
-      shape=coordinate, % Otherwise the arrow will not point to the center
-      append after command={
-        pic[scale=\zxGroundScale,,rotate=180,##1] {groundpic}
-      },
-    },
-    ground'/.style={
-      zxAllNodes,
-      shape=coordinate, % Otherwise the arrow will not point to the center
-      append after command={
-        pic[scale=\zxGroundScale,rotate=90,##1] {groundpic}
-      },
-    },
-    ground./.style={
-      zxAllNodes,
-      shape=coordinate, % Otherwise the arrow will not point to the center
-      append after command={
-        pic[scale=\zxGroundScale,rotate=-90,##1] {groundpic}
-      },
-    },
   },
   % Default style. Can be changed by user
   /zx/default style nodes/.style={
@@ -2568,6 +2521,35 @@
     ]{};
 }
 
+% %% Box, that just draws... a box
+% \zxNewNodeFromPic{Box}[
+%   main/.style={
+%     /zx/picCustomStyleBoxMainNode/.append style={####1},
+%   },
+% ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
+%   \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,
+%     /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+%     /zx/picCustomStyleBoxMainNode,
+%   ]{\tikzpictext};%
+%   \coordinate(fake center north) at (.north);%
+%   \coordinate(fake center west) at (.west);%
+%   \coordinate(fake center east) at (.east);%  
+%   \coordinate(fake center south) at (.south);%
+%   \node[anchor=center] at (fake center west) {x};
+% }
+
+\zxNewNodeFromPic{Box}[][zx create anchors={fake center north,fake center south,fake center east,fake center west,bla}]{%
+  \node[draw, inner sep=1.3mm, rectangle, name=bli, execute at begin node=$, execute at end node=$,outer sep=0pt,
+    /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+    /zx/picCustomStyleBoxMainNode,
+    ] at (0,0) {\tikzpictext};%
+  \coordinate(fake center north) at (bli.north);%
+  \coordinate(fake center west) at (bli.west);%
+  \coordinate(fake center east) at (bli.east);%  
+  \coordinate(fake center south) at (bli.south);%
+  \node[anchor=center,name=bla] at (fake center west) {x};
+  \node[anchor=center] at (0,0) {x};
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% 
