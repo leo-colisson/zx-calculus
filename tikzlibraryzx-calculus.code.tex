@@ -1326,7 +1326,19 @@
     Z/.default={},
     X/.style={"" {zxNoPhaseSmallX,anchor=center,##1}},
     X/.default={},
-    % Arrow will go out from the center of the shape instead of from the border. Useful
+    % Sometimes, it might be handy to specify an anchor only if no anchor was set before, notably when using "post arrow style if end node" (see
+    % for instance the Divider).
+    end anchor if not set/.code={%
+      \ifx\tikzcd@endanchor\pgfutil@empty% If there is no anchor, we can set ours:
+        \pgfkeysalso{/tikz/commutative diagrams/end anchor={##1}}%
+      \fi%
+    },
+    start anchor if not set/.code={%
+      \ifx\tikzcd@startanchor\pgfutil@empty% If there is no anchor, we can set ours:
+        \pgfkeysalso{/tikz/commutative diagrams/start anchor=##1}%
+      \fi%
+    },
+    % Arrow will go out from the center of the shape instead of from the border. Useful e.g.
     % when connecting nodes with different shapes, it will give back a symetric connection.
     wire centered/.style={
       on layer=edgelayer,
@@ -1846,6 +1858,38 @@
           }%
         \fi%
       },
+      %% This allows nodes to specify styles for the arrows that start/end from them.
+      %% This style will be loaded last as otherwise we don't know yet the starting and ending point.
+      %% See how we apply it on the arrow side using "every arrow post"
+      post arrow style if start node/.style={%
+        append after command={% This expects a path, but we want to write a code without any path:
+          \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
+            \def\zx@arguments{####1}%
+            \edef\zx@tmp{%
+              /zx/internals/postRunIfIamStartNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
+            }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
+            {%
+              \globaldefs=1\relax%
+              \pgfkeysalsofrom{\zx@tmp}%
+            }%
+          \endpgfextra%
+        },%
+      },
+      post arrow style if end node/.style={%
+        append after command={% This expects a path, but we want to write a code without any path:
+          \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
+            \def\zx@arguments{####1}%
+            \show\zx@arguments%
+            \edef\zx@tmp{%
+              /zx/internals/postRunIfIamEndNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
+            }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
+            {%
+              \globaldefs=1\relax%
+              \pgfkeysalsofrom{\zx@tmp}%
+            }%
+          \endpgfextra%
+        },%
+      },%
       /zx/default style nodes,
       /zx/user overlay nodes,
     },
@@ -1853,6 +1897,33 @@
       /zx/wires definition,
       /zx/default style wires,
       /zx/user overlay wires,
+      %%% Load the post arrow style at the end:
+      /tikz/commutative diagrams/every arrow post/.append style={%
+        /utils/exec={% We provide a way to disable the default behavior
+          \ifdefined\zxDisablePostRunStart\else%
+            %%% Load the arrow style set by the start node:
+            \edef\zx@tmp{% Make sure that the style exists and load it:
+              /zx/internals/postRunIfIamStartNode-\tikzcd@ar@start/.append style={},%
+              /zx/internals/postRunIfIamStartNode-\tikzcd@ar@start,%
+            }%
+            \pgfkeysalsofrom{\zx@tmp}%
+          \fi%
+          %%% Load the arrow style set by the end node:
+          \ifdefined\zxDisablePostRunEnd\else%
+            \edef\zx@tmp{% Make sure that the style exists and load it:
+              /zx/internals/postRunIfIamEndNode-\tikzcd@ar@target/.append style={},%
+              /zx/internals/postRunIfIamEndNode-\tikzcd@ar@target,%
+            }%
+            \pgfkeysalsofrom{\zx@tmp}%
+          \fi%
+        }%
+      },%
+      disable post run start/.code={\def\zxDisablePostRunStart{}},
+      disable post run end/.code={\def\zxDisablePostRunEnd{}},
+      disable post run/.style={
+        disable post run start,
+        disable post run end,
+      },
     },
     %% We add an empty coordinate in every node. This has multiple advantages: first this avoids errors about
     %% single ampersand when the matrix does not start with None, and it also avoids using \zxN{} everywhere.
@@ -2047,6 +2118,28 @@
     \let\tikzcd@\tikzcd@@originalCopyZx%
     \let\endtikzcd\endtikzcd@originalCopyZx%
   \fi%
+  \ifdefined\zxDoNotPatchArrows% Do not patch arrows (we need sometimes "every arrow post")
+  \else% Copy/pasted from https://github.com/astoff/tikz-cd/blob/master/tikzlibrarycd.code.tex, just added "every arrow post".
+    %% I'm not sure which method is more resilient: patchcmd is likely to fail on minor library update,
+    %% while redefining \tikzcd@ar@new might not apply some major library upgrades (note that we redefine it
+    %% only locally). Since I don't know what is better, I do both depending on this macro
+    \ifdefined\zxUsePatchCmdToPatchArrows%
+      \patchcmd\tikzcd@ar@new%
+      {\path[/tikz/commutative diagrams/.cd,everyx arrow,#1]}%
+      {\path[/tikz/commutative diagrams/.cd,every arrow,#1,every arrow post]}%
+      {}%
+      {}%
+    \else%
+      \def\tikzcd@ar@new[##1]{% Make sure to turn #1 into ##1 as the command is nested
+        \pgfutil@g@addto@macro\tikzcd@savedpaths{%
+          \path[/tikz/commutative diagrams/.cd,every arrow,##1,every arrow post]%<--- we added every arrow post
+          (\tikzcd@ar@start\tikzcd@startanchor) to (\tikzcd@ar@target\tikzcd@endanchor); }}%
+    \fi%
+  \fi%
+  % We make sure "every arrow post" exists:
+  \tikzset{%
+    /tikz/commutative diagrams/every arrow post/.append style={}%
+  }%
   \pgfsetlayers{background,belownodelayer,edgelayer,nodelayer,main,abovenodelayer,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
   \begin{tikzcd}[%
     /zx/defaultEnv,%
@@ -2270,8 +2363,7 @@
       % What is the distance between coordinate and base?
       % We have to do this in the coordinate system of the base coordinate.
       \pgfsettransform{\csname pgf@sh@nt@\tikz@pp@name{}\endcsname}%
-      \pgf@process{\pgfpointdiff{\pgfpointanchor{\tikz@pp@name{}}{center}}
-                                {\pgfpointanchor{\tikz@pp@name{#2}}{center}}}%
+      \pgf@process{\pgfpointanchor{\tikz@pp@name{#2}}{center}}%
       % This distance is the new anchors coordinate
       % in the base's coordinate system.
       % Adding an anchor to a node must be global
@@ -2471,14 +2563,29 @@
   \coordinate() at (0,0); % Empty coordinate make the center start at the right position
 }
 
-
 %% From scalable ZX calculus
-\zxNewNodeFromPic{Divider}[][zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast},
+\zxNewNodeFromPic{Divider}[][
+  % Because of the rounded corners, the lines will stop before touching the shape when arriving on the angle. So we force such nodes to be drawn below
+  % the shape, targeting a point inside the node.
+  %post arrow style if end node/.expanded={% we need to expand everything before setting the style, as this style will be executed much later in the arrow,
+  post arrow style if end node={% if the text contains macro like \zxVirtualCenterWest use post arrow style if end node/.expanded instead as these macro
+    % will not exist anymore once the line is drawn
+    on layer=edgelayer,%
+    end anchor if not set=fake center north,
+  },%
+  post arrow style if start node={% if the text contains macro like \zxVirtualCenterWest use post arrow style if end node/.expanded instead as these macro
+    % will not exist anymore once the line is drawn
+    on layer=edgelayer,%
+    start anchor if not set=fake center south,
+  },%
+  zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast, \zxVirtualCenterNorth, \zxVirtualCenterSouth},
   every node/.style={transform shape}
 ]{
   \node[regular polygon, regular polygon sides=3,shape border rotate=90, draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
   \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
   \coordinate(\zxVirtualCenterWest) at (-1mm,0);
+  \coordinate(\zxVirtualCenterNorth) at (\zxVirtualCenterWest); % Synonyme, useful to determine where to start
+  \coordinate(\zxVirtualCenterSouth) at (\zxVirtualCenterEast); % Synonyme, useful to determine where to start
 }
 
 %% Matrix symbol
@@ -2522,33 +2629,19 @@
 }
 
 % %% Box, that just draws... a box
-% \zxNewNodeFromPic{Box}[
-%   main/.style={
-%     /zx/picCustomStyleBoxMainNode/.append style={####1},
-%   },
-% ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-%   \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,
-%     /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
-%     /zx/picCustomStyleBoxMainNode,
-%   ]{\tikzpictext};%
-%   \coordinate(fake center north) at (.north);%
-%   \coordinate(fake center west) at (.west);%
-%   \coordinate(fake center east) at (.east);%  
-%   \coordinate(fake center south) at (.south);%
-%   \node[anchor=center] at (fake center west) {x};
-% }
-
-\zxNewNodeFromPic{Box}[][zx create anchors={fake center north,fake center south,fake center east,fake center west,bla}]{%
-  \node[draw, inner sep=1.3mm, rectangle, name=bli, execute at begin node=$, execute at end node=$,outer sep=0pt,
+\zxNewNodeFromPic{Box}[
+  main/.style={
+    /zx/picCustomStyleBoxMainNode/.append style={####1},
+  },
+][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
+  \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,
     /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleBoxMainNode,
-    ] at (0,0) {\tikzpictext};%
-  \coordinate(fake center north) at (bli.north);%
-  \coordinate(fake center west) at (bli.west);%
-  \coordinate(fake center east) at (bli.east);%  
-  \coordinate(fake center south) at (bli.south);%
-  \node[anchor=center,name=bla] at (fake center west) {x};
-  \node[anchor=center] at (0,0) {x};
+  ]{\tikzpictext};%
+  \coordinate(fake center north) at (.north);%
+  \coordinate(fake center west) at (.west);%
+  \coordinate(fake center east) at (.east);%  
+  \coordinate(fake center south) at (.south);%
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
