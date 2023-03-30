@@ -3,7 +3,9 @@
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
+%%% TODO: fix debug mode with pic-based nodes
+%%% Understand why if a "fake" alias does not exists but was created before I get no error
+
 % A tikzlibrary[libraryName].code.tex is loaded automatically by tikz when using
 % \usetikzlibrary{libraryName}. Therefore, you should just use
 % \usetikzlibrary{zx} to load this library. We also provide a package to
@@ -18,7 +20,7 @@
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
 
-\usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections}
+\usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections,fit}
 % Declare layers.
 \pgfdeclarelayer{background} % Fox boxes using "fit" to group parts of the graph.
 \pgfdeclarelayer{belownodelayer} % For nodes that always want to stay below any arrow...
@@ -1418,6 +1420,13 @@
     B/.style={bold},
     non bold/.style={line width=\zxDefaultLineWidth,},
     NB/.style={non bold},
+    %% To set bold all wires connected to the current wire
+    wires bold/.style={
+      post arrow style if end node={B},
+      post arrow style if start node={B},
+    },
+    Bw/.style={wires bold},
+    BBw/.style={bold, wires bold,},
     zxAllNodes/.style={
       shape=rectangle, % Otherwise nodes are asymetrical rectangle, which is not practical in our case. Gives notably anchor "center" which is really centered compared to asymatrical rectangles
       anchor=center, % Center cells
@@ -1833,6 +1842,7 @@
     /tikz/every node/.style={%
       % Otherwise, the empty nodes take some space… and create weird bugs. But I don't know how to add empties
       % https://tex.stackexchange.com/questions/675958/tikz-empty-nodes-with-different-style-coordinate
+      % ==> solved, see "empty"
       nodes={
         zxAllNodes,
         inner sep=0pt,
@@ -1841,7 +1851,23 @@
       % For quickly adding alias, and displaying this alias in debug mode.
       a/.code={%
         \pgfkeysalso{%
-          alias=####1,%
+          % alias=####1,%
+          % alias seems to fail with nodes in pic… let's try another method. See also:
+          % https://tex.stackexchange.com/questions/679647/tikz-pic-alias-to-internal-node
+          %% TODO: according to the above discussion, this append after command should be done after the
+          %% add anchor to node is finished, as an alias is basically copying all the macros of the initial node,
+          %% so you want to do it once its finished (in particular to preserve the anchors). But maybe
+          %% append after command is already avoiding that issue. In any case it would be good to make it more
+          %% robust (\tikzlastnode might change, so defining my own \tikzlastnode might help, use link instead
+          %% of copy alias to be sure the anchors are preserved etc...)
+          append after command={\pgfextra{%
+              \pgfnodealias{####1}{\tikzlastnode}%
+              \message{IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIi}%
+              % There is no way anymore to remember the link between the alias and the non-alias. Let's rembember it
+              % manually
+              \expanded{\noexpand\gdef\csname zx@alias@\zxCurrentDiagram @####1\endcsname{\tikzlastnode}}%
+            }%
+          },
         }%
         %% name path won't work with alias... So let's create two name path ^^
         %% https://tex.stackexchange.com/questions/619622
@@ -1866,6 +1892,7 @@
           \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
             \def\zx@arguments{####1}%
             \edef\zx@tmp{%
+              /utils/exec={\message{XXXXXXXXXXx \tikzlastnode}},%
               /zx/internals/postRunIfIamStartNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
             }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
             {%
@@ -1879,7 +1906,6 @@
         append after command={% This expects a path, but we want to write a code without any path:
           \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
             \def\zx@arguments{####1}%
-            \show\zx@arguments%
             \edef\zx@tmp{%
               /zx/internals/postRunIfIamEndNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
             }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
@@ -1901,6 +1927,11 @@
       /tikz/commutative diagrams/every arrow post/.append style={%
         /utils/exec={% We provide a way to disable the default behavior
           \ifdefined\zxDisablePostRunStart\else%
+            %%% If it is an alias, we replace it with the original node:
+            \message{\the\tikz@fig@count}%
+            \ifcsname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname% This is an alias: let's rename it to the original node
+              \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname}%
+            \fi%
             %%% Load the arrow style set by the start node:
             \edef\zx@tmp{% Make sure that the style exists and load it:
               /zx/internals/postRunIfIamStartNode-\tikzcd@ar@start/.append style={},%
@@ -1910,6 +1941,10 @@
           \fi%
           %%% Load the arrow style set by the end node:
           \ifdefined\zxDisablePostRunEnd\else%
+            %%% If it is an alias, we replace it with the original node:
+            \ifcsname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname% This is an alias: let's rename it to the original node
+              \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname}%
+            \fi%
             \edef\zx@tmp{% Make sure that the style exists and load it:
               /zx/internals/postRunIfIamEndNode-\tikzcd@ar@target/.append style={},%
               /zx/internals/postRunIfIamEndNode-\tikzcd@ar@target,%
@@ -2141,6 +2176,11 @@
     /tikz/commutative diagrams/every arrow post/.append style={}%
   }%
   \pgfsetlayers{background,belownodelayer,edgelayer,nodelayer,main,abovenodelayer,box,labellayer,foreground}% Layers are defined locally to avoid to disturb other drawings
+  %% Provide a way to reference the current diagram. This way it is for instance possible to do
+  %% \ar[from=Zbotright, to=\zxCurrentDiagram-1-1]
+  %% For this to work, you should not modify the name of the matrix.
+  \def\zxCurrentDiagram{tikz@f@\the\tikz@fig@count}%Does not exists yet... Hopefully it's updated soon enough
+  % We provide a way to get the current matrix name:
   \begin{tikzcd}[%
     /zx/defaultEnv,%
     #1]%
@@ -2634,7 +2674,7 @@
     /zx/picCustomStyleBoxMainNode/.append style={####1},
   },
 ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,
+  \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,alias=hello,
     /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleBoxMainNode,
   ]{\tikzpictext};%
