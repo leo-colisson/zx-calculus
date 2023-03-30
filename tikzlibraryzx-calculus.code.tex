@@ -2486,16 +2486,10 @@
     |[#1={
       pic text={##9},
       %% The alias=… should rather be called on the second element. But it's quite handy to write it here, so here we go:
-      a/.code={%
-        {\message{AAAAAAAAAAAAAAa Hello ########1}%
-          \globaldefs=1\relax%
-          \pgfkeysalso{
-            zx forward to node/.append style={
-              a={########1},
-            },
-          }%
-          \globaldefs=0\relax%
-        }%
+      a/.style={%
+        zx forward to node/.append style={
+          a={########1},
+        },
       },
       %% The mode stored in \zxRotationMode contains the current rotation mode (i.e. the angle between 0 and 359, typically 0,90,180,270),
       %% to allow further tweaks (for instance, a pic might be mirrored instead of rotated by 180° when using the parameter -, and this
