@@ -1823,6 +1823,8 @@
     math baseline row/.default={1},
     mbr/.style={math baseline row={##1}},
     mbr/.default={1},
+    debug mode/.code={\def\zxDebugMode{}},
+    no debug mode/.code={\let\zxDebugMode\undefined},
     amp/.style={
       ampersand replacement=\&,
     },
@@ -1862,7 +1864,6 @@
           %% of copy alias to be sure the anchors are preserved etc...)
           append after command={\pgfextra{%
               \pgfnodealias{####1}{\tikzlastnode}%
-              \message{IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIi}%
               % There is no way anymore to remember the link between the alias and the non-alias. Let's rembember it
               % manually
               \expanded{\noexpand\gdef\csname zx@alias@\zxCurrentDiagram @####1\endcsname{\tikzlastnode}}%
@@ -2449,6 +2450,12 @@
         % the default style after user.
         zx create anchors/.store in={\zxListOfNewAnchors},
         zx create anchors={},
+        % We create a new style to apply to the main node
+        zx main node/.style={
+          name=,
+          zx forward to node/.append style={},
+          zx forward to node,
+        },
         % We load the other default arguments:
         #2,
         % We try to load a potentially global style configured by the user (mostly used to override this library)
@@ -2475,10 +2482,21 @@
   % \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t'O{}O{}m}{%
   %   |[#1={pic text={##6}, ##4}, ##5]|%
   % }%
-  % The t are for modes
-  \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t't/t*e_O{}O{}m}{%
+  \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{O{}O{}t.t-t't/t*e_m}{%
     |[#1={
       pic text={##9},
+      %% The alias=… should rather be called on the second element. But it's quite handy to write it here, so here we go:
+      a/.code={%
+        {\message{AAAAAAAAAAAAAAa Hello ########1}%
+          \globaldefs=1\relax%
+          \pgfkeysalso{
+            zx forward to node/.append style={
+              a={########1},
+            },
+          }%
+          \globaldefs=0\relax%
+        }%
+      },
       %% The mode stored in \zxRotationMode contains the current rotation mode (i.e. the angle between 0 and 359, typically 0,90,180,270),
       %% to allow further tweaks (for instance, a pic might be mirrored instead of rotated by 180° when using the parameter -, and this
       %% can be configured by reading this variable).
@@ -2489,36 +2507,36 @@
         \def\zxVirtualCenterSouth{fake center south}%
         \def\zxVirtualCenterEast{fake center east}%
         \def\zxVirtualCenterWest{fake center west}%
-        \IfBooleanT{##1}{%
+        \IfBooleanT{##3}{%
           \def\zxCurrentRotationMode{90}%
           \def\zxVirtualCenterNorth{fake center west}%
           \def\zxVirtualCenterSouth{fake center east}%
           \def\zxVirtualCenterEast{fake center north}%
           \def\zxVirtualCenterWest{fake center south}%
         }%
-        \IfBooleanT{##2}{%
+        \IfBooleanT{##4}{%
           \def\zxCurrentRotationMode{180}%
           \def\zxVirtualCenterNorth{fake center south}%
           \def\zxVirtualCenterSouth{fake center north}%
           \def\zxVirtualCenterEast{fake center west}%
           \def\zxVirtualCenterWest{fake center east}%
         }%
-        \IfBooleanT{##3}{%
+        \IfBooleanT{##5}{%
           \def\zxCurrentRotationMode{270}%
           \def\zxVirtualCenterNorth{fake center east}%
           \def\zxVirtualCenterSouth{fake center west}%
           \def\zxVirtualCenterEast{fake center south}%
           \def\zxVirtualCenterWest{fake center north}%
         }%
-        \IfBooleanT{##4}{%
+        \IfBooleanT{##6}{%
           \def\zxModeSlash{}%
         }%
-        \IfBooleanT{##5}{%
+        \IfBooleanT{##7}{%
           \def\zxModeStar{}%
         }%
         % Embellishments can contain something like \zxMynode_{Text A}{Text B}
-        \IfNoValueTF{##6}{}{%
-          \def\zxModeUnderscore{##6}%
+        \IfNoValueTF{##8}{}{%
+          \def\zxModeUnderscore{##8}%
         }%
       },
       rotate=\zxCurrentRotationMode,%
@@ -2551,7 +2569,7 @@
         },
         rotate=\zxCurrentRotationMode,%        
       },%
-      ##7}, #5, ##8]|%
+      ##1}, zx forward to node/.append style={/utils/exec={\message{XXXXXXXXXXXXXXXXXXX}}}, zx forward to node, #5, ##2]|%
   }%
 }%
 
@@ -2621,7 +2639,7 @@
   zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast, \zxVirtualCenterNorth, \zxVirtualCenterSouth},
   every node/.style={transform shape}
 ]{
-  \node[regular polygon, regular polygon sides=3,shape border rotate=90, draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+  \node[regular polygon, regular polygon sides=3,shape border rotate=90, draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
   \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
   \coordinate(\zxVirtualCenterWest) at (-1mm,0);
   \coordinate(\zxVirtualCenterNorth) at (\zxVirtualCenterWest); % Synonyme, useful to determine where to start
@@ -2637,7 +2655,7 @@
     % Otherwise the space between colums is too big
     /utils/exec={\setlength\arraycolsep{1pt}}, 
   ][]{
-  \node[name=, draw, signal, fill=colorZxMatrix, inner sep=1pt, minimum height=6pt, transform shape,
+  \node[zx main node, draw, signal, fill=colorZxMatrix, inner sep=1pt, minimum height=6pt, transform shape,
     % The direction of the shape is turned when using the * symbol (transpose). 
     signal to/.expanded={\ifdefined\zxModeStar west\else east\fi},
     signal from/.expanded={\ifdefined\zxModeStar east\else west\fi},
@@ -2674,7 +2692,7 @@
     /zx/picCustomStyleBoxMainNode/.append style={####1},
   },
 ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,alias=hello,
+  \node[draw, inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,alias=hello,
     /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleBoxMainNode,
   ]{\tikzpictext};%

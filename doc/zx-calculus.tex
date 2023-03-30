@@ -26,6 +26,7 @@
 \usepackage{verbatim}
 \usepackage{cleveref}
 \usepackage{mathtools}
+\usepackage{listings}
 
 %%%% Bibliography
 % I want to have separate references for appendix and main body
@@ -94,7 +95,7 @@ Since 24/02/2023, we also provide ways to easily create new, highly customizable
   every node/.style={transform shape}
   ]{
   \node[regular polygon, regular polygon sides=3,shape border rotate=90,%shape border rotate=90,
-        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
   \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
   \coordinate(\zxVirtualCenterWest) at (-1mm,0);
 }
@@ -241,7 +242,7 @@ The reason for this is that it is hard to always get exactly the good spacing by
 
 When writing equations, you may also want to change the baseline to align properly your diagrams on a given line like that (since march 2023):
 \begin{codeexample}[]
-  $\zx[math baseline row=2]{
+  $\zx[mbr=2]{ % mbr is a shortcut for "math baseline row"
     \zxX{}\\
     \zxZ[a=myZ]{}
   }
@@ -386,7 +387,7 @@ and custom diagram: %
 }
 \end{pgfmanualentry}
 
-\begin{stylekey}{/tikz/defaultEnv/amp}
+\begin{stylekey}{/zx/defaultEnv/amp}
   In a previous version (before 2022/02/09), it was not possible to use |&| inside macros and |align| due to \LaTeX{} limitations. However, we found a solution by re-scanning the tokens, so now no special care should be taken in align or macros. But in case you need to deal with an environment having troubles with |&|, either use the |ampersand replacement=\&| option (whose shortcut is |amp|) or |\zxAmp| (in any case, replace |&| with |\&|).
 \begin{codeexample}[vbox]
 An aligned equation:
@@ -753,6 +754,16 @@ For fractions, you can configure how you want the label text to be displayed, ei
 Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are useful to put parens appropriately when the fraction is written inline.
 \end{pgfmanualentry}
 
+\begin{stylekey}{/zx/defaultEnvdebug mode}
+  If this macro is defined, debug mode is active. See below how it can be useful (here is a quick example).
+\begin{codeexample}[width=3cm]
+\begin{ZX}[debug mode]
+  \zxZ{} \ar[to=secondNode] & \zxZ[a=secondNode]{} & \zxX{}\\
+                            & \zxZ[a=thirdNode]{}
+\end{ZX}
+\end{codeexample}
+\end{stylekey}
+
 \begin{command}{\zxDebugMode{}}
   If this macro is defined, debug mode is active. See below how it can be useful.
 \end{command}
@@ -810,13 +821,23 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 \end{codeexample}
 \end{stylekey}
 
+\begin{stylekey}{/zx/defaultEnv/math baseline row=row to center}
+  You can also choose directly a line to center on: for instance to center on the first line, use: |math baseline row=1|, or, equivalently |mbr=1| or directly |mbr|:
+\begin{codeexample}[width=0pt]
+  $\begin{ZX}[mbr]
+    \zxN{} \rar[B] & [\zxwCol] \zxMatrix{A} \rar[B] &[\zxwCol] \zxN{}
+  \end{ZX} = A$
+\end{codeexample}
+\end{stylekey}
+
+
 \subsubsection{Ground}
 
 \textbf{NB}: this functionality, based on custom nodes (\cref{subsec:customNodes}) was added on 13/03/2023.
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxGround\opt{.}\opt{-}\opt{'}\oarg{picture style}\marg{}\@@
+  \extractcommand\zxGround\oarg{picture style}\opt{.}\opt{-}\opt{'}\marg{}\@@
   \extractcommand\zxGroundScale\@@
   \pgfmanualbody
 The ground symbol can be used to denote a discarding operation… but is also useful to compute the norm of a state or denote a measurement by first copying the state and discarding one copy. This way, a measurement in the computational basis can be represented as:
@@ -865,7 +886,7 @@ We provide some notations coming from the scalable ZX calculus~\cite{CHP19_SZXca
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxDivider\opt{.}\opt{-}\opt{'}\marg{}\@@
+  \extractcommand\zxDivider\oarg{picture style}\oarg{picture style}\opt{.}\opt{-}\opt{'}\marg{}\@@
   \pgfmanualbody
   Dividers can be used to split (or gather) groups of wires. The |.|,|-|,|'| modifiers are used, respectively, to denote the bottom/right/top versions:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
@@ -890,7 +911,7 @@ We provide some pre-defined symbols in both horizontal: %
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxMatrix\opt{.}\opt{-}\opt{'}\opt{/}\opt{*}\opt{\_\{text in pmatrix\}}\oarg{pic style}\oarg{node style}\marg{matrix name}\@@
+  \extractcommand\zxMatrix\oarg{pic style}\oarg{node style}\opt{.}\opt{-}\opt{'}\opt{/}\opt{*}\opt{\_\{text in pmatrix\}}\marg{matrix name}\@@
   \pgfmanualbody
   Matrices are represented using arrows: |matrix name| is the content of the label of the node:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
@@ -900,17 +921,17 @@ We provide some pre-defined symbols in both horizontal: %
 \end{ZX}
 \end{codeexample}
 }
-The |*| option is used to reverse the direction of the arrow, typically for the transpose (note how we can give an alias (with |a| in |node style|) to combine with |math baseline| to properly vertically align the node):
+The |*| option is used to reverse the direction of the arrow, typically for the transpose (note how we can give an alias (with |a| in |node style|) to combine with |math baseline|, or its quicker variants |mbr=nb line to center on| to properly vertically align the node):
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 We define %
-$\begin{ZX}[math baseline=myf]
-  \zxN{} \rar[B] & \zxMatrix*[][a=myf]{A} \rar[B] & \zxN{}
+$\begin{ZX}[mbr]
+  \zxN{} \rar[B] & \zxMatrix*{A} \rar[B] & \zxN{}
 \end{ZX} \coloneqq
-\begin{ZX}[math baseline=myA]
-            & [\zxWCol] \zxN{} \ar[B,dr,s]                 & [\zxWCol] \zxN{} \\[\zxZeroCol+.3mm]
-\ar[B,dr,s] & \zxMatrix[][a=myA]{A} \ar[B,u,C] \ar[B,d,C-] &                  \\
-            &                                              & \zxN{}           \\
+\begin{ZX}[mbr=2]
+            & [\zxWCol] \zxN{} \ar[B,dr,s]        & [\zxWCol] \zxN{} \\[\zxZeroCol+.3mm]
+\ar[B,dr,s] & \zxMatrix{A} \ar[B,u,C] \ar[B,d,C-] &                  \\
+            &                                     & \zxN{}           \\
 \end{ZX}$.
 \end{codeexample}
 }
@@ -972,7 +993,7 @@ is a shortcut for %
 \end{ZX}
 \end{codeexample}
 }
-Note that it seems that some environment does not play well with the way we handle |&| (our changes were needed to make them compatible with |align|, and to provide an easy interface with the |external| library… but it seems to not fit well with all environments, e.g.\ arrays). In that case you should use |\begin{ZXNoExt}| together with |[ampersand replacement=\&]| (of course, use |\&| instead of |&| in the rest of the matrix):
+Note that it seems that some environments do not play well with the way we handle |&| (our changes were needed to make them compatible with |align|, and to provide an easy interface with the |external| library… but it seems to not fit well with all environments, e.g.\ arrays). In that case you should use |\begin{ZXNoExt}| together with |[ampersand replacement=\&]| (of course, use |\&| instead of |&| in the rest of the matrix):
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 $\begin{ZXNoExt}[ampersand replacement=\&]
@@ -2116,7 +2137,7 @@ However, this method has several limitations: first, it is non-trivial to define
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
-    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {};
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, zx main node, alias=mynode] at (0,0) {};
     \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
   }
   \begin{ZX}
@@ -2124,7 +2145,7 @@ However, this method has several limitations: first, it is non-trivial to define
   \end{ZX}
 \end{codeexample}
 }
-Note how giving an empty name |name=| to a node makes it the target of arrows. Without this, the lines would go to the coordinate |(0,0)|, and go through all the nodes:
+Note how giving |zx main node| to a node makes it the target of arrows (note that you should make sure that your picture has at least one main node if you want features like |debug mode| to work). Without this, the lines would go to the coordinate |(0,0)|, and go through all the nodes:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
@@ -2141,7 +2162,7 @@ Note that sometimes, one might want to draw lines to a fixed point, while leavin
 \begin{codeexample}[width=0pt]
 \zxNewNodeFromPic{MyDivider}{
   \node[regular polygon, regular polygon sides=3, shape border rotate=90,
-        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
 }
 Compare %
 \begin{ZX}
@@ -2155,12 +2176,12 @@ and %
 }
 Note that I'm working on a better solutions to move nodes on different layers, or automatically see which anchor to choose depending on the custom node… but it's not that \mylink{https://tex.stackexchange.com/questions/618823/node-on-layer-style-in-tikz-matrix-tikzcd}{easy}.
 
-We can similarly put the |name=| on the other node to point to the other node by default:
+We can similarly put the |zx main node| on the other node to point to the other node by default:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
     \node[draw,fill=blue!50,draw=blue,inner sep=3mm, alias=mynode] at (0,0) {};
-    \node[draw,fill=red!50,draw=blue,inner sep=1mm, name=] at (mynode.north east) {};
+    \node[draw,fill=red!50,draw=blue,inner sep=1mm, zx main node] at (mynode.north east) {};
   }
   \begin{ZX}
     A \rar[end anchor=center,on layer=main] & \zxMyNode{} \rar & B & \zxMyNode{} & \zxMyNode{}
@@ -2172,7 +2193,7 @@ We can similarly put the |name=| on the other node to point to the other node by
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
-    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=] at (0,0) {};
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, zx main node] at (0,0) {};
     \zxExtendBoundingBox{horizontal=1cm, vertical=3mm}
   }
   \begin{ZX}
@@ -2185,7 +2206,7 @@ We can similarly put the |name=| on the other node to point to the other node by
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyNode}{
-    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {\tikzpictext};
+    \node[draw,fill=blue!50,draw=blue,inner sep=3mm, zx main node, alias=mynode] at (0,0) {\tikzpictext};
     \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
   }
   \begin{ZX}
@@ -2269,7 +2290,7 @@ Nothing prevents you from doing so directly in the default style. Just, make sur
     /zx/picCustomStyleMyBoxMainNode/.append style={####1},
   },
 ]{%
-  \node[draw, inner sep=1.3mm, rectangle, name=, execute at begin node=$, execute at end node=$,
+  \node[draw, inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,
     /zx/picCustomStyleMyBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleMyBoxMainNode,
   ]{\tikzpictext};%
@@ -2291,7 +2312,7 @@ Nothing prevents you from doing so directly in the default style. Just, make sur
     % Just to show how to quickly scale a node by default, to quickly update the size of a whole picture:
     scale=1.3
   ]{
-      \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, inner sep=1mm,rounded corners, name=] {};
+      \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, inner sep=1mm,rounded corners, zx main node] {};
   }
   \begin{ZX}
     \zxMyTriangle{} \rar & \zxMyTriangle-{} & \zxMyTriangle'{} \dar \\
@@ -2305,7 +2326,7 @@ Note however that you can customize how rotations is applied. By default, the |'
   \zxNewNodeFromPic{MyTriangle}[
     every node/.style={transform shape},
   ]{
-      \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, font=\footnotesize,inner sep=1pt,rounded corners, name=] {\tikzpictext};
+      \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, font=\footnotesize,inner sep=1pt,rounded corners, zx main node] {\tikzpictext};
   }
   \begin{ZX}
     \zxMyTriangle{A} \rar   & \zxMyTriangle-{A}   & \zxMyTriangle'{A} \dar   \\
@@ -2322,7 +2343,7 @@ To avoid that issue, we will undo the default rotation, and apply on the node of
   ]{
     \node[
       regular polygon, regular polygon sides=3, draw=black,fill=blue!50, font=\footnotesize,
-      inner sep=1pt,rounded corners, name=,
+      inner sep=1pt,rounded corners, zx main node,
       shape border rotate=90+\zxCurrentRotationMode, % Rotates the shape but not the text
     ] {\tikzpictext};
   }
@@ -2341,7 +2362,7 @@ Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\
     % Note that this is the SECOND optional argument!
     zx create anchors={anchorA,anchorB},
   ]{
-      \node[star, minimum size=6mm, draw, alias=mystar, fill=red, name=] at (0,0) {};
+      \node[star, minimum size=6mm, draw, alias=mystar, fill=red, zx main node] at (0,0) {};
       \coordinate (anchorA) at (mystar.outer point 1);
       \coordinate (anchorB) at (mystar.outer point 2);
   }
@@ -2358,7 +2379,7 @@ The ZX library typically uses four special anchors |fake center east/…| to det
   every node/.style={transform shape}
   ]{
   \node[regular polygon, regular polygon sides=3,shape border rotate=90,%shape border rotate=90,
-        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,name=] {};
+        draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
   \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
   \coordinate(\zxVirtualCenterWest) at (-1mm,0);
 }
@@ -2407,7 +2428,7 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 \zxNewNodeFromPic{MyNode}[][zx create anchors/.expanded={fake center west}]{
-  \node[draw,fill=blue!50,draw=blue,inner sep=3mm, name=, alias=mynode] at (0,0) {};
+  \node[draw,fill=blue!50,draw=blue,inner sep=3mm, zx main node, alias=mynode] at (0,0) {};
   \node[draw,fill=red!50,draw=blue,inner sep=1mm] at (mynode.north east) {};
   \coordinate(fake center west) at (mynode.north east);
 }
@@ -2422,9 +2443,9 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyDoubleNode}{
-      \node[fill=blue!20, name=, inner sep=3mm] at (0,0) {};
+      \node[fill=blue!20, zx main node, inner sep=3mm] at (0,0) {};
       \node[circle,fill=red!70, inner sep=.8mm,name=redNode] at (0,1.5mm) {};
-      \node[circle,fill=orange!70, inner sep=.8mm,name=orangeNode] at (0,-1.5mm) {};
+      \node[circle,fill=orange!70, inner sep=.8mm, name=orangeNode] at (0,-1.5mm) {};
   }
   \begin{ZX}
     A \rar[end subnode=redNode] \rar[end subnode=orangeNode] &[5mm] \zxMyDoubleNode{}\\
@@ -2435,7 +2456,56 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 
 \end{pgfmanualentry}
 
-\subsection{Externalize}
+\subsection{Caching pictures via an externalization library}
+
+The pictures built with this package can easily take maybe 0.5 seconds per picture to be built, which can easily add up to a long compilation time. Caching externalization can save you a lot of time: I went from a tiny draft taking 30 seconds to be built to a built time of 2.5 seconds.
+
+\subsubsection{robust-externalize: recommended}
+
+While \tikzname{} provides an external library, it has many drawbacks that make it unusable in practice. To solve that issue, I created my own library called \mylink{https://github.com/leo-colisson/robust-externalize}{\texttt{robust-externalize}}. It's still very young, but has been working really reliably in my tests.
+
+To use it, first install |robust-externalize| by copy/pasting robust-externalize.sty in your project (unless your \LaTeX{} distribution already has it), and load it using something like that (you might want to change the template to add packages to use when compiling separately the images):
+\begin{lstlisting}
+\usepackage{robust-externalize}
+\pgfkeys{
+  /robExt/.cd,
+  templateZX/.style={
+    set subfolder={robustExternalize/}, % Images will be put in the robustExternalize/ folder
+    defineTemplate={
+      \documentclass{standalone}
+      %% You can update this template to fit your needs: put here any package/definition your ZX diagrams will need
+      %% (if you use \input{}, make sure to use \input{../} as it is compiled in a subfolder)
+      \usepackage{amsmath}
+      \usepackage{zx-calculus}
+      \begin{document}%
+      \robExtMainContent%
+      \end{document}
+    },
+    dependencies={}, % Add here any file that must induce a recompilation of your file if it changes.
+  },
+}
+
+%% We redefine the ZX environments to use instead 
+\RenewDocumentEnvironment{ZX}{O{}O{}+b}{%
+  \begin{robExtern}{templateZX,#2}%
+    \begin{ZX}[#1]%
+      #3%
+    \end{ZX}%
+  \end{robExtern}%
+}{}
+
+\RenewDocumentCommand{\zx}{O{}O{}m}{%
+  \begin{robExtern}{templateZX,#2}%
+    \zx[#1]{#3}%
+  \end{robExtern}%
+}
+\end{lstlisting}
+
+Now, just recompile your project: it should cache the pictures. See \mylink{https://github.com/leo-colisson/robust-externalize}{\texttt{robust-externalize}} for more details.
+
+\subsubsection{Tikz external: not recommended}
+
+\textbf{WARNING}: I added some options to use tikz |external| library to save compilation time... And then I realized that tikz |external| was quite close to be unusable in practice as it has many caveats. I ended up coding my own replacement to externalize any operation, and it works much better! See comment in the previous section.
 
 Since 2022/02/08, it is possible to use the tikz |external| library to save compilation time. To load it, you need to add the following tikz libraries:
 \begin{verse}
