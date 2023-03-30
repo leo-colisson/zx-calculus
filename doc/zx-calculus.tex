@@ -92,7 +92,7 @@ Since 24/02/2023, we also provide ways to easily create new, highly customizable
 \begin{codeexample}[width=0pt]
 % Define a reusable node
 \zxNewNodeFromPic{MyDivider}[][zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast},
-  every node/.style={transform shape}
+  every node/.append style={transform shape}
   ]{
   \node[regular polygon, regular polygon sides=3,shape border rotate=90,%shape border rotate=90,
         draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
@@ -758,8 +758,9 @@ Note that in |\zxFracZ{a+b}[(a+b)][(c+d)]{c+d}| the optional arguments are usefu
   If this macro is defined, debug mode is active. See below how it can be useful (here is a quick example).
 \begin{codeexample}[width=3cm]
 \begin{ZX}[debug mode]
-  \zxZ{} \ar[to=secondNode] & \zxZ[a=secondNode]{} & \zxX{}\\
-                            & \zxZ[a=thirdNode]{}
+  \rar[B] & [\zxwCol] \zxDivider[a=divTop]{} & \\
+  &                                  & \zxZ[a=Ztopleft]{}
+  \ar[from=divTop, to=Ztopleft]
 \end{ZX}
 \end{codeexample}
 \end{stylekey}
@@ -2303,12 +2304,12 @@ Nothing prevents you from doing so directly in the default style. Just, make sur
 \end{codeexample}
 }
 
-\paragraph{Rotations.} Note that often, we want to rotate the nodes. The automatically generated macro to add new nodes comes with multiple flavors by adding the usual symbols |-|,|'|,|'|: by default, |\myNode-| will ``rotate'' by 180 degrees the pic, |\myNode'| will rotate it by 270 degrees to fake a node put ``above'', and |\myNode'| will rotate it by 90 degrees to fake a node put below. Importantly, by default tikz rotates/scales the coordinates, but \textbf{not the nodes or text}, so you might want to specify \textbf{transform shape} on each node you want to rotate and scale according to the parent transform, or using the |every node/.style={transform shape}| option to apply it on all nodes:
+\paragraph{Rotations.} Note that often, we want to rotate the nodes. The automatically generated macro to add new nodes comes with multiple flavors by adding the usual symbols |-|,|'|,|'|: by default, |\myNode-| will ``rotate'' by 180 degrees the pic, |\myNode'| will rotate it by 270 degrees to fake a node put ``above'', and |\myNode'| will rotate it by 90 degrees to fake a node put below. Importantly, by default tikz rotates/scales the coordinates, but \textbf{not the nodes or text}, so you might want to specify \textbf{transform shape} on each node you want to rotate and scale according to the parent transform, or using the |every node/.append style={transform shape}| (\textbf{WARNING}: make sure to use |append| or otherwise |zx main node| you not work and you will not be able to give a name to a node) option to apply it on all nodes:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyTriangle}[
     % To also rotate/scale the node, otherwise only it's coordinate is rotated
-    every node/.style={transform shape},
+    every node/.append style={transform shape},
     % Just to show how to quickly scale a node by default, to quickly update the size of a whole picture:
     scale=1.3
   ]{
@@ -2324,7 +2325,7 @@ Note however that you can customize how rotations is applied. By default, the |'
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyTriangle}[
-    every node/.style={transform shape},
+    every node/.append style={transform shape},
   ]{
       \node[regular polygon, regular polygon sides=3, shape border rotate=90, draw=black,fill=blue!50, font=\footnotesize,inner sep=1pt,rounded corners, zx main node] {\tikzpictext};
   }
@@ -2371,12 +2372,12 @@ Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\
   \end{ZX}
 \end{codeexample}
 }
-The ZX library typically uses four special anchors |fake center east/…| to determine where some wires should start (not all kinds of wires follow this convention). Because the north anchor is not anymore in the north after applying a rotation, we provide also |\zxVirtualCenterWest| (same for |East|, |North|, |South|) that will ``counter balance'' the rotation, to ensure the real north anchor is always in the north, by renaming the anchors appropriately. This way, by using these ``virtual anchors'', you only need to place your anchor when the shape is not rotated, and it should automatically rotate the anchors appropriately when needed (see remarks regarding |every node/.style={transform shape}|):
+The ZX library typically uses four special anchors |fake center east/…| to determine where some wires should start (not all kinds of wires follow this convention). Because the north anchor is not anymore in the north after applying a rotation, we provide also |\zxVirtualCenterWest| (same for |East|, |North|, |South|) that will ``counter balance'' the rotation, to ensure the real north anchor is always in the north, by renaming the anchors appropriately. This way, by using these ``virtual anchors'', you only need to place your anchor when the shape is not rotated, and it should automatically rotate the anchors appropriately when needed (see remarks regarding |every node/.append style={transform shape}|):
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 % Define a reusable node
   \zxNewNodeFromPic{MyDivider}[][zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast},
-  every node/.style={transform shape}
+  every node/.append style={transform shape}
   ]{
   \node[regular polygon, regular polygon sides=3,shape border rotate=90,%shape border rotate=90,
         draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
@@ -2405,7 +2406,7 @@ You can even dynamically add anchors depending on the input of the user. For ins
 \zxNewNodeFromPic{MyStar}[
   nb spikes/.store in=\myNbSides,
   nb spikes=5,
-  every node/.style={transform shape},
+  every node/.append style={transform shape},
   ][
     % zx create anchors is parsed ultimately by \foreach so we can use lists like
     % this to create anchors spike-1, spike-2...

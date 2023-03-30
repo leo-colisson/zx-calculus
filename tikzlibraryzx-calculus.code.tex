@@ -1893,7 +1893,6 @@
           \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
             \def\zx@arguments{####1}%
             \edef\zx@tmp{%
-              /utils/exec={\message{XXXXXXXXXXx \tikzlastnode}},%
               /zx/internals/postRunIfIamStartNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
             }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
             {%
@@ -1929,7 +1928,6 @@
         /utils/exec={% We provide a way to disable the default behavior
           \ifdefined\zxDisablePostRunStart\else%
             %%% If it is an alias, we replace it with the original node:
-            \message{\the\tikz@fig@count}%
             \ifcsname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname% This is an alias: let's rename it to the original node
               \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname}%
             \fi%
@@ -2563,7 +2561,7 @@
         },
         rotate=\zxCurrentRotationMode,%        
       },%
-      ##1}, zx forward to node/.append style={/utils/exec={\message{XXXXXXXXXXXXXXXXXXX}}}, zx forward to node, #5, ##2]|%
+      ##1}, #5, ##2]|%
   }%
 }%
 
@@ -2631,7 +2629,7 @@
     start anchor if not set=fake center south,
   },%
   zx create anchors={\zxVirtualCenterWest, \zxVirtualCenterEast, \zxVirtualCenterNorth, \zxVirtualCenterSouth},
-  every node/.style={transform shape}
+  every node/.append style={transform shape}
 ]{
   \node[regular polygon, regular polygon sides=3,shape border rotate=90, draw=black,fill=gray!50, inner sep=1.6pt, rounded corners=0.8mm,zx main node] {};
   \coordinate(\zxVirtualCenterEast) at (.2mm,0); % Used to start lines on the side of the shape
