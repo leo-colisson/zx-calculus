@@ -2916,13 +2916,34 @@
 %     left/.initial=1pt,right/.initial=1pt,bottom/.initial=1pt,top/.initial=1pt
 %   }}
 
-\tikzset{fit margins/.style={/tikz/afit/.cd,#1,
+\tikzset{
+  fit margins/.style={
+    /tikz/afit/.cd,#1,
     /tikz/.cd,
     inner xsep=\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
     inner ysep=\pgfkeysvalueof{/tikz/afit/top}+\pgfkeysvalueof{/tikz/afit/bottom},
     xshift=-\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
-    yshift=-\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top}},
-    afit/.cd,left/.initial=1pt,right/.initial=1pt,bottom/.initial=1pt,top/.initial=1pt,/tikz/.cd}
+    yshift=-\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top}
+  },
+  afit/.cd,
+  left/.initial=1pt,
+  right/.initial=1pt,
+  bottom/.initial=1pt,
+  top/.initial=1pt,
+  horizontal/.style={
+    left=#1,
+    right=#1,
+  },
+  vertical/.style={
+    top=#1,
+    bottom=#1,
+  },
+  all/.style={
+    horizontal=#1,
+    vertical=#1,
+  },
+  /tikz/.cd
+}
 
 \NewExpandableDocumentCommand{\zxNamedBox}{O{}O{blue}mO{}m}{
   \node[inner sep=2pt, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
