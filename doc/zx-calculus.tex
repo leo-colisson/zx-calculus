@@ -417,12 +417,12 @@ The following commands are useful to create different kinds of nodes. Always add
 
 
 \begin{pgfmanualentry}
-  \extractcommand\zxNone\opt{+}\opt{-}\marg{text}\@@
-  \extractcommand\zxN\opt{+}\opt{-}\marg{text}\@@
+  \extractcommand\zxNone\opt{-\textbar+}\marg{text}\@@
+  \extractcommand\zxN\opt{-\textbar+}\marg{text}\@@
   \extractcommand\zxNL\@@
   \extractcommand\zxNR\@@
   \pgfmanualbody
-  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). The \verb#-|+# decorations are used to add a bit of horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing (I don't know how to add \verb#|# in the documentation of the function).
+  Adds an empty node with |\zxNone{}| (alias |\zxN{}|). The \verb#-|+# decorations are used to add a bit of horizontal (\verb#\zxNone-{}#), vertical (\verb#\zxNone|{}#) and both (\verb#\zxNone+{}#) spacing.
 
   |\zxNone| is just a coordinate (and therefore can't have any text inside, but when possible this node should be preferred over the other versions since it has really zero width), but |\zxNone-{}| and \verb#\zxNone|{}# are actually nodes with |inner sep=0| along one direction. For that reason, they still have a tiny height or width (impossible to remove as far as I know). If you don't want to get holes when connecting multiple wires to them, it is therefore necessary to use |\zxNone{}| or the |wire centered| style (alias |wc|) (if you are using the |IO| mode, see also the |between none| style). But anyway you should mostly use |\zxNone|.
 
@@ -482,8 +482,8 @@ You may also get the error |Single ampersand used with wrong catcode| when |&| h
 \end{align}
 \end{codeexample}
 
-\begin{command}{\zxNoneDouble\opt{+-}\marg{text}}
-  Like |\zxNone|, but the spacing for \verb#+-|# is large enough to fake two lines in only one. Not extremely useful (or one needs to play with |start anchor=south,end anchor=north|).
+\begin{command}{\zxNoneDouble\opt{-\textbar+}\marg{text}}
+  Like |\zxNone|, but the spacing for \verb#-|+# is large enough to fake two lines in only one. Not extremely useful (or one needs to play with |start anchor=south,end anchor=north|).
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=3cm]
 \begin{ZX}
