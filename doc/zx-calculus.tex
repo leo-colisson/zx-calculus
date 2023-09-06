@@ -167,14 +167,37 @@ To link the nodes, you should use |\arrow[options]| (|\ar[options]| for short) a
 \end{codeexample}
 See how the alignment of your matrix helps reading it: in emacs |M-x align| is your friend (or even better, if you are tired of selecting the lines to align, bind \mylink{https://tex.stackexchange.com/a/64566/116348}{this \texttt{align-environment} function} to some shortcuts, like |C-<tab>| and you will just have to do a single key-press to align your matrix).
 
-You may also encounter some shortcuts, like |\rar| instead of |\ar[r]|. Since straight lines are boring, we created many styles that you can just add in the options. For instance, a measured Bell-pair can be created using the |C| style (note also how the |*| argument forces the node to be tighter):
+You may also encounter some shortcuts, like |\rar| instead of |\ar[r]|. Since straight lines are boring, we created many styles that you can just add in the options. For instance, a measured Bell-pair can be created using the |C| style (note also how the |*| argument forces the node to be tighter), as the name of the style tries to mimic the shape of the wire:
 \begin{codeexample}[]
 \begin{ZX}
   \zxZ*{a \pi} \ar[d,C]\\
   \zxZ*{b \pi}
 \end{ZX}
 \end{codeexample}
-The name of the style usually tries to graphically represent the shape of a node (here it looks like a |C|). We also introduce many other styles, like |N| for wires that arrive and leave at wide angle (yeah, the |N| is the best letter I could find to fit that shape):
+
+\alertinfo{
+  \textbf{Tips}: on small diagrams, describing the arrow position using relative position like \texttt{rrb} works really nicely, but on big diagrams that you need to rewrite, it can quickly be hard to manage, as moving a node will break all links to it. While it is possible to specify both |from| and |to| in an absolute way, the experience shows that it is easier to work with a ``semi-relative'' addressing, where only the |to| is specified in an absolute setting, while the |from| is automatically derived from the current position of the arrow. You can use \texttt{a=somename} to give a name for a node (\texttt{a} being the short name of alias).}
+
+This way, on non-trivial diagrams, we recommend to format graphs like:
+\begin{codeexample}[]
+\begin{ZX}
+  \zxN{}                                      & \zxZ[a=beta]{\beta} \\
+  \zxZ{\alpha} \ar[to=beta,N] \ar[to=gamma,N] &                     \\
+                                              & \zxZ[a=gamma]{\gamma}
+\end{ZX}
+\end{codeexample}
+Note that you can also set |debug mode| to display the name of the nodes for an easier addressing:
+\begin{codeexample}[]
+\begin{ZX}[debug mode]
+  % See how the code stayed unchanged despite changing the position of the nodes
+  \zxN{}                                      & \zxZ[a=beta]{\beta} \\
+  \zxZ{\alpha} \ar[to=beta,N] \ar[to=gamma,N] &                     \\
+                                              &                     \\
+                                              &  & \zxZ[a=gamma]{\gamma}
+\end{ZX}
+\end{codeexample}
+
+We also introduce many other styles, like |N| for wires that arrive and leave at wide angle (yeah, the |N| is the best letter I could find to fit that shape):
 \begin{codeexample}[]
 \begin{ZX}
   \zxN{}                           & \zxZ{\beta}\\
@@ -218,7 +241,7 @@ You also have styles which automatically add another node in between, for instan
   \zxZ{\alpha} \ar[r,o',H] \ar[r,o.,H] &[\zxHCol] \zxZ{\beta}
 \end{ZX}
 \end{codeexample}
-Note that we used also |&[\zxHCol]| instead of |&| (on the first line). This is useful to add an extra space between the columns to have a nicer look. The same apply for rows (see the |*Row| instead of |*Col|):
+Note that we used also |&[\zxHCol]| instead of |&| (on the first line). This is useful to add an extra space between the columns to have a nicer look. The same applies for rows (see the |*Row| instead of |*Col|):
 \begin{codeexample}[]
 \begin{ZX}
   \zxZ{\alpha} \ar[d,-o,Z] \ar[d,o-,X] \\[\zxSRow]
@@ -1009,6 +1032,41 @@ $\begin{ZXNoExt}[ampersand replacement=\&]
 \end{ZXNoExt}$
 \end{codeexample}
 }
+Here is a demo to check if the true north etc anchors are placed correctly:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C'] \ar[to=Gll,C.] & \zxMatrix[a=Gll]'{G}
+\end{ZX} %
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C'] \ar[to=Gll,C.] & \zxMatrix[a=Gll]'*{G}
+\end{ZX} %
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C'] \ar[to=Gll,C.] & \zxMatrix[a=Gll].{G}
+\end{ZX} %
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C'] \ar[to=Gll,C.] & \zxMatrix[a=Gll].*{G}
+\end{ZX} %
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C] \ar[to=Gll,C-] \\
+  \zxMatrix[a=Gll]{G}
+\end{ZX} %
+\begin{ZX} %
+  \zxH{} \ar[to=Gll,C] \ar[to=Gll,C-] \\
+  \zxMatrix[a=Gll]*{G}
+\end{ZX} %
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C-] \ar[to=Gll,C] \\
+  \zxMatrix[a=Gll]-{G}
+\end{ZX} %
+\begin{ZX}
+  \zxH{} \ar[to=Gll,C] \ar[to=Gll,C-] \\
+  \zxMatrix[a=Gll]-*{G}
+\end{ZX}
+\end{codeexample}
+}
+
+
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -2304,7 +2362,7 @@ Nothing prevents you from doing so directly in the default style. Just, make sur
 \end{codeexample}
 }
 
-\paragraph{Rotations.} Note that often, we want to rotate the nodes. The automatically generated macro to add new nodes comes with multiple flavors by adding the usual symbols |-|,|'|,|'|: by default, |\myNode-| will ``rotate'' by 180 degrees the pic, |\myNode'| will rotate it by 270 degrees to fake a node put ``above'', and |\myNode'| will rotate it by 90 degrees to fake a node put below. Importantly, by default tikz rotates/scales the coordinates, but \textbf{not the nodes or text}, so you might want to specify \textbf{transform shape} on each node you want to rotate and scale according to the parent transform, or using the |every node/.append style={transform shape}| (\textbf{WARNING}: make sure to use |append| or otherwise |zx main node| you not work and you will not be able to give a name to a node) option to apply it on all nodes:
+\paragraph{Rotations.} Note that often, we want to rotate the nodes. The automatically generated macro to add new nodes comes with multiple flavors by adding the usual symbols |-|,|'|,|.|: by default, |\myNode-| will ``rotate'' by 180 degrees the pic, |\myNode'| will rotate it by 270 degrees to fake a node put ``above'', and |\myNode.| will rotate it by 90 degrees to fake a node put below. Importantly, by default tikz rotates/scales the coordinates, but \textbf{not the nodes or text}, so you might want to specify \textbf{transform shape} on each node you want to rotate and scale according to the parent transform, or using the |every node/.append style={transform shape}| (\textbf{WARNING}: make sure to use |append| or otherwise |zx main node| you not work and you will not be able to give a name to a node) option to apply it on all nodes:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyTriangle}[
@@ -2356,7 +2414,7 @@ To avoid that issue, we will undo the default rotation, and apply on the node of
 }
 Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\zxMyNode.| (for instance, it might be more natural to denote |'| in place of |.| and |.| in place |'|, since these symbols visually represent the top/bottom place of the node). In that case, you just need to apply the style |invert top bottom| or |invert right left| in your \emph{style before user} and it will invert them automatically.
 
-\paragraph{Add anchors to node.} We can automatically (and easily) add multiple anchors to our nodes (the |fake center east/…| anchor is used for instance by shapes like |\ar[<']| to see where the node should start from): just add coordinates with the name of the desired anchor in your graph (say |anchorA| and |anchorB|), and in \emph{style \textbf{after} user} add this list of anchor like: |zx create anchors={anchorA,anchorB}| (actually this list is expanded using the |\foreach| syntax so you can use more advanced syntax like |anchor1,anchor...,anchor10| to avoid repeating the 10 names of the anchor). For instance, we can do this way:
+\paragraph{Add anchors to node.} We can automatically (and easily) add multiple anchors to our nodes (the |fake center east/…| anchors are used for instance by shapes like |\ar[<']| to see where the node should start from, while the |true north/…| anchors are used to notify where is the true north after the rotation (after rotating a node, the east might actually be on the north etc), which is for instance used by shapes like |C'|): just add coordinates with the name of the desired anchor in your graph (say |anchorA| and |anchorB|), and in \emph{style \textbf{after} user} add this list of anchor like: |zx create anchors={anchorA,anchorB}| (actually this list is expanded using the |\foreach| syntax so you can use more advanced syntax like |anchor1,anchor...,anchor10| to avoid repeating the 10 names of the anchor). For instance, we can do this way:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyStar}[][
@@ -2372,7 +2430,7 @@ Note that one might want to exchange |\zxMyNode|/|\zxMyNode-| or |\zxMyNode'|/|\
   \end{ZX}
 \end{codeexample}
 }
-The ZX library typically uses four special anchors |fake center east/…| to determine where some wires should start (not all kinds of wires follow this convention). Because the north anchor is not anymore in the north after applying a rotation, we provide also |\zxVirtualCenterWest| (same for |East|, |North|, |South|) that will ``counter balance'' the rotation, to ensure the real north anchor is always in the north, by renaming the anchors appropriately. This way, by using these ``virtual anchors'', you only need to place your anchor when the shape is not rotated, and it should automatically rotate the anchors appropriately when needed (see remarks regarding |every node/.append style={transform shape}|):
+The ZX library typically uses some special anchors like |fake center east/…| and |true east/…| to determine where some wires should start (not all kinds of wires follow this convention, for instance |<'| uses |fake center| since the wire is supposed to leave close to the center, while |C| follows |true west| since the wire is supposed to leave from the west). Because the north anchor is not anymore in the north after applying a rotation, we provide also |\zxVirtualCenterWest| (same for |East|, |North|, |South|) that will ``counter balance'' the rotation, to ensure the real north anchor is always in the north, by renaming the anchors appropriately. This way, by using these ``virtual anchors'', you only need to place your anchor when the shape is not rotated, and it should automatically rotate the anchors appropriately when needed (see remarks regarding |every node/.append style={transform shape}|):
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 % Define a reusable node

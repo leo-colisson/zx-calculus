@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2023/04/24
+%%% Version: 2023/09/06
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -679,13 +679,25 @@
           \ifPgfpointOrNode{\tikztostart}{%
             \def\StartPoint{\tikztostart}%
           }{%
-            \def\StartPoint{\tikztostart.##4}%
+            % For some nodes, "north" might not point to north (notably after a rotation). So we can define some anchors "true north" that actually point
+            % to the north.
+            % Test if "true north" etc exists:
+            \ifAnchorExistsNodeSpecific{\tikztostart}{true ##4}{%
+              \def\StartPoint{\tikztostart.true ##4}%
+            }{%
+              \def\StartPoint{\tikztostart.##4}%
+            }%  
           }%
           % Test if tikztostart is a point or a node, and define StartPoint accordingly.
           \ifPgfpointOrNode{\tikztotarget}{%
             \def\TargetPoint{\tikztotarget}%
           }{%
-            \def\TargetPoint{\tikztotarget.##4}%
+            % Test if "true north" etc exists:
+            \ifAnchorExistsNodeSpecific{\tikztotarget}{true ##4}{%
+              \def\TargetPoint{\tikztotarget.true ##4}%
+            }{%
+              \def\TargetPoint{\tikztotarget.##4}%
+            }%  
           }%
         }%
         (\StartPoint) % <- the path starts at StartPoint
@@ -726,10 +738,6 @@
     % too close or too far appart. However, it may still be useful, so now we define the old
     % styles, that you can use them using \ar[r,IO,C].
     % NB: for the newest styles, we add new anchors to the nodes depending on the direction.
-    % I also wanted to add more complicated ways to configqure the starting point (i.e. start at the boundary
-    % and not behind the node), but seems like it's hard (impossible?) to do with matrices...
-    % The reason is that the intersection library seems to fail with matrices.
-    % If you know how to solve that, you can help here: https://tex.stackexchange.com/questions/619274
     C/.style={C@generic={min}{90}{180+90}{west}{\x}{\y}{(\n1,\y1)}{y radius=\n3, x radius=##1*\n3}},
     C/.default=1,
     % Like C, but rotated
@@ -2082,6 +2090,26 @@
   \ifAnchorExistsFromShape{\shapenode}{#2}{#3}{#4}%
 }
 
+%% If we manually add an anchor to a note, \ifAnchorExists will not work. Hence this improved version:
+%% Note that #3 and #4 will run in a group
+\def\ifAnchorExistsNodeSpecific#1#2#3#4{%
+  \let\zxcalculus@tmp\undefined% This is used to run #3 and #4 outside the group
+  {% group not to pollute stuff with pgf@sh@ma
+    \ifcsname pgf@sh@ma@#1\endcsname% per node config
+      \csname pgf@sh@ma@#1\endcsname% we run the config
+    \fi%
+    %%% First we extract the shape of the node:
+    \edef\pgf@node@name{#1}%
+    \edef\shapenode{\csname pgf@sh@ns@\pgf@node@name\endcsname}% e.g. rectangle
+    \ifAnchorExistsFromShape{\shapenode}{#2}{\gdef\zxcalculus@tmp{}}{}%    
+  }%
+  \ifdefined\zxcalculus@tmp%
+    #3%
+  \else%
+    #4%
+  \fi%
+}
+
 %%% Create different kinds of dots...
 %% https://tex.stackexchange.com/questions/617959
 %% https://tex.stackexchange.com/questions/528774/excess-vertical-space-in-vdots/528775#528775
@@ -2494,17 +2522,26 @@
       %% can be configured by reading this variable).
       /utils/exec={%
         \def\zxCurrentRotationMode{0}%
+        %%% Fake center is mostly for curves like <', and true north/ is mostly for curves like C, C'...
         %%% These anchor name are changed depending on the rotation: the north/… is before the rotation.
         \def\zxVirtualCenterNorth{fake center north}%
         \def\zxVirtualCenterSouth{fake center south}%
         \def\zxVirtualCenterEast{fake center east}%
         \def\zxVirtualCenterWest{fake center west}%
+        \def\zxTrueNorth{true north}%
+        \def\zxTrueSouth{true south}%
+        \def\zxTrueEast{true east}%
+        \def\zxTrueWest{true west}%
         \IfBooleanT{##3}{%
           \def\zxCurrentRotationMode{90}%
           \def\zxVirtualCenterNorth{fake center west}%
           \def\zxVirtualCenterSouth{fake center east}%
           \def\zxVirtualCenterEast{fake center north}%
           \def\zxVirtualCenterWest{fake center south}%
+          \def\zxTrueNorth{true west}%
+          \def\zxTrueSouth{true east}%
+          \def\zxTrueEast{true north}%
+          \def\zxTrueWest{true south}%
         }%
         \IfBooleanT{##4}{%
           \def\zxCurrentRotationMode{180}%
@@ -2512,6 +2549,10 @@
           \def\zxVirtualCenterSouth{fake center north}%
           \def\zxVirtualCenterEast{fake center west}%
           \def\zxVirtualCenterWest{fake center east}%
+          \def\zxTrueNorth{true south}%
+          \def\zxTrueSouth{true north}%
+          \def\zxTrueEast{true west}%
+          \def\zxTrueWest{true east}%
         }%
         \IfBooleanT{##5}{%
           \def\zxCurrentRotationMode{270}%
@@ -2519,6 +2560,10 @@
           \def\zxVirtualCenterSouth{fake center west}%
           \def\zxVirtualCenterEast{fake center south}%
           \def\zxVirtualCenterWest{fake center north}%
+          \def\zxTrueNorth{true east}%
+          \def\zxTrueSouth{true west}%
+          \def\zxTrueEast{true south}%
+          \def\zxTrueWest{true north}%
         }%
         \IfBooleanT{##6}{%
           \def\zxModeSlash{}%
@@ -2646,7 +2691,7 @@
     rotate=-\zxCurrentRotationMode,
     % Otherwise the space between colums is too big
     /utils/exec={\setlength\arraycolsep{1pt}}, 
-  ][]{
+  ][zx create anchors={true north,true south,true east,true west}]{
   \node[zx main node, draw, signal, fill=colorZxMatrix, inner sep=1pt, minimum height=6pt, transform shape,
     % The direction of the shape is turned when using the * symbol (transpose). 
     signal to/.expanded={\ifdefined\zxModeStar west\else east\fi},
@@ -2676,6 +2721,10 @@
     /zx/picCustomStyleMatrixMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleMatrixMainNode,
     ]{};
+    \coordinate(true east) at (.east); % Used to start lines on the side of the shape
+    \coordinate(true west) at (.west);
+    \coordinate(true north) at (true west); % Synonyme, useful to determine where to start
+    \coordinate(true south) at (true east); % Synonyme, useful to determine where to start
 }
 
 % %% Box, that just draws... a box
