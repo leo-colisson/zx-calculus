@@ -2521,44 +2521,32 @@ The pictures built with this package can easily take maybe 0.5 seconds per pictu
 
 \subsubsection{robust-externalize: recommended}
 
-While \tikzname{} provides an external library, it has many drawbacks that make it unusable in practice. To solve that issue, I created my own library called \mylink{https://github.com/leo-colisson/robust-externalize}{\texttt{robust-externalize}}. It's still very young, but has been working really reliably in my tests.
+While \tikzname{} provides an external library, it has many drawbacks that make it unusable in practice. To solve that issue, I created my own library called \mylink{https://github.com/leo-colisson/robust-externalize}{\texttt{robust-externalize}}. It's still very young, but has been working really reliably in my tests (note that a major update occurred in september 2023, so we updated the instruction accordingly).
 
-To use it, first install |robust-externalize| by copy/pasting robust-externalize.sty in your project (unless your \LaTeX{} distribution already has it), and load it using something like that (you might want to change the template to add packages to use when compiling separately the images):
-\begin{lstlisting}
+To use it, first install |robust-externalize| by copy/pasting robust-externalize.sty in your project (unless your \LaTeX{} distribution already has it), make sure you have version 1.1, and load it using:
+\begin{codeexample}[code only]
 \usepackage{robust-externalize}
-\pgfkeys{
-  /robExt/.cd,
-  templateZX/.style={
-    set subfolder={robustExternalize/}, % Images will be put in the robustExternalize/ folder
-    defineTemplate={
-      \documentclass{standalone}
-      %% You can update this template to fit your needs: put here any package/definition your ZX diagrams will need
-      %% (if you use \input{}, make sure to use \input{../} as it is compiled in a subfolder)
+\robExtConfigure{
+  % We create a new preset for zx pictures
+  ZX/.style={
+    latex, % we inherit from the latex preset
+    add to preamble={  % we make sure the zx library is loaded when building cached images
       \usepackage{amsmath}
       \usepackage{zx-calculus}
-      \begin{document}%
-      \robExtMainContent%
-      \end{document}
     },
     dependencies={}, % Add here any file that must induce a recompilation of your file if it changes.
   },
 }
 
-%% We redefine the ZX environments to use instead 
-\RenewDocumentEnvironment{ZX}{O{}O{}+b}{%
-  \begin{robExtern}{templateZX,#2}%
-    \begin{ZX}[#1]%
-      #3%
-    \end{ZX}%
-  \end{robExtern}%
-}{}
+% say to cache by default all ZX environments (can be changed later) and \zx{} commands
+\cacheEnvironment{ZX}{ZX}
+\cacheCommand{zx}{ZX}
 
-\RenewDocumentCommand{\zx}{O{}O{}m}{%
-  \begin{robExtern}{templateZX,#2}%
-    \zx[#1]{#3}%
-  \end{robExtern}%
-}
-\end{lstlisting}
+% You can pass options to robust-externalize via <>
+\begin{ZX}<add to preamble={\def\name{Alice}}>
+  \zxX{\text{\name}}
+\end{ZX}
+\end{codeexample}
 
 Now, just recompile your project: it should cache the pictures. See \mylink{https://github.com/leo-colisson/robust-externalize}{\texttt{robust-externalize}} for more details.
 

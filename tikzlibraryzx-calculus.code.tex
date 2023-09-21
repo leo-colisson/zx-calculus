@@ -3,8 +3,18 @@
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% TODO: fix debug mode with pic-based nodes
 %%% Understand why if a "fake" alias does not exists but was created before I get no error
+
+%% TODO:
+%% - Check why this displays weirdly:
+% \begin{ZX}[myBold]
+%   &                                       & \zxDivider[a=div]{} \ar['>, to=Gll] \ar['>, to=Gll2]               &                                 &                                   & \\
+%   & \zxH{} \ar[to=div,<',wce] \ar[to=root,<.] &                                                                    & \zxMatrix[a=Gll]'*{G^\matrixUr} & \zxMatrix[a=Gll2]'/*{G^\matrixUr} & \\
+%   \zxN{} \ar[rr] &                                       & [\zxwCol] \zxZ[a=root]{} \ar[B,rrr] \ar[to=Gll,.>] \ar[to=Gll2,.>] &                                 &                                   & 
+% \end{ZX}
+%
+% - Understand why it is not possible to do: \ar[to=buttons,end subnode=redNode] with alias like \zxMyDoubleNode[a=buttons]{}
+% 
 
 % A tikzlibrary[libraryName].code.tex is loaded automatically by tikz when using
 % \usetikzlibrary{libraryName}. Therefore, you should just use
