@@ -65,7 +65,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2023/04/24}\\[3mm]
+  {Léo Colisson \quad Version 2023/09/23+unstable}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -2514,6 +2514,146 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 }
 
 \end{pgfmanualentry}
+
+
+
+
+\subsection{Create your own multi-column/row gate}
+
+We provide since around 2023/09/23 a number of functions in order to deal with gates spawning multiple rows or columns, including to create your own multi-columns/rows gates. We present first the individual functions, and show after how to combine them to create more advanced styles. Note that the following define commands, but you can easily insert them in a style using:
+\begin{verbatim}
+/utils/exec={\yourCommands}
+\end{verbatim}
+or by creating a new style with |my style/.code={\yourCommand}|.
+
+\begin{pgfmanualentry}
+  \extractcommand\zxGetNameAbsoluteNode\marg{row}\marg{column}\@@
+  \pgfmanualbody%
+  Function to get the name of a cell using its absolute coordinate in the matrix (start at 1):
+\begin{codeexample}[]
+  \begin{ZX}[
+      execute at end picture={
+        \node[draw, rounded corners, fill=orange,
+          node on layer=background,
+          fit=(\zxGetNameAbsoluteNode{1}{1})(\zxGetNameAbsoluteNode{1}{2})
+        ]{};
+      }
+    ]
+    A & B
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \extractcommand\zxExecuteAtEndPicture\marg{code}\@@
+  \extractcommand\zxOriginalRow\@@
+  \extractcommand\zxOriginalCol\@@
+  \extractcommand\zxGetNameRelativeNode\marg{relative row}\marg{relative column}\@@
+  \pgfmanualbody%
+  Since it is not always practical to use |execute at end picture| since it is outside of the node, we define |\zxExecuteAtEndPicture{your code}| that you can insert inside a node. Note that in |your code| you can use |\zxOriginalRow| and |\zxOriginalCol| that will contain the position of the column and row where you inserted that command, and |\zxGetNameRelativeNode| will allow you to get the name of the neighbour nodes by specifying the difference of columns and the difference of lines. Note that these variables and commands are usable in |\zxExecuteAtCellRelative| and |\zxExecuteAtCellAbsolute| as well.
+\begin{codeexample}[]
+  \NewExpandableDocumentCommand{\myFitWithBelowNeighbour}{}{
+    \zxExecuteAtEndPicture{%
+      \node[draw, rounded corners, fill=orange,
+        node on layer=background,
+        fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{1}{0})
+      ]{};
+    }%
+  }
+  \begin{ZX}
+    A & B                          & C & D \\
+    A & B \myFitWithBelowNeighbour & C & D \\
+    A & B                          & C & D \\
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \extractcommand\zxExecuteAtCellAbsolute\marg{row}\marg{column}\marg{code}\@@
+  \extractcommand\zxExecuteAtCellRelative\marg{relative row}\marg{relative column}\marg{code}\@@
+  \pgfmanualbody%
+  Often, just adding some nodes at the end of the picture is not enough: you might want to add other nodes automatically in the matrix. For instance, if you want to implement yourself a gate spawning multiple rows, a simple way to achieve that would be to add invisible boxes inside the matrix and use them to fit the final component. You can place nodes where you want using something like this (note that you should use |zx main node| in order to give the good name to the node, otherwise you will not be able to link to it):
+\begin{codeexample}[]
+  \NewExpandableDocumentCommand{\mySimpleMultigate}{m}{
+    \zxBox{#1}
+    \zxExecuteAtCellRelative{1}{-1}{\node[zx main node, green]{\text{I am relative}};}
+    \zxExecuteAtCellRelative{0}{1}{\node[zx main node, green]{\text{I am also relative}};}
+    \zxExecuteAtCellAbsolute{2}{4}{\node[zx main node, red]{\text{I am absolute}};}
+  }
+  \begin{ZX}
+ &                    &    \\
+ & \mySimpleMultigate{X} &  & \\
+ &                    &    \\
+  \end{ZX}
+\end{codeexample}
+\textbf{Important}: for all these manipulation to work, be sure to only specify coordinates after the main node, either later on the same line or on next columns since previous cells have already been parsed. You must also be sure that the cell does \textbf{not already contains a content}.
+
+\textbf{TODO: right now I can pass a node but I cannot pass information using the short syntax:}
+\begin{verbatim}
+|[foo]| bar
+\end{verbatim}
+which means that custom pictures like |\myBox| cannot be used directly.
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \extractcommand\zxSetVariable\marg{name variable}\marg{content variable}\@@
+  \extractcommand\zxGetVariable\marg{name variable}\@@
+  \pgfmanualbody%
+  You might want at some point to pass data to the node you placed elsewhere, for instance the style it should take etc. For simple setups, you can directly pass the argument like:
+\begin{codeexample}[]
+  \NewExpandableDocumentCommand{\mySimpleMultigate}{mmmm}{
+    \zxBox{#1}
+    \zxExecuteAtCellRelative{1}{-1}{\node[zx main node, #2]{\text{I am relative}};}
+    \zxExecuteAtCellRelative{0}{1}{\node[zx main node, #3]{\text{I am also relative}};}
+    \zxExecuteAtCellAbsolute{2}{4}{\node[zx main node, #4]{\text{I am absolute}};}
+  }
+  \begin{ZX}
+ &                    &    \\
+ & \mySimpleMultigate{X}{red}{pink}{orange} &  & \\
+ &                    &    \\
+  \end{ZX}
+\end{codeexample}
+but for more complicated setups, you might want to use some variables. This can be done using the above commands (set it in the main node, and get it in other nodes) (or you can also directly give it the argument): this should just create a new macro and evaluate it.
+\begin{codeexample}[]
+  \NewExpandableDocumentCommand{\mySimpleMultigate}{mmm}{
+    \zxX{#1}
+    \zxSetVariable{my variable}{Hey #2}
+    \zxSetVariable{my color}{#3}
+    \zxExecuteAtCellRelative{1}{-1}{\node[tmp/.style/.expand once={\zxGetVariable{my color}}, tmp]{\text{\zxGetVariable{my variable}}};}
+  }
+  \begin{ZX}
+A & B                                         & C  \\
+  & \mySimpleMultigate{\alpha}{Alice}{purple} &  & \\
+  &                                           &    \\
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+With all of this, we can now create a simple multi-columns/rows gate mechanism (but you certainly want to use the one provided by this library if you actually care about multi-columns/rows gates:
+
+\begin{codeexample}[]
+  % \mySimpleMultigate{rows}{cols}{content}
+  \NewExpandableDocumentCommand{\mySimpleMultigate}{mmm}{
+    \node[zx main node, inner sep=1mm]{#3};
+    \zxExecuteAtCellRelative{#1}{#2}{%
+      \node[zx main node, inner sep=1mm]{#3};
+    }
+    \zxExecuteAtEndPicture{
+      \node[node on layer=foreground,
+        fill=white, inner sep=0pt, draw,
+        fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{#1}{#2}),
+        label={[node on layer=foreground]center:{#3}}]{};
+    }
+  }
+  \begin{ZX}
+A                             & B                           & C & D & E & F                          \\
+\rar                          & \mySimpleMultigate{2}{3}{X} &   &   &   & \lar                       \\
+\rar                          &                             &   &   &   & \lar                       \\
+\zxN{} \dar[C] \rar           &                             &   &   &   & \zxN[a=bottomright]{} \lar \\
+\zxN{} \ar[to=bottomright,C-] & 
+\end{ZX}
+\end{codeexample}
+
 
 \subsection{Caching pictures via an externalization library}
 

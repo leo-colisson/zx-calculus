@@ -1980,11 +1980,28 @@
     %% We add an empty coordinate in every node. This has multiple advantages: first this avoids errors about
     %% single ampersand when the matrix does not start with None, and it also avoids using \zxN{} everywhere.
     %% However, we can't just use 'nodes in empty cells=true' or it will add nodes that might take some space:
-    /tikz/execute at empty cell={
-      \coordinate[
-        % yshift=axis_height, % We already do that elsewhere
-        name=\tikzmatrixname
-      -\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];
+    % https://tex.stackexchange.com/questions/696622/tikz-allow-the-style-syntax-in-execute-at-empty-cells?noredirect=1#comment1729912_696622
+    % /tikz/replace empty cell with/.code={%
+    %   \def\tikz@at@emptycell{%
+    %     \tikz@lib@matrix@start@cell
+    %     #1%
+    %     \tikz@lib@matrix@end@cell
+    %   }%
+    % },
+    % /tikz/replace empty cell with={%
+    /tikz/execute at empty cell={%
+      % We want to check if there is a
+      \ifcsname zxExecuteAtCell-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
+        \csname zxExecuteAtCell-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
+      \else%
+        \ifdefined\zxCustomExecuteAtEmptyCell\zxCustomExecuteAtEmptyCell%
+        \else%
+          \coordinate[
+          % yshift=axis_height, % We already do that elsewhere
+          name=\tikzmatrixname
+          -\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];
+        \fi%
+      \fi%
     },
     % When an arrow is present, it will not detect it as an empty cell… The below code tries to avoid this issue, but actually has another issue as it removes all nodes without text in it, like |[circle, draw, inner sep=3pt]|, so
     % we disable it for now.
@@ -2148,6 +2165,104 @@
 }
 
 \DeclareRobustCommand{\cvdots}{\cvdotsCenterMathline}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Practical functions to define multirow/multicols gates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% We provide a generic set of functions to execute code later
+% (in a later cell, or at the end of the picture), together with
+% a way to pass any kind of variables for later
+
+\tikzset{
+  % When using the \node{}; instead of |[foo]| bar structure, no name is given to the node. This is fixed with
+  % this:
+  zx main node/.style={
+    name=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn
+  },
+  zx subnode/.style={
+    name=\tikzcdmatrixname-\zxOriginalRow-\zxOriginalCol#1,%
+  },
+  zx independent subnode/.style={
+    name=\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1,%
+  },
+}
+
+\NewExpandableDocumentCommand{\zxGetNameAbsoluteNode}{mm}{%
+  \tikzcdmatrixname-#1-#2%
+}%
+
+%% here you can use previously defined variables if you created them
+%% will only work inside environments where \zxOriginalRow/Col are defined
+\NewExpandableDocumentCommand{\zxGetNameRelativeNode}{mm}{%
+  \tikzcdmatrixname-\the\numexpr\zxOriginalRow+#1\relax-\the\numexpr\zxOriginalCol+#2\relax%
+}%
+
+
+% \zxExecuteAtEndPicture{\node{A};} will execute \node{A}; at the end of the picture
+% It will automatically define \zxOriginalRow, \zxOriginalCol and
+% \zxGetNameRelativeNode{n}{m} to get the row/col where this command was run
+% and to get the position of the relative node relative to the position of the command
+\NewExpandableDocumentCommand{\zxExecuteAtEndPicture}{m}{%
+  \def\zx@tmp@args{#1}%
+  \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@savedpaths{
+        \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
+        \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
+      \expandonce\zx@tmp@args%
+    }%
+  }%
+  \zx@tmp%
+}
+
+% \zxExecuteAtCellAbsolute{1}{2}{\node{A};} will execute at cell row 1, column 2 the code \node{A};, just make sure that nothing is already present in that cell
+\NewExpandableDocumentCommand{\zxExecuteAtCellAbsolute}{mmm}{%
+  \def\zx@tmp@args{#3}%
+  \edef\zx@tmp@code{
+    \noexpand\expandafter\noexpand\gdef\noexpand\csname zxExecuteAtCell-\tikzcdmatrixname-#1-#2\noexpand\endcsname{%
+      \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
+      \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
+      \expandonce{\zx@tmp@args}%
+    }%
+  }%
+  \zx@tmp@code%
+}
+
+% \zxExecuteAtCellRelative{1}{2}{\node{A};} will execute at cell current row + 1, current column + 2 the code \node{A};, just make sure that nothing is already present in that cell
+\NewExpandableDocumentCommand{\zxExecuteAtCellRelative}{mmm}{%
+  \def\zx@tmp@args{#3}%
+  % putting this in the csname directly does not work
+  \edef\zx@tmp{zxExecuteAtCell-\tikzcdmatrixname-\the\numexpr \the\pgfmatrixcurrentrow+#1\relax-\the\numexpr\the\pgfmatrixcurrentcolumn+#2\relax}%
+  \edef\zx@tmp@code{%
+    \noexpand\expandafter\noexpand\gdef\noexpand\csname \zx@tmp\noexpand\endcsname{%
+      \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
+      \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%      
+      \expandonce{\zx@tmp@args}%
+    }%
+  }%
+  \zx@tmp@code%
+  % \edef\zx@tmp{}%
+  % \expandafter\gdef\csname \zx@tmp\endcsname{#3}%
+}
+
+%%%
+%%% Variables that you can create in one cell and reuse later
+%%
+
+% \zxGateMultiNewVariable{my variable}{value}
+\NewExpandableDocumentCommand{\zxSetVariable}{mm}{%
+  % For some reasons it fails inside the csname directly
+  \edef\zx@tmp{zxGateMultiVariable-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1}%
+  \expandafter\gdef\csname \zx@tmp\endcsname{%
+    #2%
+  }%
+  \expandafter\show\csname zxGateMultiVariable-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1\endcsname
+}
+
+\NewExpandableDocumentCommand{\zxGetVariable}{m}{%
+  \csname zxGateMultiVariable-\tikzcdmatrixname-\zxOriginalRow-\zxOriginalCol-#1\endcsname%
+}
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Practical functions to nest diagrams
