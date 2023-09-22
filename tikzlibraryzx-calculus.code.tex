@@ -13,8 +13,6 @@
 %   \zxN{} \ar[rr] &                                       & [\zxwCol] \zxZ[a=root]{} \ar[B,rrr] \ar[to=Gll,.>] \ar[to=Gll2,.>] &                                 &                                   & 
 % \end{ZX}
 %
-% - Understand why it is not possible to do: \ar[to=buttons,end subnode=redNode] with alias like \zxMyDoubleNode[a=buttons]{}
-% 
 
 % A tikzlibrary[libraryName].code.tex is loaded automatically by tikz when using
 % \usetikzlibrary{libraryName}. Therefore, you should just use
@@ -1041,8 +1039,22 @@
       end anchor=,
     },
     %% To go to a subnode defined in a pic with from subnode=mysubnode.
-    start subnode/.code={\edef\tikzcd@ar@start{\tikzcd@ar@start##1}},
-    end subnode/.code={\edef\tikzcd@ar@target{\tikzcd@ar@target##1}},
+    start subnode/.code={%
+      \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@start}%
+      \ifcsname \zx@tmp\endcsname%
+        \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname ##1}%%
+      \else%
+        \edef\tikzcd@ar@start{\tikzcd@ar@start##1}%
+      \fi%
+    },
+    end subnode/.code={% The edef is needed, or it always go into the first loop and might give errors later
+      \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@target}%
+      \ifcsname \zx@tmp\endcsname%
+        \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname ##1}%%
+      \else%
+        \edef\tikzcd@ar@target{\tikzcd@ar@target##1}%
+      \fi%
+    },
     %% Forced versions are versions which do not nicely fallback to center if shape does not
     %% have "fake center XXX". This is used mostly for wires based on in/out (our function b.
     %% Not sure how to have a code which always fallback to center if shape does not.
@@ -2254,7 +2266,6 @@
   \expandafter\gdef\csname \zx@tmp\endcsname{%
     #2%
   }%
-  \expandafter\show\csname zxGateMultiVariable-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1\endcsname
 }
 
 \NewExpandableDocumentCommand{\zxGetVariable}{m}{%

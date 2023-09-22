@@ -2513,6 +2513,19 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 \end{codeexample}
 }
 
+Note that you can also combine it with |to| and |alias|:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\zxNewNodeFromPic{MyDoubleNode}{
+  \node[fill=blue!20, zx main node, inner sep=3mm] at (0,0) {};
+  \node[circle,fill=red!70, inner sep=.8mm,name=redNode] at (0,1.5mm) {};
+  \node[circle,fill=orange!70, inner sep=.8mm, name=orangeNode] at (0,-1.5mm) {};
+}
+\begin{ZX}
+  \zxZ{} \ar[to=buttons, end subnode=orangeNode]  \\
+  \zxX{} \rar & \zxMyDoubleNode[a=buttons]{} \rar & 
+\end{ZX}
+}
+
 \end{pgfmanualentry}
 
 
