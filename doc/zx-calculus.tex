@@ -205,7 +205,7 @@ We also introduce many other styles, like |N| for wires that arrive and leave at
                                    & \zxZ{\gamma}
 \end{ZX}
 \end{codeexample}
-Or |s| for wires that arrive and leave at sharp angles\footnote{Note: on older versions, a |\zxN{}| might be needed on the first cell as it seems that the first cell of a matrix can't be empty… this should be fixed in latest versions.}:
+Or |s| for wires that arrive and leave at sharp angles\footnote{Note: on older versions, a |\textbackslash zxN\{\}| might be needed on the first cell as it seems that the first cell of a matrix can't be empty… this should be fixed in latest versions.}:
 \begin{codeexample}[]
 \begin{ZX}
                                    & \zxZ{\beta} \\
@@ -867,8 +867,8 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 The ground symbol can be used to denote a discarding operation… but is also useful to compute the norm of a state or denote a measurement by first copying the state and discarding one copy. This way, a measurement in the computational basis can be represented as:
 \begin{codeexample}[width=0pt]
   \begin{ZX}
-              & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
-    \zxN \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\[\zxZeroRow]
+              & [\zxwCol]                    & [\zxwCol] \zxN{} \rar & \zxN{} \\
+    \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\[\zxZeroRow]
               &                              & \zxGround{}              
   \end{ZX}
 \end{codeexample}
@@ -891,13 +891,13 @@ Moreover, by default the |pic| takes some space (this way it will not overlap wi
 \begin{codeexample}[width=0pt]
   Compare
   \begin{ZX}
-                & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+                & [\zxwCol]                    & [\zxwCol] \zxN{} \rar & \zxN{} \\
     \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\
                 &                              & \zxGround[overlay]{}           
   \end{ZX}
   with
   \begin{ZX}
-                & [\zxwCol]                    & [\zxwCol] \zxN \rar & \zxN \\
+                & [\zxwCol]                    & [\zxwCol] \zxN{} \rar & \zxN{} \\
     \zxN{} \rar & \zxZ{} \ar[ur,<'] \ar[dr,<'] &                            \\
                 &                              & \zxGround{}              
   \end{ZX}
@@ -1452,7 +1452,7 @@ When the nodes are too far appart, the default angle of |30| may produce strange
   \extractkey/zx/wires definition/S.-=-andL config (default \{defaultS',default-S,symmetry\})\@nil%
   \makeatother
   \pgfmanualbody
-  |s| and |S| are used to create a s-like wire, to have nicer diagonal lines between nodes. Other versions are soften versions (the input and output angles are not as sharp. Adding |'| or |.| specifies if the wire is going up-right or down-right, however as of today if it mostly used for backward compatibility since, for instance, |-s'| is the same as |-s| (but some styles may want to do a difference later). The only exception is for |s|/|s'|/|s.|: |s| has a sharper output angle than |s'| and |s.| (which are both equals).
+  |s| and |S| are used to create a s-like wire (|s| is smoother than |S| that arrives and leave horizontally), to have nicer diagonal lines between nodes. Other versions are soften versions (the input and output angles are not as sharp. Adding |'| or |.| specifies if the wire is going up-right or down-right, however as of today if it mostly used for backward compatibility since, for instance, |-s'| is the same as |-s| (but some styles may want to do a difference later). The only exception is for |s|/|s'|/|s.|: |s| has a sharper output angle than |s'| and |s.| (which are both equals).
 \begin{codeexample}[width=3cm]
   \begin{ZX}
     \zxX{\alpha} \ar[s,rd] \\
@@ -2138,7 +2138,7 @@ A swapped Bell pair is %
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 \begin{ZX}
-  \zxX[bold]{} \rar[Bn,o'] \rar[Bn.=m,o.] &[\zxwCol] \zxZ{} \rar &[\zxwCol] \zxN{}
+  \zxX[bold]{} \rar[Bn',o'] \rar[Bn.=m,o.] &[\zxwCol] \zxZ{} \rar &[\zxwCol] \zxN{}
 \end{ZX}
 \end{codeexample}
 }
@@ -2151,6 +2151,34 @@ Finally, the last variations with args like |BnArgs| allows you to provide an ad
 \end{ZX}
 \end{codeexample}
 }
+Note that |bold| and its alias |B| can also be used as an argument to the |ZX| environment to turn all spiders and wires in bold:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[bold]
+  \zxX{} \rar[o'] \rar[o.] & \zxZ{} \rar &[\zxwCol] \zxN{}
+\end{ZX}
+\end{codeexample}
+You might also want to combine it with the |non bold| option to temporarily set a wire non-bold:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[bold]
+  \zxX{} \rar[o'] \rar[o.] & \zxZ{} \rar[non bold] &[\zxwCol] \zxN{}
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/styles/rounded style/wires bold\@nil%
+  \extractkey/zx/styles/rounded style/Bw\@nil%
+  \extractkey/zx/styles/rounded style/BBw\@nil%
+  \makeatother
+  \pgfmanualbody
+  If you set |wires bold| (alias |Bw|) to a node, all wired connected to that node will be bold. |BBw| additionally turn the current node bold.
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxX{} \rar[o'] \rar[o.] & \zxZ[BBw]{} \rar &[\zxwCol] \zxN{}
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 
@@ -2498,7 +2526,7 @@ Note that this library uses some anchors called |fake center {east,west,north,so
 \end{codeexample}
 }
 
-\paragraph{Link to a sub-node.} Sometimes, we might prefer to draw a link to a node instead of an anchor (an anchor can only be a single coordinate). To that end, just name your nodes as usual, and use |from subnode| or |to subnode| to do the link
+\paragraph{Link to a sub-node.} Sometimes, we might prefer to draw a link to a node instead of an anchor (an anchor can only be a single coordinate). To that end, just name your nodes as usual, and use |start subnode| or |end subnode| to do the link
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \zxNewNodeFromPic{MyDoubleNode}{
@@ -2533,7 +2561,7 @@ Note that you can also combine it with |to| and |alias|:
 
 \subsection{Create your own multi-column/row gate}
 
-We provide since around 2023/09/23 a number of functions in order to deal with gates spawning multiple rows or columns, including to create your own multi-columns/rows gates. We present first the individual functions, and show after how to combine them to create more advanced styles. Note that the following define commands, but you can easily insert them in a style using:
+We provide since 2023/09/23 a number of functions in order to deal with gates spawning multiple rows or columns, including to create your own multi-columns/rows gates. We present first the individual functions, and show after how to combine them to create more advanced styles. Note that the following define commands, but you can easily insert them in a style using:
 \begin{verbatim}
 /utils/exec={\yourCommands}
 \end{verbatim}
@@ -2544,16 +2572,15 @@ or by creating a new style with |my style/.code={\yourCommand}|.
   \pgfmanualbody%
   Function to get the name of a cell using its absolute coordinate in the matrix (start at 1):
 \begin{codeexample}[]
-  \begin{ZX}[
-      execute at end picture={
-        \node[draw, rounded corners, fill=orange,
-          node on layer=background,
-          fit=(\zxGetNameAbsoluteNode{1}{1})(\zxGetNameAbsoluteNode{1}{2})
-        ]{};
-      }
-    ]
-    A & B
-  \end{ZX}
+\begin{ZX}[
+  execute at end picture={
+    \node[draw, rounded corners, fill=orange,
+    node on layer=background,
+    fit=(\zxGetNameAbsoluteNode{1}{1})(\zxGetNameAbsoluteNode{1}{2})
+    ]{};
+  }]
+  A & B
+\end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
 
@@ -2563,61 +2590,87 @@ or by creating a new style with |my style/.code={\yourCommand}|.
   \extractcommand\zxOriginalCol\@@
   \extractcommand\zxGetNameRelativeNode\marg{relative row}\marg{relative column}\@@
   \pgfmanualbody%
-  Since it is not always practical to use |execute at end picture| since it is outside of the node, we define |\zxExecuteAtEndPicture{your code}| that you can insert inside a node. Note that in |your code| you can use |\zxOriginalRow| and |\zxOriginalCol| that will contain the position of the column and row where you inserted that command, and |\zxGetNameRelativeNode| will allow you to get the name of the neighbour nodes by specifying the difference of columns and the difference of lines. Note that these variables and commands are usable in |\zxExecuteAtCellRelative| and |\zxExecuteAtCellAbsolute| as well.
+  |execute at end picture| is first annoying to use, but it also runs after the definition of the wires, meaning that it is not possible to point to nodes defined in that portion of the code. To solve these issues, we define |\zxExecuteAtEndPicture{your code}| that you can insert inside a node. Note that in |your code| you can use |\zxOriginalRow| and |\zxOriginalCol| that will contain the position of the column and row where you inserted that command, and |\zxGetNameRelativeNode| will allow you to get the name of the neighbour nodes by specifying the difference of columns and the difference of lines. Note that these variables and commands are usable in |\zxExecuteAtCellRelative| and |\zxExecuteAtCellAbsolute| as well.
 \begin{codeexample}[]
-  \NewExpandableDocumentCommand{\myFitWithBelowNeighbour}{}{
-    \zxExecuteAtEndPicture{%
-      \node[draw, rounded corners, fill=orange,
-        node on layer=background,
-        fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{1}{0})
-      ]{};
-    }%
-  }
-  \begin{ZX}
-    A & B                          & C & D \\
-    A & B \myFitWithBelowNeighbour & C & D \\
-    A & B                          & C & D \\
-  \end{ZX}
+\NewExpandableDocumentCommand{\myFitWithBelowNeighbour}{}{
+  \zxExecuteAtEndPicture{%
+    \node[draw, rounded corners, fill=orange,
+      node on layer=background,
+      fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{1}{0})
+    ]{};
+  }%
+}
+\begin{ZX}
+  A & B                          & C & D \\
+  A & B \myFitWithBelowNeighbour & C & D \\
+  A & B                          & C & D \\
+\end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
+  \def\extrakeytext{style, }
   \extractcommand\zxExecuteAtCellAbsolute\marg{row}\marg{column}\marg{code}\@@
   \extractcommand\zxExecuteAtCellRelative\marg{relative row}\marg{relative column}\marg{code}\@@
+  \extractcommand\zxExecuteAtRegionRelative\marg{relative row}\marg{relative column}\marg{code}\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/tikz/zx style from variable=\marg{name variable}\@nil%
+  \makeatother
   \pgfmanualbody%
-  Often, just adding some nodes at the end of the picture is not enough: you might want to add other nodes automatically in the matrix. For instance, if you want to implement yourself a gate spawning multiple rows, a simple way to achieve that would be to add invisible boxes inside the matrix and use them to fit the final component. You can place nodes where you want using something like this (note that you should use |zx main node| in order to give the good name to the node, otherwise you will not be able to link to it):
-\begin{codeexample}[]
-  \NewExpandableDocumentCommand{\mySimpleMultigate}{m}{
-    \zxBox{#1}
-    \zxExecuteAtCellRelative{1}{-1}{\node[zx main node, green]{\text{I am relative}};}
-    \zxExecuteAtCellRelative{0}{1}{\node[zx main node, green]{\text{I am also relative}};}
-    \zxExecuteAtCellAbsolute{2}{4}{\node[zx main node, red]{\text{I am absolute}};}
-  }
-  \begin{ZX}
- &                    &    \\
- & \mySimpleMultigate{X} &  & \\
- &                    &    \\
-  \end{ZX}
-\end{codeexample}
-\textbf{Important}: for all these manipulation to work, be sure to only specify coordinates after the main node, either later on the same line or on next columns since previous cells have already been parsed. You must also be sure that the cell does \textbf{not already contains a content}.
-
-\textbf{TODO: right now I can pass a node but I cannot pass information using the short syntax:}
+  Often, just adding some nodes at the end of the picture is not enough: you might want to add other nodes automatically in the matrix. For instance, if you want to implement yourself a gate spawning multiple rows, a simple way to achieve that would be to add invisible boxes inside the matrix and use them to fit the final component. You can place nodes where you want using something like this (note that you should use |zx main node| that is basically a shortcut for:
 \begin{verbatim}
-|[foo]| bar
+\tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn}
 \end{verbatim}
-which means that custom pictures like |\myBox| cannot be used directly.
+otherwise |\rar| will not be able to know which node to join: note that it is automatically added in nodes like |\zxX{}|):
+\begin{codeexample}[]
+\NewExpandableDocumentCommand{\mySimpleMultigate}{m}{
+  \zxBox{#1}
+  \zxExecuteAtCellRelative{1}{-1}{\node[zx main node, green]{\text{I am relative}};}
+  \zxExecuteAtCellRelative{0}{1}{\node[zx main node, green]{\text{I am also relative}};}
+  \zxExecuteAtCellAbsolute{2}{4}{\node[zx main node, red]{\text{I am absolute}};}
+}
+\begin{ZX}
+A & B                     & C  \\
+  & \mySimpleMultigate{X} &  & \\
+  &                       &    \\
+\end{ZX}
+\end{codeexample}
+(note that the relative version adds it to cells relative to the current cell while the absolute version executes it at the absolute cell coordinate)
+\textbf{Important}: for all these manipulation to work, be sure to only specify coordinates after the main node, either later on the same line or on next rows since previous cells have already been parsed.
+
+You can also do it for a whole region of size $n \times m$ using |\zxExecuteAtRegionRelative{n}{m}{code}| like this (just make sure that the cells exist):
+\begin{codeexample}[]
+\NewExpandableDocumentCommand{\myRegion}{}{
+  \zxExecuteAtRegionRelative{2}{3}{%
+    \zxBox{\text{\tiny Original row: \zxOriginalRow{}, column:\zxOriginalCol{}
+        % We compute the relative position to print it:
+        (rel: \the\numexpr\the\pgfmatrixcurrentrow  -\zxOriginalRow\relax
+        x\the\numexpr\the\pgfmatrixcurrentcolumn-\zxOriginalCol\relax).}}}
+}
+\begin{ZX}
+  A & B & C         & D & E & F & G \\
+  &   & \myRegion &   &   &   &   \\
+  &   &           &   &   &   &   \\
+  &   &           &   &   &   & 
+\end{ZX}
+\end{codeexample}
+(note that if you use |\zxExecuteAtRegionRelative| and want to define one alias for the top-left node, you should use |a if origin=alias for the node| instead of |a=alias name for the node| since it would give the alias to the last node instead of the first node). Note that if you execute it multiple times on the same cell, both codes will be executed.
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
+  \def\extrakeytext{style, }
   \extractcommand\zxSetVariable\marg{name variable}\marg{content variable}\@@
   \extractcommand\zxGetVariable\marg{name variable}\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/tikz/zx style from variable=\marg{name variable}\@nil%
+  \makeatother
   \pgfmanualbody%
   You might want at some point to pass data to the node you placed elsewhere, for instance the style it should take etc. For simple setups, you can directly pass the argument like:
 \begin{codeexample}[]
   \NewExpandableDocumentCommand{\mySimpleMultigate}{mmmm}{
     \zxBox{#1}
     \zxExecuteAtCellRelative{1}{-1}{\node[zx main node, #2]{\text{I am relative}};}
-    \zxExecuteAtCellRelative{0}{1}{\node[zx main node, #3]{\text{I am also relative}};}
+    \zxExecuteAtCellRelative{0}{1}{\zxBox[main={zx main node}]{\text{I am also relative}}}
     \zxExecuteAtCellAbsolute{2}{4}{\node[zx main node, #4]{\text{I am absolute}};}
   }
   \begin{ZX}
@@ -2628,23 +2681,24 @@ which means that custom pictures like |\myBox| cannot be used directly.
 \end{codeexample}
 but for more complicated setups, you might want to use some variables. This can be done using the above commands (set it in the main node, and get it in other nodes) (or you can also directly give it the argument): this should just create a new macro and evaluate it.
 \begin{codeexample}[]
-  \NewExpandableDocumentCommand{\mySimpleMultigate}{mmm}{
-    \zxX{#1}
-    \zxSetVariable{my variable}{Hey #2}
-    \zxSetVariable{my color}{#3}
-    \zxExecuteAtCellRelative{1}{-1}{\node[tmp/.style/.expand once={\zxGetVariable{my color}}, tmp]{\text{\zxGetVariable{my variable}}};}
-  }
-  \begin{ZX}
+\NewExpandableDocumentCommand{\mySimpleMultigate}{mmm}{
+  \zxX{#1}
+  \zxSetVariable{my variable}{Hey #2}
+  \zxSetVariable{my style}{#3}
+  \zxExecuteAtCellRelative{1}{-1}{\node[zx style from variable={my style}]{\text{\zxGetVariable{my variable}}};}
+}
+\begin{ZX}
 A & B                                         & C  \\
-  & \mySimpleMultigate{\alpha}{Alice}{purple} &  & \\
+  & \mySimpleMultigate{\alpha}{Alice}{purple,opacity={.3}} &  & \\
   &                                           &    \\
-  \end{ZX}
+\end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
 
 With all of this, we can now create a simple multi-columns/rows gate mechanism (but you certainly want to use the one provided by this library if you actually care about multi-columns/rows gates:
 
-\begin{codeexample}[]
+
+\begin{codeexample}[width=0pt]
   % \mySimpleMultigate{rows}{cols}{content}
   \NewExpandableDocumentCommand{\mySimpleMultigate}{mmm}{
     \node[zx main node, inner sep=1mm]{#3};
@@ -2663,9 +2717,87 @@ A                             & B                           & C & D & E & F     
 \rar                          & \mySimpleMultigate{2}{3}{X} &   &   &   & \lar                       \\
 \rar                          &                             &   &   &   & \lar                       \\
 \zxN{} \dar[C] \rar           &                             &   &   &   & \zxN[a=bottomright]{} \lar \\
-\zxN{} \ar[to=bottomright,C-] & 
+\zxN{} \ar[to=bottomright,C-] &                                                                      
 \end{ZX}
 \end{codeexample}
+
+Note that you can also define subnodes in the final node and point to them. You can either use its alias, or point to any node added via region relative or cell relative, it will automatically find the parent node:
+
+\begin{codeexample}[width=0pt]
+  % \mySimpleMultigate{rows}{cols}{content}
+  \NewExpandableDocumentCommand{\myFancyGate}{O{}mmm}{
+    % a=#1 make sure to add the alias on the first element
+    \node[zx main node, inner sep=1mm, a=#1]{#4};
+    \zxExecuteAtRegionRelative{#2}{#3}{%
+      \node[zx main node, inner sep=1mm]{#4};
+    }%
+    \zxExecuteAtEndPicture{
+      \node[node on layer=foreground,
+        alias=tmp,
+        opacity=.5,
+        fill=white, inner sep=0pt, draw,
+        fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
+        label={[node on layer=foreground]center:{#4}}]
+        {};
+      \node[node on layer=foreground, fill=red, inner sep=.9mm, circle, zx subnode=redCircle] at (tmp.south east) {};
+    }
+  }
+  \begin{ZX}
+A                                                     & B                                  & C & D & E    & F    \\
+\rar[end subnode=redCircle, blue, bend right]         & \myFancyGate[aliasMyGate]{3}{4}{X} &   &   & \rar &      \\
+\rar[purple]                                          &                                    &   &   &      & \lar \\
+\rar[end subnode=redCircle, pink, bend right]         &                                    &   &   &      & \lar \\
+\ar[to=aliasMyGate,red]                               &                                                          \\
+\ar[to=aliasMyGate,end subnode=redCircle,green,bend right] & 
+\end{ZX}
+\end{codeexample}
+
+You can also force all nodes pointing to a region-relative or cell-relative to point to a specific anchor:
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/every node/pre arrow style if start node=\marg{style, to, apply}\@nil%
+  \extractkey/every node/pre arrow style if end node=\marg{style, to, apply}\@nil%
+  \extractkey/every node/post arrow style if start node=\marg{style, to, apply}\@nil%
+  \extractkey/every node/post arrow style if end node=\marg{style, to, apply}\@nil%
+  \makeatother
+  \pgfmanualbody%
+  This will apply the corresponding style to any wire leaving from the current cell or arriving to the current cell depending on the variation (node that you can use these functions in any node, there is no special role played by |zxExecuteAtRegionRelativeAndOrigin| here), |pre| variants being run before the user input (\textbf{WARNING}: at the step, the target of the node is not known!) while |post| variants are run after the user input:
+
+\begin{codeexample}[width=0pt]
+% \myFancyGate[alias]{rows}{cols}{content}
+\NewExpandableDocumentCommand{\myFancyGate}{O{}mmm}{
+  \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
+    \node[zx main node, inner sep=1mm, a if origin=#1,
+      %% These two lines says to connect any line coming/leaving from here to the redCircle subnode
+      post arrow style if start node={start subnode=redCircle},
+      post arrow style if end node={end subnode=redCircle},
+    ]{#4};
+  }%
+  \zxExecuteAtEndPicture{
+    \node[node on layer=foreground,
+      alias=tmp,
+      opacity=.5,
+      fill=white, inner sep=0pt, draw,
+      % The expression "\the\numexpr#3-1\relax" removes 1 to the current column or it will draw too many
+      % columns (size n x m means that we stop at element (n-1) x (m-1) since we start from zero
+      fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
+      label={[node on layer=foreground]center:{#4}}]
+      {};
+    \node[node on layer=foreground, fill=red, inner sep=.9mm, circle, zx subnode=redCircle] at (tmp.south east) {};
+  }
+}
+\begin{ZX}
+A                                             & B                                  & C & D & E    & F    \\
+\rar                                          & \myFancyGate[aliasMyGate]{3}{4}{X} &   &   & \rar &      \\
+\rar[purple]                                  &                                    &   &   &      & \lar \\
+\rar[end subnode=redCircle, pink, bend right] &                                    &   &   &      & \lar \\
+\ar[to=aliasMyGate,red]                       &                                                          \\
+\ar[to=aliasMyGate,end subnode=redCircle,green,bend right] 
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
 
 
 \subsection{Caching pictures via an externalization library}
@@ -3725,7 +3857,7 @@ $x = \begin{ZX}[
     \node[fit=(start)(end),yshift=-axis_height] {\usebox{\myZXbox}};
   },
   math baseline=myb]
-                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]\\
+                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]{}\\
   \zxN[a=myb]{} \rar & \zxFracZ{\pi}{2} \rar      & \zxFracX{\pi}{2} \rar & \zxFracZ{\pi}{2} \rar & \zxN{}
 \end{ZX}$
 \end{codeexample}
@@ -3744,7 +3876,7 @@ Note that this has the advantage of preserving the baseline of the big drawing. 
 %%             v---- note the backslash
 \zxSaveDiagram{\myZXconstant}{\zxX{} \rar \ar[r,o'] \ar[r,o.] & \zxZ{}}
 $x = \begin{ZX}[use diagram={\myZXconstant}{(start)(end)}, math baseline=myb]
-                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]\\
+                     &[\zxwCol] \zxFracX-{\pi}{2} & \zxN[a=start]{}       & \zxN[a=end]{}\\
   \zxN[a=myb]{} \rar & \zxFracZ{\pi}{2} \rar      & \zxFracX{\pi}{2} \rar & \zxFracZ{\pi}{2} \rar & \zxN{}
 \end{ZX}$
 \end{codeexample}
@@ -3847,12 +3979,24 @@ I'm very grateful of course to everybody that worked on these amazing field whic
 \section{Changelog}
 
 \begin{itemize}
+\item 2023/09/26:
+  \begin{itemize}
+  \item Many updates in the past months, custom nodes are made easy, multi-gates nodes as well, added |post arrow style if start node| and other similar commands, updated the doc to use the latest version of robust-externalize that is much simpler to use now\dots Some nodes can also now be usable outside tikzcd, but I've not tried (I should provide more options for this).
+  \end{itemize}
 \item 2022/02/09:
   \begin{itemize}
   \item Added compatibility with external tikz library
   \item More robust handling of |&|: align and macros does not need |\&| anymore.
   \item |\&| in |\zxSaveDiagram| is replaced with |&|. This introduces a small backward incompatibility, but hey, I said it was still subject to changes :-)
   \end{itemize}
+\end{itemize}
+
+\section{TODO}
+\begin{itemize}
+\item I think that some anchors are not properly configured in stuff like |\zxBox| etc
+\item I set some global options like |/zx/internals/postRun...| but I should make sure to reset them for every pictures, or I might get weird behaviors (not sure why they don't seem to appear right now?)
+\item Make zxNamedBox usable inside cells directly
+\item Clean the code since it sta
 \end{itemize}
 
 \printindex

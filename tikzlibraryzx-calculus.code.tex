@@ -581,7 +581,11 @@
     },
     lw/.style={looseness wires only},
     bold/.style={very thick},
-    non bold/.style={line width=\zxDefaultLineWidth,},
+    non bold/.style={
+      line width=\zxDefaultLineWidth,
+      % We need to disable bold later since "bold wires" will automatically add bold at the end
+      bold/.style={},
+    },
     B/.style={bold},
     NB/.style={non bold},
     %% Adds a n above to denote the number of wires
@@ -602,14 +606,14 @@
     boldn-/.style={Bn-Args={##1}{}},
     boldn-/.default={n},
     %% For wires left to right
-    Bn'Args/.style 2 args={bold, "/" {anchor=center,##2}, "##1" {above,yshift=3pt,##2}},
+    Bn'Args/.style 2 args={bold, "|" {rotate=65-90,anchor=center,##2}, "##1" {above,yshift=3pt,##2}},
     Bn'Args/.default={n}{},
-    Bn.Args/.style 2 args={bold, "/" {anchor=center,##2}, "##1" {below,yshift=-3pt,##2}},
+    Bn.Args/.style 2 args={bold, "|" {rotate=65-90,anchor=center,##2}, "##1" {below,yshift=-3pt,##2}},
     Bn.Args/.default={n}{},
     %% for wires top/down (left,right)
-    BnArgs/.style 2 args={bold, "/" {rotate=90,anchor=center,##2}, "##1" {left,xshift=-2pt,##2}},
+    BnArgs/.style 2 args={bold, "|" {rotate=-65,anchor=center,##2}, "##1" {left,xshift=-2pt,##2}},
     BnArgs/.default={n}{},
-    Bn-Args/.style 2 args={bold, "/" {rotate=90,anchor=center,##2}, "##1" {right,xshift=2pt,##2}},
+    Bn-Args/.style 2 args={bold, "|" {rotate=-65,anchor=center,##2}, "##1" {right,xshift=2pt,##2}},
     Bn-Args/.default={n}{},
     % boldnPos/.style={bold, "/" {anchor=center}, "##1" {yshift=3pt}},
     % boldnPos/.default={n}{pos=50},
@@ -1041,19 +1045,61 @@
     %% To go to a subnode defined in a pic with from subnode=mysubnode.
     start subnode/.code={%
       \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@start}%
-      \ifcsname \zx@tmp\endcsname%
-        \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname ##1}%%
+      % First, rewrite \tikzcd@ar@start so that it equals the name of the current node without alias
+      \ifcsname \zx@tmp\endcsname% There exists an alias
+        \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
+        \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname}%
       \else%
-        \edef\tikzcd@ar@start{\tikzcd@ar@start##1}%
-      \fi%
+        \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
+      \fi
+      % First, we check if there is a node with this name on this node. If not, we will try with the parent node
+      \@ifundefined{pgf@sh@ns@\tikzcd@ar@start ##1}{%
+        % The current node has no such subnode name: let's start its parent.
+        \@ifundefined{\tikzcd@ar@start -zxOriginalRow}{%
+          % There is no original coordinate: error
+          \PackageError{zx-calculus}{In "start subnode=##1", the subnode ##1 of node \tikzcd@ar@start \zx@tmp@alias does not exist.}{}%
+        }{%
+          % There is an original coordinate: we try to see if the original node admits a subnode.
+          \edef\zx@tmp@originalRow{\csname \tikzcd@ar@start-zxOriginalRow\endcsname}%
+          \edef\zx@tmp@originalCol{\csname \tikzcd@ar@start-zxOriginalCol\endcsname}%
+          \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}{%
+            \PackageError{zx-calculus}{In "start subnode=##1", the subnode ##1 of aliased node \tikzcd@ar@start{} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}{}%
+          }{%
+            \edef\tikzcd@ar@start{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}%%
+          }%
+        }%
+      }{% There exists a subnode in the current name
+        \edef\tikzcd@ar@start{\tikzcd@ar@start ##1}%%
+      }%
     },
     end subnode/.code={% The edef is needed, or it always go into the first loop and might give errors later
       \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@target}%
-      \ifcsname \zx@tmp\endcsname%
-        \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname ##1}%%
+      % First, rewrite \tikzcd@ar@target so that it equals the name of the current node without alias
+      \ifcsname \zx@tmp\endcsname% There exists an alias
+        \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
+        \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname}%
       \else%
-        \edef\tikzcd@ar@target{\tikzcd@ar@target##1}%
-      \fi%
+        \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
+      \fi
+      % First, we check if there is a node with this name on this node. If not, we will try with the parent node
+      \@ifundefined{pgf@sh@ns@\tikzcd@ar@target ##1}{%
+        % The current node has no such subnode name: let's start its parent.
+        \@ifundefined{\tikzcd@ar@target -zxOriginalRow}{%
+          % There is no original coordinate: error
+          \PackageError{zx-calculus}{In "end subnode=##1", the subnode ##1 of node \tikzcd@ar@target{} \zx@tmp@alias does not exist.}{}%
+        }{%
+          % There is an original coordinate: we try to see if the original node admits a subnode.
+          \edef\zx@tmp@originalRow{\csname \tikzcd@ar@target-zxOriginalRow\endcsname}%
+          \edef\zx@tmp@originalCol{\csname \tikzcd@ar@target-zxOriginalCol\endcsname}%
+          \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}{%
+            \PackageError{zx-calculus}{In "end subnode=##1", the subnode ##1 of aliased node \tikzcd@ar@target{} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}{}%
+          }{%
+            \edef\tikzcd@ar@target{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}%%
+          }%
+        }%
+      }{% There exists a subnode in the current name
+        \edef\tikzcd@ar@target{\tikzcd@ar@target ##1}%%
+      }%
     },
     %% Forced versions are versions which do not nicely fallback to center if shape does not
     %% have "fake center XXX". This is used mostly for wires based on in/out (our function b.
@@ -1448,13 +1494,16 @@
     },
     bold/.style={very thick},
     B/.style={bold},
-    non bold/.style={line width=\zxDefaultLineWidth,},
+    non bold/.style={%
+      line width=\zxDefaultLineWidth,
+    },
     NB/.style={non bold},
     %% To set bold all wires connected to the current wire
-    wires bold/.style={
+    bold wires/.style={
       post arrow style if end node={B},
       post arrow style if start node={B},
     },
+    wires bold/.style={bold wires},% backward compatible
     Bw/.style={wires bold},
     BBw/.style={bold, wires bold,},
     zxAllNodes/.style={
@@ -1824,6 +1873,34 @@
   % User can add stuff in this style to improve wire styles
   /zx/user overlay wires/.style={
   },
+  /zx/every arrow pre/.style={%
+    /utils/exec={% We provide a way to disable the default behavior
+      \ifdefined\zxDisablePreRunStart\else%
+        %%% If it is an alias, we replace it with the original node:
+        \ifcsname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname% This is an alias: let's rename it to the original node
+          \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname}%
+        \fi%
+        %%% Load the arrow style set by the start node:
+        \edef\zx@tmp{% Make sure that the style exists and load it:
+          /zx/internals/preRunIfIamStartNode-\tikzcd@ar@start/.append style={},%
+          /zx/internals/preRunIfIamStartNode-\tikzcd@ar@start,%
+        }%
+        \pgfkeysalsofrom{\zx@tmp}%
+      \fi%
+      %%% Load the arrow style set by the end node:
+      \ifdefined\zxDisablePreRunEnd\else%
+        %%% If it is an alias, we replace it with the original node:
+        \ifcsname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname% This is an alias: let's rename it to the original node
+          \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname}%
+        \fi%
+        \edef\zx@tmp{% Make sure that the style exists and load it:
+          /zx/internals/preRunIfIamEndNode-\tikzcd@ar@target/.append style={},%
+          /zx/internals/preRunIfIamEndNode-\tikzcd@ar@target,%
+        }%
+        \pgfkeysalsofrom{\zx@tmp}%
+      \fi%
+    }%
+  },%
   /zx/defaultEnv/.style={
     %tiny depends on the size of the font... which we want to keep consistent look
     column sep=\zxDefaultColumnSep,
@@ -1849,10 +1926,21 @@
     1-row diagram/.style={},
     %% usage: math baseline=wantedBaseline, where you have somewhere \zxX[a=wantedBaseline]{\beta}
     math baseline/.style={baseline={([yshift=-axis_height]##1)}},
-    math baseline row/.style={math baseline=\tikzcdmatrixname-##1-1},
+    math baseline row/.style={math baseline=\zxCurrentDiagram-##1-1},
     math baseline row/.default={1},
     mbr/.style={math baseline row={##1}},
     mbr/.default={1},
+    bold/.style={
+      /tikz/commutative diagrams/arrows={B},
+      /zx/user overlay nodes/.style={
+        zxSpiders/.append style={BBw},
+        zxH/.append style={BBw},
+      },
+      /utils/exec={\def\zxEnableAllElementsBold{}},
+    },
+    B/.style={
+      bold
+    },
     debug mode/.code={\def\zxDebugMode{}},
     no debug mode/.code={\let\zxDebugMode\undefined},
     amp/.style={
@@ -1915,6 +2003,14 @@
           }%
         \fi%
       },
+      % runs a=foo only if we are at the origin (0,0) of a zxExecuteAtRegionRelative
+      a if origin/.code={%
+        \ifnum \the\pgfmatrixcurrentrow=\zxOriginalRow\relax%
+          \ifnum \the\pgfmatrixcurrentcolumn=\zxOriginalCol\relax%
+            \pgfkeysalso{a={####1}}%
+          \fi%          
+        \fi%
+      },
       %% This allows nodes to specify styles for the arrows that start/end from them.
       %% This style will be loaded last as otherwise we don't know yet the starting and ending point.
       %% See how we apply it on the arrow side using "every arrow post"
@@ -1946,14 +2042,44 @@
           \endpgfextra%
         },%
       },%
+      pre arrow style if start node/.style={%
+        append after command={% This expects a path, but we want to write a code without any path:
+          \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
+            \def\zx@arguments{####1}%
+            \edef\zx@tmp{%
+              /zx/internals/preRunIfIamStartNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
+            }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
+            {%
+              \globaldefs=1\relax%
+              \pgfkeysalsofrom{\zx@tmp}%
+            }%
+          \endpgfextra%
+        },%
+      },
+      pre arrow style if end node/.style={%
+        append after command={% This expects a path, but we want to write a code without any path:
+          \pgfextra% this syntax with \endpgfextra completely turns off the tikz syntax, that might be safer than \pgfextra{...}.
+            \def\zx@arguments{####1}%
+            \edef\zx@tmp{%
+              /zx/internals/preRunIfIamEndNode-\tikzlastnode/.append style={\unexpanded\expandafter{\zx@arguments}},%
+            }% https://tex.stackexchange.com/questions/47905/how-to-globally-tikzset-styles
+            {%
+              \globaldefs=1\relax%
+              \pgfkeysalsofrom{\zx@tmp}%
+            }%
+          \endpgfextra%
+        },%
+      },
       /zx/default style nodes,
       /zx/user overlay nodes,
     },
     every arrow/.style={%
       /zx/wires definition,
       /zx/default style wires,
+      /zx/every arrow pre,
       /zx/user overlay wires,
       %%% Load the post arrow style at the end:
+      %% See also every arrow pre if you want to run it before the style of the arrow
       /tikz/commutative diagrams/every arrow post/.append style={%
         /utils/exec={% We provide a way to disable the default behavior
           \ifdefined\zxDisablePostRunStart\else%
@@ -1988,6 +2114,13 @@
         disable post run start,
         disable post run end,
       },
+      enable post run start/.code={\let\zxDisablePostRunStart\undefined},
+      enable post run end/.code={\let\zxDisablePostRunEnd\undefined},
+      enable post run/.style={
+        enable post run start,
+        enable post run end,
+      },
+      enable post run,
     },
     %% We add an empty coordinate in every node. This has multiple advantages: first this avoids errors about
     %% single ampersand when the matrix does not start with None, and it also avoids using \zxN{} everywhere.
@@ -2000,18 +2133,32 @@
     %     \tikz@lib@matrix@end@cell
     %   }%
     % },
-    % /tikz/replace empty cell with={%
+    %   /tikz/replace empty cell with={%
+    % /tikz/execute at empty cell/.code={%
+    %   \expandafter\def\expandafter\tikz@at@emptycell\expandafter
+    %   {\tikz@at@emptycell\expandafter\expandafter\expandafter
+    %   \tikz@lib@matrix@start@cell##1\tikz@lib@matrix@end@cell}},
+    % This is started at the beginning of non-empty cells
+    every matrix/.append style={
+      /tikz/execute at end cell={%
+        \ifcsname zxExecuteAtCell-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
+          \csname zxExecuteAtCell-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
+        \fi%
+      },%
+    },%
     /tikz/execute at empty cell={%
       % We want to check if there is a
-      \ifcsname zxExecuteAtCell-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
-        \csname zxExecuteAtCell-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
+      \ifcsname zxExecuteAtCell-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
+        % I wanted to allow a syntax with |[]| but first it seems to be quite hard (as it depends on the number of extensions):
+        % %% https://tex.stackexchange.com/questions/696622/tikz-allow-the-style-syntax-in-execute-at-empty-cells
+        % but anyway I guess it is better to turn everything into nodes so that \zxX{} can be inserted outside of a matrix.
+        \csname zxExecuteAtCell-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn\endcsname%
       \else%
         \ifdefined\zxCustomExecuteAtEmptyCell\zxCustomExecuteAtEmptyCell%
         \else%
           \coordinate[
           % yshift=axis_height, % We already do that elsewhere
-          name=\tikzmatrixname
-          -\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];
+          name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];
         \fi%
       \fi%
     },
@@ -2069,6 +2216,14 @@
     /zx/user overlay,
   },
 }
+
+% % Call \zxSetStyleWhenEndingHere{your, zx, style} when you want to configure a particular style when arriving on a particular cell
+% \NewExpandableDocumentCommand{\zxSetStyleWhenEndingHere}{m}{%
+%   \pgfkeys{
+%     /zx/internals/postRunIfIamEndNode-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn/.append code={#1},
+%     /zx/internals/postRunIfIamEndNode-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn
+%   }%
+% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Helper functions
@@ -2188,14 +2343,31 @@
 \tikzset{
   % When using the \node{}; instead of |[foo]| bar structure, no name is given to the node. This is fixed with
   % this:
-  zx main node/.style={
-    name=\tikzmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn
+  zx main node/.code={%
+    % If we are in a matrix, we can give it the name of the current column
+    \ifdefined\zxCurrentDiagram%
+      \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn}%
+    \fi%
   },
-  zx subnode/.style={
-    name=\tikzcdmatrixname-\zxOriginalRow-\zxOriginalCol#1,%
+  zx subnode/.code={
+    \ifdefined\zxCurrentDiagram%
+      \ifdefined\zxOriginalRow%
+        \tikzset{name=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
+      \else%
+        \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
+      \fi%
+    \else%
+      \message{Warning: you or outside of a tikzcd environment, so you will not be able to implement subnodes for now. But you might want to try to define zxCurrentDiagram, pgfmatrixcurrentrow and pgfmatrixcurrentcolumn yourself, you might be lucky.}%
+    \fi%
   },
   zx independent subnode/.style={
-    name=\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1,%
+    name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1,%
+  },
+  zx apply style/.code={\tikzset{/tikz/.cd,#1}},
+  zx style from variable/.style={%
+    zx apply style/.expand twice={\csname zxGateMultiVariable-\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol-#1\endcsname},
+    % \expandafter\scantokens\expandafter{\zx@tmp}%
+    % \zx@tmp%
   },
 }
 
@@ -2206,17 +2378,14 @@
 %% here you can use previously defined variables if you created them
 %% will only work inside environments where \zxOriginalRow/Col are defined
 \NewExpandableDocumentCommand{\zxGetNameRelativeNode}{mm}{%
-  \tikzcdmatrixname-\the\numexpr\zxOriginalRow+#1\relax-\the\numexpr\zxOriginalCol+#2\relax%
+  \zxCurrentDiagram-\the\numexpr\zxOriginalRow+#1\relax-\the\numexpr\zxOriginalCol+#2\relax%
 }%
 
 
-% \zxExecuteAtEndPicture{\node{A};} will execute \node{A}; at the end of the picture
-% It will automatically define \zxOriginalRow, \zxOriginalCol and
-% \zxGetNameRelativeNode{n}{m} to get the row/col where this command was run
-% and to get the position of the relative node relative to the position of the command
+% \zxExecuteAtEndPicture{\node{A};} will execute \node{A}; at the end of the picture (or rather after the draw of the matrix, but before the draw of the wires)
 \NewExpandableDocumentCommand{\zxExecuteAtEndPicture}{m}{%
   \def\zx@tmp@args{#1}%
-  \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@savedpaths{
+  \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@before@paths@hook{%
         \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
         \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
       \expandonce\zx@tmp@args%
@@ -2228,31 +2397,65 @@
 % \zxExecuteAtCellAbsolute{1}{2}{\node{A};} will execute at cell row 1, column 2 the code \node{A};, just make sure that nothing is already present in that cell
 \NewExpandableDocumentCommand{\zxExecuteAtCellAbsolute}{mmm}{%
   \def\zx@tmp@args{#3}%
+  \edef\zx@tmp{zxExecuteAtCell-\zxCurrentDiagram-#1-#2}%
+  % Make sure to define the macro as we can't add to it if it does not exist
+  \ifcsname \zx@tmp\endcsname\else\expandafter\gdef\csname \zx@tmp\endcsname{}\fi%
   \edef\zx@tmp@code{
-    \noexpand\expandafter\noexpand\gdef\noexpand\csname zxExecuteAtCell-\tikzcdmatrixname-#1-#2\noexpand\endcsname{%
+    \noexpand\expandafter\noexpand\pgfutil@g@addto@macro\noexpand\csname zxExecuteAtCell-\zxCurrentDiagram-#1-#2\noexpand\endcsname{%
       \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
       \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
+      % To allow to recover \zxOriginalRow from the name of the node later, we create a new macro "namenode-zxOriginalRow" with the value of the original row, same for Col
+      \noexpand\expandafter\noexpand\xdef\noexpand\csname\zxCurrentDiagram-\noexpand\the\noexpand\pgfmatrixcurrentrow-\noexpand\the\noexpand\pgfmatrixcurrentcolumn-zxOriginalRow\endcsname{\noexpand\zxOriginalRow}%
+      \noexpand\expandafter\noexpand\xdef\noexpand\csname\zxCurrentDiagram-\noexpand\the\noexpand\pgfmatrixcurrentrow-\noexpand\the\noexpand\pgfmatrixcurrentcolumn-zxOriginalCol\endcsname{\noexpand\zxOriginalCol}%
       \expandonce{\zx@tmp@args}%
     }%
   }%
   \zx@tmp@code%
 }
 
+% TODO: maybe use instead /tikz/every cell={n}{m} that is always run even if the cell is not empty? Or execute at begin cell that applies to non-empty cells?
 % \zxExecuteAtCellRelative{1}{2}{\node{A};} will execute at cell current row + 1, current column + 2 the code \node{A};, just make sure that nothing is already present in that cell
 \NewExpandableDocumentCommand{\zxExecuteAtCellRelative}{mmm}{%
   \def\zx@tmp@args{#3}%
   % putting this in the csname directly does not work
-  \edef\zx@tmp{zxExecuteAtCell-\tikzcdmatrixname-\the\numexpr \the\pgfmatrixcurrentrow+#1\relax-\the\numexpr\the\pgfmatrixcurrentcolumn+#2\relax}%
+  \edef\zx@tmp{zxExecuteAtCell-\zxCurrentDiagram-\the\numexpr \the\pgfmatrixcurrentrow+#1\relax-\the\numexpr\the\pgfmatrixcurrentcolumn+#2\relax}%
+  % \noexpand\expandafter\noexpand\gdef\noexpand\csname \zx@tmp\noexpand\endcsname{%
+  % Make sure to define the macro as we can't add to it if it does not exist
+  \ifcsname \zx@tmp\endcsname\else\expandafter\gdef\csname \zx@tmp\endcsname{}\fi%
   \edef\zx@tmp@code{%
-    \noexpand\expandafter\noexpand\gdef\noexpand\csname \zx@tmp\noexpand\endcsname{%
+    \noexpand\expandafter\noexpand\pgfutil@g@addto@macro\noexpand\csname \zx@tmp\noexpand\endcsname{%
       \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
-      \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%      
+      \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
+      % To allow to recover \zxOriginalRow from the name of the node later, we create a new macro "namenode-zxOriginalRow" with the value of the original row, same for Col
+      \noexpand\expandafter\noexpand\xdef\noexpand\csname\zxCurrentDiagram-\noexpand\the\noexpand\pgfmatrixcurrentrow-\noexpand\the\noexpand\pgfmatrixcurrentcolumn-zxOriginalRow\endcsname{\noexpand\zxOriginalRow}%
+      \noexpand\expandafter\noexpand\xdef\noexpand\csname\zxCurrentDiagram-\noexpand\the\noexpand\pgfmatrixcurrentrow-\noexpand\the\noexpand\pgfmatrixcurrentcolumn-zxOriginalCol\endcsname{\noexpand\zxOriginalCol}%
       \expandonce{\zx@tmp@args}%
     }%
   }%
   \zx@tmp@code%
   % \edef\zx@tmp{}%
   % \expandafter\gdef\csname \zx@tmp\endcsname{#3}%
+}
+
+% \zxExecuteAtRegionRelative{n}{m}{code} will execute code \zxExecuteAtCellRelative in all cells starting from the current cell (note that
+% it will have no effect on the (0,0) cell since this cell is not empty and already processed
+\NewExpandableDocumentCommand{\zxExecuteAtRegionRelative}{mmm}{%
+  \pgfmathparse{#1-1}%
+  \foreach \i in {0,...,\pgfmathresult}{%
+    \pgfmathparse{#2-1}%
+    \foreach \j in {0,...,\pgfmathresult}{%
+      \zxExecuteAtCellRelative{\i}{\j}{#3}%
+    }%
+  }%
+}
+
+\NewExpandableDocumentCommand{\zxExecuteAtRegionRelativeAndOrigin}{mmm}{%
+  % Just a trick or the tikz matrix parser will not understand that we are in a node if we start with def:
+  \coordinate(zx@Useless);
+  \def\zxOriginalRow{\the\pgfmatrixcurrentrow}%
+  \def\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
+  %#3%
+  \zxExecuteAtRegionRelative{#1}{#2}{#3}%
 }
 
 %%%
@@ -2262,14 +2465,14 @@
 % \zxGateMultiNewVariable{my variable}{value}
 \NewExpandableDocumentCommand{\zxSetVariable}{mm}{%
   % For some reasons it fails inside the csname directly
-  \edef\zx@tmp{zxGateMultiVariable-\tikzcdmatrixname-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1}%
+  \edef\zx@tmp{zxGateMultiVariable-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1}%
   \expandafter\gdef\csname \zx@tmp\endcsname{%
     #2%
   }%
 }
 
-\NewExpandableDocumentCommand{\zxGetVariable}{m}{%
-  \csname zxGateMultiVariable-\tikzcdmatrixname-\zxOriginalRow-\zxOriginalCol-#1\endcsname%
+\def\zxGetVariable#1{%
+  \csname zxGateMultiVariable-\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol-#1\endcsname%
 }
 
 
@@ -2316,6 +2519,9 @@
     \let\tikzcd@\tikzcd@@originalCopyZx%
     \let\endtikzcd\endtikzcd@originalCopyZx%
   \fi%
+  % we need to reset this or it will get data from previous pictures
+  \global\let\tikzcd@before@paths@hook\pgfutil@empty%
+  \global\let\tikzcd@savedpaths\pgfutil@empty%
   \ifdefined\zxDoNotPatchArrows% Do not patch arrows (we need sometimes "every arrow post")
   \else% Copy/pasted from https://github.com/astoff/tikz-cd/blob/master/tikzlibrarycd.code.tex, just added "every arrow post".
     %% I'm not sure which method is more resilient: patchcmd is likely to fail on minor library update,
@@ -2323,7 +2529,7 @@
     %% only locally). Since I don't know what is better, I do both depending on this macro
     \ifdefined\zxUsePatchCmdToPatchArrows%
       \patchcmd\tikzcd@ar@new%
-      {\path[/tikz/commutative diagrams/.cd,everyx arrow,#1]}%
+      {\path[/tikz/commutative diagrams/.cd,every arrow,#1]}%
       {\path[/tikz/commutative diagrams/.cd,every arrow,#1,every arrow post]}%
       {}%
       {}%
@@ -2342,12 +2548,23 @@
   %% Provide a way to reference the current diagram. This way it is for instance possible to do
   %% \ar[from=Zbotright, to=\zxCurrentDiagram-1-1]
   %% For this to work, you should not modify the name of the matrix.
-  \def\zxCurrentDiagram{tikz@f@\the\tikz@fig@count}%Does not exists yet... Hopefully it's updated soon enough
+  %% Old way
+  % \def\zxCurrentDiagram{tikz@f@\the\tikz@fig@count}%Does not exists yet... Hopefully it's updated soon enough
+  % Should be equivalent but might even work if we change the name of the matrix, hopefully we only use it at the right time.
+  % Also, when drawing the lines, we are not anymore inside the tikzmatrix, but tikzcdmatrixname contains the name of the matrix instead:
+  \def\zxCurrentDiagram{\ifdefined\tikzmatrixname\tikzmatrixname\else\tikzcdmatrixname\fi}%
+  % \pgfutil@g@addto@macro\tikzcd@before@paths@hook{%
+  %   \def\zxCurrentDiagram{\tikzcdmatrixname}%
+  % }%
+  % the problem with \tikzcdmatrixname is that it is only defined at the end, once the matrix is built
   % We provide a way to get the current matrix name:
   \begin{tikzcd}[%
     /zx/defaultEnv,%
     #1]%
-  }{\end{tikzcd}\egroup}
+  }{\end{tikzcd}%
+  \global\let\tikzcd@before@paths@hook\pgfutil@empty%
+  \global\let\tikzcd@savedpaths\pgfutil@empty%
+  \egroup}
 
 % https://tex.stackexchange.com/a/619983/116348
 \ExplSyntaxOn
@@ -2391,7 +2608,7 @@
       % are not compatible with external):
       \ifthenelse{\equal{\zx@external@mode}{wrapForceExt}}{%
         {\tikzexternalenable\zxExt[#1][#2][#3]{#4}}%
-      }{
+      }{%
         \ifthenelse{\equal{\zx@external@mode}{wrap}}{% We wrap everything around figures to be compatible with external
           \zxExt[#1][#2][#3]{#4}%
         }{% We don't wrap anything inside figures, so we lose external compatibility.
@@ -2401,7 +2618,7 @@
               \tikzexternaldisable%
               \message{WARNING: you chose to disable temporarily the tikz external library.}%
             \fi%
-          }{}
+          }{}%
           \zxNoExt[#1]{#4}%
         }%
       }%
@@ -2466,21 +2683,16 @@
 % The current mode is stored in \interactionmode, 0, 1, 2, 3 corresponding respectively to batch, nonstop, scroll or errorstop. 
 % https://tex.stackexchange.com/questions/91592/where-to-find-official-and-extended-documentation-for-tex-latexs-commandlin
 \NewDocumentCommand\zxConfigureExternalSystemCallAuto{}{%
-  \message{XXX Configuring auto.}
   \ifnum\interactionmode=0 %
-  \message{XXX Configuring auto 0.}
     \zxConfigureExternalSystemCall[-interaction=batchmode]%
   \fi%
   \ifnum\interactionmode=1 %
-  \message{XXX Configuring auto 1.}
     \zxConfigureExternalSystemCall[-interaction=nonstopmode]% emacs
   \fi%
   \ifnum\interactionmode=2 %
-  \message{XXX Configuring auto 2.}
     \zxConfigureExternalSystemCall[-interaction=scrollmode]%
   \fi%
   \ifnum\interactionmode=3 %
-  \message{XXX Configuring auto 3.}
     \zxConfigureExternalSystemCall[-interaction=errorstopmode]% pdflatex by default
   \fi%
 }
@@ -2645,7 +2857,7 @@
   %   |[#1={pic text={##6}, ##4}, ##5]|%
   % }%
   \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{O{}O{}t.t-t't/t*e_m}{%
-    |[#1={
+    \node[zx main node, #1={
       pic text={##9},
       %% The alias=… should rather be called on the second element. But it's quite handy to write it here, so here we go:
       a/.style={%
@@ -2742,7 +2954,7 @@
         },
         rotate=\zxCurrentRotationMode,%        
       },%
-      ##1}, #5, ##2]|%
+      ##1}, #5, ##2]{};%
   }%
 }%
 
@@ -2923,15 +3135,15 @@
 % and vertical, \zxNone-{} is only horizontal space, \zxNone|{} is only vertical space.
 \NewExpandableDocumentCommand{\zxNone}{t+t-t|O{}m}{
   \IfBooleanTF{#1}{% \zxNone+
-    |[zxNone+,#4]| #5%
+    \node[zx main node, zxNone+,#4] {#5};%
   }{
     \IfBooleanTF{#2}{% \zxNone-
-      |[zxNone-,#4]| #5%
+      \node[zx main node, zxNone-,#4] {#5};%
     }{
       \IfBooleanTF{#3}{% \zxNone
-        |[zxNoneI,#4]| #5%
+        \node[zx main node, zxNoneI,#4] {#5};%
       }{% \zxNone
-        |[zxNone,#4]| #5%
+        \node[zx main node, zxNone,#4] {#5};%
       }%
     }%
   }%
@@ -2940,15 +3152,15 @@
 % Usage: alias of \zxNone... To bad token can't be easily forwarded to another function.
 \NewExpandableDocumentCommand{\zxN}{t+t-t|O{}m}{
   \IfBooleanTF{#1}{% \zxNone+
-    |[zxNone+,#4]| #5%
+    \node[zx main node, zxNone+,#4] {#5};%
   }{
     \IfBooleanTF{#2}{% \zxNone-
-      |[zxNone-,#4]| #5%
+      \node[zx main node, zxNone-,#4]{#5};%
     }{
       \IfBooleanTF{#3}{% \zxNone|
-        |[zxNoneI,#4]| #5%
+        \node[zx main node, zxNoneI,#4]{#5};%
       }{% \zxNone
-        |[zxNone,#4]| #5%
+        \node[zx main node, zxNone,#4]{#5};%
       }%
     }%
   }%
@@ -2970,15 +3182,15 @@
 % Cf \zxNone, but with larger space.
 \NewExpandableDocumentCommand{\zxNoneDouble}{t+t-t|O{}m}{
   \IfBooleanTF{#1}{% \zxNoneDouble+
-    |[zxNoneDouble+,#4]| #5%
+    \node[zx main node, zxNoneDouble+,#4]{#5};%
   }{
     \IfBooleanTF{#2}{% \zxNoneDouble-
-      |[zxNoneDouble-,#4]| #5%
+      \node[zx main node, zxNoneDouble-,#4]{#5};%
     }{
       \IfBooleanTF{#3}{% \zxNoneDouble
-        |[zxNoneDoubleI,#4]| #5%
+        \node[zx main node, zxNoneDoubleI,#4]{#5};%
       }{% \zxNoneDouble
-        |[zxNoneDouble,#4]| #5%
+        \node[zx main node, zxNoneDouble,#4]{#5};%
       }
     }
   }
@@ -2987,39 +3199,39 @@
 %% For maximum styling liberty, the content is given directly to the style.
 % It allows the style to put the phase in a label.
 \NewExpandableDocumentCommand{\zxZ}{O{}t*t-m}{
-  |[zxZ4={#1}{\IfBooleanTF{#3}{-}{}}{\IfBooleanTF{#2}{*}{}}{#4}]| %
+  \node[zx main node, zxZ4={#1}{\IfBooleanTF{#3}{-}{}}{\IfBooleanTF{#2}{*}{}}{#4}] {}; %
 }
 
 %% For maximum styling liberty, the content is given directly to the style.
 %% It allows the style to put the phase in a label.
 \NewExpandableDocumentCommand{\zxX}{O{}t*t-m}{
-  |[zxX4={#1}{\IfBooleanTF{#3}{-}{}}{\IfBooleanTF{#2}{*}{}}{#4}]| %
+  \node[zx main node, zxX4={#1}{\IfBooleanTF{#3}{-}{}}{\IfBooleanTF{#2}{*}{}}{#4}]{};%
 }
 
 \NewExpandableDocumentCommand{\zxH}{O{}m}{
-  |[zxH,#1]| {}%
+  \node[zx main node, zxH,#1]{};%
 }
 
 % Use like: \zxFracX{\pi}{4} for positive values or for negative \zxFracX-{\pi}{4}
 \NewExpandableDocumentCommand{\zxFracZ}{O{}t-moom}{%
   \IfNoValueTF{#5}{% 2 arguments like: \zxFracZ{\pi}{2}
-    |[zxFracZ6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#3}{#6}]| %
+    \node[zx main node, zxFracZ6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#3}{#6}]{};%
   }{% 4 arguments like \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
-    |[zxFracZ6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#4}{#5}]| %
+    \node[zx main node, zxFracZ6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#4}{#5}]{};%
   }%
 }
 
 % Use like: \zxFracX{\pi}{4} for positive values or for negative \zxFracX-{\pi}{4}
 \NewExpandableDocumentCommand{\zxFracX}{O{}t-moom}{%
   \IfNoValueTF{#5}{% 2 arguments like: \zxFracZ{\pi}{2}
-    |[zxFracX6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#3}{#6}]| %
+    \node[zx main node, zxFracX6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#3}{#6}]{};%
   }{% 4 arguments like \zxFracZ{a+b}[(a+b)][(c+d)]{c+d}
-    |[zxFracX6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#4}{#5}]| %
+    \node[zx main node, zxFracX6={#1}{\IfBooleanTF{#2}{\zxMinus}{}}{#3}{#6}{#4}{#5}]{};%
   }%
 }
 
 \NewExpandableDocumentCommand{\zxEmptyDiagram}{}{
-  |[zxEmptyDiagram]| {}%
+  \node[zx main node, zxEmptyDiagram]{};%
 }
 
 
@@ -3027,7 +3239,7 @@
 % Useful to put on the left of a node like "n \vdots", linked to the next node.  Example: \leftManyDots{n}.
 % First optional argument is scale of text, second is scale of =.
 \NewExpandableDocumentCommand{\leftManyDots}{O{1}O{\zxScaleDots}m}{%
-  |[zxNone+,inner xsep=0pt]| \scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdotsCenterMathline$}} \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
+  \node[zx main node, zxNone+,inner xsep=0pt]{\scalebox{#1}{$#3$\,}\makebox[0pt][l]{\scalebox{#2}{$\cvdotsCenterMathline$}}}; \ar[r,-N.,start anchor=north east] \ar[r,-N',start anchor=south east] \pgfmatrixnextcell[\zxwCol]%
 }
 
 % Useful to link two nodes and put a vdots in between.
@@ -3037,7 +3249,7 @@
 
 % Like \leftManyDots but on the right. Do *not* create a new node, like in |[zxShortZ]| \alpha \rightManyDots{m}
 \NewExpandableDocumentCommand{\rightManyDots}{O{1}O{\zxScaleDots}m}{%
-  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] |[zxNone+,inner xsep=0pt]| \makebox[0pt][r]{\scalebox{#2}{$\cvdotsCenterMathline$}}\scalebox{#1}{\,$#3$}
+  \ar[r,N'-,end anchor=north west] \ar[r,N.-,end anchor=south west] \pgfmatrixnextcell[\zxwCol] \node[zx main node, zxNone+,inner xsep=0pt]{\makebox[0pt][r]{\scalebox{#2}{$\cvdotsCenterMathline$}}\scalebox{#1}{\,$#3$}};
 }
 
 % Shortcut for frequent wires
