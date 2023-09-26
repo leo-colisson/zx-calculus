@@ -82,6 +82,9 @@
 %% Default separation between rows and columns
 \newcommand{\zxDefaultColumnSep}{1.5mm}
 \newcommand{\zxDefaultRowSep}{1.5mm}
+% In circuit mode, we have mostly gates, and the default setting might be too small
+\newcommand{\zxDefaultColumnSepCircuit}{4mm}
+\newcommand{\zxDefaultRowSepCircuit}{4mm}
 % To cancel the default tow separation
 \newcommand{\zxZeroCol}{-\zxDefaultColumnSep}
 \newcommand{\zxZeroRow}{-\zxDefaultRowSep}
@@ -109,6 +112,7 @@
 \def\zxDefaultSoftAngleChevron{60}
 
 \def\zxGroundScale{1.8}
+\def\zxMeterScale{1}
 
 % Styles for O,N,... (new bezier version)
 \tikzset{
@@ -143,6 +147,13 @@
 
 % Scale to use when scaling 3 dots
 \def\zxScaleDots{.7}
+
+% Size of the minimum width of boxes
+% We need 4ex to fit most elements in height, at least with the default font (f_a is the heigher), and 1.83em to fit them in width (W is the wider).
+% Since these two values are quite close, lets take the maximum (1.83em) to have a square shape
+\def\zxBoxMinimumWidth{1.83em}
+\def\zxBoxMinimumHeight{1.83em}
+
 
 % 0.4pt is default in tikz. Also used to ensure it has not been modified document wise by other libraries
 % (quantikz notably changes this parameter).
@@ -189,6 +200,11 @@
 % If you prefer to start the wire on the surface of the node, do that instead... but it will take longer to compute. See also our ui style
 % as the default styles are not meant to work in that setting.
 % \let\zxWireInsideIfNoIntersectionName\undefined
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Global temporary variables/dimensions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newsavebox{\zx@tmp@box}%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Adding anchors
@@ -1042,6 +1058,23 @@
       start anchor=,
       end anchor=,
     },
+    % Classical wires: we make them bend
+    classical/.style={
+      double distance=1pt,
+      double,
+      line cap=rect,
+      % the .5pt is half of the double distance
+      shorten <=.5pt+.5\pgflinewidth,
+      shorten >=.5pt+.5\pgflinewidth,
+      % to path={},
+    },
+    cl/.style={classical},
+    connect -|/.style={
+      to path={(\tikztostart) -| (\tikztotarget)}
+    },
+    connect |-/.style={
+      to path={(\tikztostart) |- (\tikztotarget)}
+    },
     %% To go to a subnode defined in a pic with from subnode=mysubnode.
     start subnode/.code={%
       \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@start}%
@@ -1481,6 +1514,9 @@
     %% Normalize fonts to avoid different rendering when document has a different font shape.
     zxNormalFont/.style={
       font={\fontsize{10}{12}\selectfont},
+    },
+    zxTinyFont/.style={
+      font={\fontsize{6}{6}\selectfont},
     },
     % Practical styles to either vertically center the content, or fix the position of the baseline.
     content fixed baseline/.style={
@@ -1930,6 +1966,11 @@
     math baseline row/.default={1},
     mbr/.style={math baseline row={##1}},
     mbr/.default={1},
+    % In circuits (mostly gates), the default separation feels too small, so we adjust it here
+    circuit/.style={
+      column sep=\zxDefaultColumnSepCircuit,
+      row sep=\zxDefaultRowSepCircuit,
+    },
     bold/.style={
       /tikz/commutative diagrams/arrows={B},
       /zx/user overlay nodes/.style={
@@ -1984,7 +2025,7 @@
               \pgfnodealias{####1}{\tikzlastnode}%
               % There is no way anymore to remember the link between the alias and the non-alias. Let's rembember it
               % manually
-              \expanded{\noexpand\gdef\csname zx@alias@\zxCurrentDiagram @####1\endcsname{\tikzlastnode}}%
+              \expandafter\xdef\csname zx@alias@\zxCurrentDiagram @####1\endcsname{\tikzlastnode}%
             }%
           },
         }%
@@ -2340,6 +2381,10 @@
 % (in a later cell, or at the end of the picture), together with
 % a way to pass any kind of variables for later
 
+\NewExpandableDocumentCommand{\zxMainCoordinate}{O{}m}{
+  \coordinate[#1,#2](\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn);
+}
+
 \tikzset{
   % When using the \node{}; instead of |[foo]| bar structure, no name is given to the node. This is fixed with
   % this:
@@ -2471,8 +2516,28 @@
   }%
 }
 
+\NewExpandableDocumentCommand{\zxSetVariableExpandOnce}{mm}{%
+  % For some reasons it fails inside the csname directly
+  \edef\zx@tmp{zxGateMultiVariable-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1}%
+  \expandafter\xdef\csname \zx@tmp\endcsname{%
+    \expandonce{#2}%
+  }%
+}
+
+\NewExpandableDocumentCommand{\zxSetVariableExpand}{mm}{%
+  % For some reasons it fails inside the csname directly
+  \edef\zx@tmp{zxGateMultiVariable-\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn-#1}%
+  \expandafter\xdef\csname \zx@tmp\endcsname{%
+    #2%
+  }%
+}
+
 \def\zxGetVariable#1{%
   \csname zxGateMultiVariable-\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol-#1\endcsname%
+}
+
+\def\zxShowVariable#1{%
+  \expandafter\show\csname zxGateMultiVariable-\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol-#1\endcsname%
 }
 
 
@@ -3080,9 +3145,19 @@
   main/.style={
     /zx/picCustomStyleBoxMainNode/.append style={####1},
   },
+  add label advanced/.style 2 args={
+    main={
+      label={[inner sep=1.8pt,zxTinyFont,####1]####2},
+    },
+  },
+  % label already exists
+  add label/.style={
+    add label advanced={}{####1},
+  },
 ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[draw, inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,alias=hello,
-    /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+  \node[draw, inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
+  minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
+  /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleBoxMainNode,
   ]{\tikzpictext};%
   \coordinate(fake center north) at (.north);%
@@ -3090,6 +3165,196 @@
   \coordinate(fake center east) at (.east);%  
   \coordinate(fake center south) at (.south);%
 }
+
+
+\NewCommandCopy\zxGate\zxBox
+
+% Like box, but don't draw the border. Useful for instance in \zxElt{\ket{\psi}}
+\zxNewNodeFromPic{Elt}[
+  main/.style={
+    /zx/picCustomStyleEltMainNode/.append style={####1},
+  },
+][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
+  \node[inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
+  minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
+  /zx/picCustomStyleEltMainNode/.append style={}, % Make sure it exists to avoid errors
+    /zx/picCustomStyleEltMainNode,
+  ]{\tikzpictext};%
+  \coordinate(fake center north) at (.north);%
+  \coordinate(fake center west) at (.west);%
+  \coordinate(fake center east) at (.east);%  
+  \coordinate(fake center south) at (.south);%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gate Multi (user part)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% TODO: maybe try to clean: https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo
+\NewExpandableDocumentCommand{\zxGateMulti}{O{}mmm}{
+  % The coordinate here is useful to help tikzcd to see that it is a node as it tries to search for path
+  \path;\pgfkeys{
+    /zx/gateMulti/.cd,
+    content inner nodes/.store in=\myContent,
+    content inner nodes={#4},
+    a/.store in=\zxGateMultiAlias,
+    a=,
+    style inner nodes/.store in=\zxGateMultiStyle,
+    style inner nodes={},
+    % style for the main style
+    main/.store in=\zxGateMultiMainStyle,
+    main={},
+    main text/.store in=\zxGateMultiMainTextStyle,
+    main text={},
+    % Run additional code after the last \node
+    additional code/.store in=\zxGateMultiAdditionalCode,
+    additional code=,   
+    % This will compute the size of the content, and adapt the width of the inner nodes
+    % leaving around a margin specified in the 2 first arguments (row/column), the last argument is the minimum width of the inner nodes
+    % note that we take as a reference the content of \pgfmatrixcolumnsep which might not be constant: if you change the width of the columns,
+    % you are on your own.
+    fit content/.code n args={4}{
+      % First, we compute the width of the content.
+      % \newdimen\zx@totalheight% + total height of box + margin
+      % \newdimen\zx@width% width of box + margin
+      % we save the content in a box:
+      % I asked here if there is a better approach:
+      % https://tex.stackexchange.com/questions/696964/cannot-set-sbox-inside-tikz
+      \begin{lrbox}{\zx@tmp@box}%
+        \let\selectfont\pgf@selectfontorig\begin{tikzpicture}\zxBox{#4}\end{tikzpicture}%
+        % I don't know why, but adding a second, empty tikzpicture help, otherwise it sets a huge bounding box for the first element.
+        % maybe tikzpicture's variable are not all set locally?
+        \begin{tikzpicture}\end{tikzpicture}%
+      \end{lrbox}%
+      % \sbox{\zx@tmp@box}{#4 xxxx}%
+      % \sbox\zx@tmp@box{\begin{tikzpicture}\node{xxx};\end{tikzpicture}}%
+      % % \usebox{\zx@tmp@box}
+      % \message{\the\dimexpr\the\ht\zx@tmp@box\relax}
+      % % we measure the content of the box (2 times since we have left and right margins):
+      \edef\zx@totalheight{\the\dimexpr\ht\zx@tmp@box + \dp\zx@tmp@box + ##1 + ##1\relax}%
+      \edef\zx@width{\the\dimexpr\wd\zx@tmp@box + ##2 + ##2\relax}%
+      \edef\zx@width{\the\dimexpr\wd\zx@tmp@box\relax}%
+      % \show\zx@totalheight
+      % \show\zx@width
+      %% We compute now the width/total height of each node. Basically, we have #3 blocks, and #3-1 column separations, so we want to find x such that:
+      %% x*#2 + (#2-1)*\pgfmatrixcolumnsep = \zx@width, i.e.
+      %% x = (\zx@width - (#2-1)*\pgfmatrixcolumnsep)/#2,
+      \pgfmathsetmacro{\zx@final@width@block}{max(##4,(\zx@width - (#3-1)*\pgfmatrixcolumnsep)/(#3))}%
+      \pgfmathsetmacro{\zx@final@height@block}{max(##3,(\zx@totalheight - (#2-1)*\pgfmatrixrowsep)/(#2))}%
+      \pgfkeysalso{%
+        content inner nodes={},
+        style inner nodes/.expanded={
+          inner sep=0pt,
+          outer sep=0pt,
+          opacity=0,
+          % fill=red,
+          minimum width=\zx@final@width@block pt,
+          minimum height=\zx@final@height@block pt,
+        },
+      }%
+    },
+    fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth},
+    /utils/exec={
+      \ifdefined\zxDisableFitContent\else%
+        \pgfkeysalso{fit content}%
+      \fi%
+    },
+    safe fit/.style={
+      style inner nodes={},
+      content inner nodes={#4},
+    },
+    add label advanced/.style 2 args={
+      main={
+        label={[align=center,inner sep=1.8pt,zxTinyFont,##1]##2},
+      },
+    },
+    % label already exists
+    add label/.style={
+      add label advanced={}{##1},
+    },
+    #1,
+    % % /tikz/column sep/.show code,
+    % /utils/exec={
+    %   \message{\pgfmatrixcolumnsep}
+    %   \show\pgfmatrixcolumnsep
+    % },
+  }%
+  % Store the content for letter use
+  \zxSetVariableExpandOnce{content inner nodes}{\myContent}%
+  \zxSetVariableExpandOnce{style inner nodes}{\zxGateMultiStyle}%
+  \zxSetVariableExpandOnce{style main node}{\zxGateMultiMainStyle}%
+  \zxSetVariableExpandOnce{style main text node}{\zxGateMultiMainTextStyle}%
+  \zxSetVariableExpandOnce{gate multi alias}{\zxGateMultiAlias}%
+  \zxSetVariableExpandOnce{additional code}{\zxGateMultiAdditionalCode}%
+  \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
+    \zxBox[%
+    main={zx main node,
+      draw,
+      opacity=0,
+      zx style from variable={style inner nodes},
+    }]{\zxGetVariable{content inner nodes}}
+  }%
+  \zxExecuteAtEndPicture{
+    % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:
+    \node[
+      draw,
+      a=\zxGetVariable{gate multi alias},
+      inner sep=0pt,
+      fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
+      alias=zxMainNode,
+      /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+      /zx/picCustomStyleBoxMainNode,
+      zx style from variable={style main node}]{};
+      \node[rectangle, execute at begin node=$, execute at end node=$, at=(zxMainNode.center),alias=zxMainNodeText,zx style from variable={style main text node}]{#4};
+      % \message{\zxGetVariable{additional code}}
+      % \expandafter\show\let
+      \scantokens{%
+        \zxGetVariable{additional code}%
+      }%
+  }
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Circuit-related gates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\NewExpandableDocumentCommand{\zxCtrl}{O{}m}{%
+  \node[zx main node, circle, inner sep=2pt, fill=black, #1]{};
+}
+
+% white ctrl
+\NewExpandableDocumentCommand{\zxOCtrl}{O{}m}{%
+  \node[zx main node, circle, inner sep=2pt, draw, #1]{};
+}
+
+\NewExpandableDocumentCommand{\zxNot}{O{}m}{%
+  \node[zx main node, circle, inner sep=2.5pt, draw, append after command={(\tikzlastnode.north) edge (\tikzlastnode.south) (\tikzlastnode.east) edge (\tikzlastnode.west)}, #1]{};
+}
+
+\NewExpandableDocumentCommand{\zxCross}{O{}m}{%
+  \zxMainCoordinate{}
+  \node[at={(0,0)}, rectangle, inner sep=3pt, append after command={(\tikzlastnode.north east) edge[line cap=round] (\tikzlastnode.south west) (\tikzlastnode.south east) edge[line cap=round] (\tikzlastnode.north west)}, #1]{};
+}
+
+% Loosely inspired by
+% https://tex.stackexchange.com/questions/416055/measurement-meter-quantum-circuit-with-tikz
+% Avoid nesting tikz pictures, more efficient, more configurable
+\newsavebox\zxMeterBox
+\begin{lrbox}{\zxMeterBox}%
+  \begin{tikzpicture}[line width=.5,scale=.5]%
+    \draw[line cap=round] (0,0) to[bend left=50] (1,0);%
+    % \draw[line cap=round,-latex] (.5,-.2) to (.7,.8);
+    \draw[line cap=round,-{Stealth[length=6, round]}] (.5,-.15) to (.9,.75);%
+    %\useasboundingbox (-0.1,-.16) (1.1,.9);
+  \end{tikzpicture}%
+\end{lrbox}
+
+\NewExpandableDocumentCommand{\zxMeter}{O{1}m}{%
+  \pgfmathparse{.8*\zxMeterScale*#1}%
+  \scalebox{\pgfmathresult}{\usebox{\zxMeterBox}}%
+}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% 

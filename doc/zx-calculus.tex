@@ -10,6 +10,7 @@
 \usepackage{amsmath}
 \usepackage[margin=3cm]{geometry}
 \usepackage{calc}
+\usepackage{braket}
 \usepackage{tikz}
 \usetikzlibrary{shadows,fit}
 % \usetikzlibrary fails because file is not in current directory, lazy to setup TEXINPUTS
@@ -65,7 +66,7 @@
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2023/09/23+unstable}\\[3mm]
+  {Léo Colisson \quad Version 2023/09/27+unstable}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -110,6 +111,26 @@ Since 24/02/2023, we also provide ways to easily create new, highly customizable
 \end{codeexample}
 }
 
+Since 2023-09-27, you can also do advanced operations on multi-gate elements or use our default style:
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+  \rar & \zxGate{H} \rar & \zxGateMulti{2}{3}{H} &  & \rar & \\
+  \rar & \zxGate{H} \rar &                       &  & \rar & 
+\end{ZX}
+\end{codeexample}
+
+and create more traditional circuits:
+
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \zxElt{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+  & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,connect -|] \\
+  \ar[r]                  & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+  &  & \zxBox{H} \rar & 
+\end{ZX}    
+\end{codeexample}
+}
 
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
@@ -1115,19 +1136,186 @@ You can also set globally the styles like |/zx/picCustomStyleBeforeUserMatrix| (
 }
 \end{pgfmanualentry}
 
-\subsubsection{Miscellaneous}
+
+\subsubsection{Circuit-related}
+
+Since 2023-09-17, we provide a number of options to typeset circuits.
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxBox\marg{box text}\@@
+  \extractcommand\zxBox\opt{\oarg{style}}\marg{box text}\@@
+  \extractcommand\zxGate\opt{\oarg{style}}\marg{box text}\@@
   \pgfmanualbody
-  You can add simple boxes using |\zxBox{X}| (in math mode), possibly adding additional styling to the main box using |main={your style}|:
+  (both commands are alias) You can add simple boxes using |\zxBox{X}| (in math mode), possibly adding additional styling to the main box using |main={your style}|:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[]
 \begin{ZX}
   \zxBox{G} \rar[B]                    & [\zxwCol] \zxN{}\\
   \zxBox[main={fill=green}]{G_A} \rar[B] & [\zxwCol] \zxN{}
 \end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \extractcommand\zxDefaultColumnSepCircuit\@@
+  \extractcommand\zxDefaultRowSepCircuit\@@
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/defaultEnv/circuit\@nil%
+  \makeatother
+  \pgfmanualbody
+  This style enables the circuit mode, which is simply changing the default spacing between lines and columns. Compare:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}
+  \rar & \zxGate{H} \rar & \zxGateMulti{2}{3}{H} &  & \rar & \\
+  \rar & \zxGate{H} \rar &                       &  & \rar & 
+\end{ZX}
+\end{codeexample}
+}
+with
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+  \rar & \zxGate{H} \rar & \zxGateMulti{2}{3}{H} &  & \rar & \\
+  \rar & \zxGate{H} \rar &                       &  & \rar & 
+\end{ZX}
+\end{codeexample}
+}
+You can customize the default spacing with |\def\zxDefaultColumnSepCircuit{4mm}| and |\def\zxDefaultRowSepCircuit{4mm}|.
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxGateMulti\opt{\oarg{style}}\marg{number rows}\marg{number columns}\marg{box text}\@@
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/gateMulti/a=\marg{alias main node}\@nil%
+  \extractkey/zx/gateMulti/add label=\marg{label}\@nil%
+  \extractkey/zx/gateMulti/add label advanced=\marg{style}\marg{label}\@nil%
+  \extractkey/zx/gateMulti/content inner nodes=\marg{content inner nodes}\@nil%
+  \extractkey/zx/gateMulti/main=\marg{style}\@nil%
+  \extractkey/zx/gateMulti/main text=\marg{style}\@nil%
+  \extractkey/zx/gateMulti/additional code=\marg{code to add new nodes}\@nil%
+  \extractkey/zx/gateMulti/fit content=\opt{\marg{additional row margin}\marg{additional column margin}\marg{minimum height inner nodes}\marg{minimum width inner nodes}}\@nil%
+  \extractkey/zx/gateMulti/safe fit\@nil%
+  \makeatother
+  \pgfmanualbody
+  Create a multi-line/row gate:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+  \rar & \zxGate{H} \rar & \zxGateMulti{2}{3}{H} &  & \rar & \\
+  \rar & \zxGate{H} \rar &                       &  & \rar & 
+\end{ZX}
+\end{codeexample}
+}
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+  \begin{ZX}
+    \rar & \zxBox{H} \rar & \zxGateMulti{1}{3}{H} \dar &           & \rar      & \zxBox{H} &  & \\
+         &                & \zxBox{H} \rar             & \zxBox{H} & \zxBox{H} &           &  & 
+  \end{ZX}
+\end{codeexample}
+}
+You can also customize its behavior in a number of ways using the above listed styles. |a| will just give the main node an alias, which can be used to refer to that node later using |to=nameAlias|, |main| and |main text| allows you to change the style of the main node and the main text:
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+A                                 & B                                    & C & D    & E              &  & \\
+\zxBox{H} \rar                    & \zxGateMulti[a=secondGate]{2}{3}{H}  &   & \rar & \zxBox{X}      &  & \\
+\zxBox{H} \rar                    &                                      &   &      & \zxBox{X} \lar &  & \\
+\zxBox{H} \rar \ar[dr,bend right] & \zxBox{H} \rar[to=secondGate]        &   &      &                &  & \\
+                                  & \zxGateMulti[main={fill=orange!50!white}, main text={red}]{1}{2}{H} & & 
+\end{ZX}
+\end{codeexample}
+while |additional code| allows you to write arbitrary code after the creation of the main node (|zxMainNode| and |zxMainNodeText| are the alias of the main node and text node):
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+  \zxBox{H} \rar       & \zxGateMulti[
+    main={fill=orange!50!white},
+    main text={red},
+    additional code={
+      \node[
+        circle,
+        inner sep=2pt,
+        fill=red,
+        at={($(zxMainNode.east)+(0mm,1.5mm)$)},
+        zx subnode={redCircle}
+      ]
+      {};
+    }%
+    ]{1}{2}{H}         & \rar[start subnode={redCircle}, to=lastH, C-] & \\
+    \zxBox[a=lastH]{H} &                                              
+\end{ZX}
+\end{codeexample}
+The |add label| and |add label advanced| allows you to add labels:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \rar & \zxGateMulti[add label={Bell \\measurement}]{2}{1}{\zxMeter{}} \rar[classical] & \\
+  \rar & \rar[cl]                                                                       & 
+\end{ZX}
+\end{codeexample}
+Internally, in order to place the matrix, we place a number of inner nodes in the region of the matrix. You can customize them using |content inner nodes| and |style inner nodes|. This can be practical if you want to force the node to take less space for instance:
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit]
+    &  &                       &  &  &  &  & \\
+    & \zxGate{H} \rar & \zxGateMulti[content inner nodes={}, style inner nodes={red,
+      minimum width=2pt, minimum height=2pt,
+      test/.style={fill=#1,opacity=.3}, test=red}]{2}{3}{HHHH} &  &  &  &  & \\
+    &  &                       &  &  &  &  & 
+  \end{ZX}
+\end{codeexample}
+By default, we run |fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth}| which works by evaluating the width of the content, and by automatically setting the size of the inner nodes so that the content fits nicely at the end (it takes the default column sep of the matrix, so it will not see custom adjustment of the column size with |&[1cm]|), with a minimum size. You can also call instead |safe fit| that will just set all inner nodes to be equal to the size of the content (which might not be optimal in term of space). While it works well with nodes of small size, it gives weird results on large nodes:
+Compare
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+ & A              & B                        & C         & D         & E         &  & \\
+ & \zxBox{H} \rar & \zxGateMulti{1}{3}{HHHH} &           & \rar      & \zxBox{H} &  & \\
+ &                & \zxBox{H}                & \zxBox{H} & \zxBox{H} &           &  & \\
+ &                &                          &           &           &           &  & \\
+ &                &                          &           &           &           &  & \\
+\end{ZX}
+\end{codeexample}
+with
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  & A              & B                                        & C         & D         & E         &  & \\
+  & \zxBox{H} \rar & \zxGateMulti[safe fit]{1}{3}{HHHH} &           & \rar      & \zxBox{H} &  & \\
+  &                & \zxBox{H}                                & \zxBox{H} & \zxBox{H} &           &  & \\
+  &                &                                          &           &           &           &  & \\
+  &                &                                          &           &           &           &  & \\
+\end{ZX}
+\end{codeexample}
+Note that even if you enable |safe fit|, we first run |fit content| even before reading the user input, but you can disable it for efficiency reasons by setting |\def\zxDisableFitContent{}| before |\zxGateMulti| (|fit content| is significantly slower due to internal computations, but if time is an issue for you see our section on externalization \cref{sec:externalization}).
+\end{pgfmanualentry}
+
+%{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxElt\opt{\oarg{style}}\marg{box text}\@@
+  \extractcommand\zxCtrl\opt{\oarg{style}}\marg{}\@@
+  \extractcommand\zxOCtrl\opt{\oarg{style}}\marg{}\@@
+  \extractcommand\zxNot\opt{\oarg{style}}\marg{}\@@
+  \extractcommand\zxCross\opt{\oarg{style}}\marg{}\@@
+  \extractcommand\zxMeter\opt{\oarg{scale}}\marg{}\@@
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/wires definition/classical\@nil%
+  \extractkey/zx/wires definition/cl\@nil%
+  \extractkey/zx/wires definition/connect =-\textbar\@nil%
+  \extractkey/zx/wires definition/connect =\textbar-\@nil%
+  \makeatother
+  \pgfmanualbody
+  |\zxElt| is like |\zxGate| but without any border (useful to add spacing around elements like |\ket{\psi}|), and the other commands just create the corresponding symbols that you can link together as you want as usual using |\ar| (note that |\zxMeter{}| is node a node but just an icon, so place it yourself inside |\zxGate| or |\zxGateMulti|). The style are wire styles, and are useful to print classical wires (|cl| is an alias for |classical|) and wires bent with a 90 degrees angle. Note that I could not write the right name in the doc, you should remove the equal sign like in \texttt{connect -\textbar}.
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \zxElt{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+  & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,connect -|] \\
+  \ar[r]                  & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+  &  & \zxBox{H} \rar & 
+\end{ZX}    
 \end{codeexample}
 }
 \end{pgfmanualentry}
@@ -2613,9 +2801,6 @@ or by creating a new style with |my style/.code={\yourCommand}|.
   \extractcommand\zxExecuteAtCellAbsolute\marg{row}\marg{column}\marg{code}\@@
   \extractcommand\zxExecuteAtCellRelative\marg{relative row}\marg{relative column}\marg{code}\@@
   \extractcommand\zxExecuteAtRegionRelative\marg{relative row}\marg{relative column}\marg{code}\@@
-  \makeatletter% should not be letter for \@@... strange
-  \extractkey/tikz/zx style from variable=\marg{name variable}\@nil%
-  \makeatother
   \pgfmanualbody%
   Often, just adding some nodes at the end of the picture is not enough: you might want to add other nodes automatically in the matrix. For instance, if you want to implement yourself a gate spawning multiple rows, a simple way to achieve that would be to add invisible boxes inside the matrix and use them to fit the final component. You can place nodes where you want using something like this (note that you should use |zx main node| that is basically a shortcut for:
 \begin{verbatim}
@@ -2660,6 +2845,8 @@ You can also do it for a whole region of size $n \times m$ using |\zxExecuteAtRe
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
   \extractcommand\zxSetVariable\marg{name variable}\marg{content variable}\@@
+  \extractcommand\zxSetVariableExpandOnce\marg{name variable}\marg{content variable}\@@
+  \extractcommand\zxSetVariableExpand\marg{name variable}\marg{content variable}\@@
   \extractcommand\zxGetVariable\marg{name variable}\@@
   \makeatletter% should not be letter for \@@... strange
   \extractkey/tikz/zx style from variable=\marg{name variable}\@nil%
@@ -2691,6 +2878,42 @@ but for more complicated setups, you might want to use some variables. This can 
 A & B                                         & C  \\
   & \mySimpleMultigate{\alpha}{Alice}{purple,opacity={.3}} &  & \\
   &                                           &    \\
+\end{ZX}
+\end{codeexample}
+The difference between |\zxSetVariable|, |\zxSetVariableExpandOnce| and |\zxSetVariableExpand| is that they respectively don't expand their input like |\gdef|, expand it once, or expand it completely like |\gxdef|. This can be useful in more complex setups, for instance if you store the style/variable in a macro first using pgfkeys:
+\begin{codeexample}[]
+\NewExpandableDocumentCommand{\MyGateMulti}{O{}mmm}{
+  % The path; here is useful to help tikzcd to see that it is a node as it tries to search for path and \pgfkeys does not look like a path
+  % If you forget it, you will get something like \node is not defined
+  \path;\pgfkeys{
+    /zx/gateMulti/.cd,
+    content inner nodes/.store in=\myContent,
+    content inner nodes=#4,
+    a/.store in=\zxGateMultiAlias,
+    a=,
+    style inner nodes/.store in=\zxGateMultiStyle,
+    style inner nodes={},
+    #1,
+  }%
+  % Store the content for letter use
+  \zxSetVariableExpandOnce{content inner nodes}{\myContent}
+  \zxSetVariableExpandOnce{style inner nodes}{\zxGateMultiStyle}
+  \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
+  \zxBox[main={zx main node,
+    % a if origin=\zxGateMultiAlias,
+    draw,
+    zx style from variable={style inner nodes},
+    %/zx/gateMulti/style inner nodes aux
+  }]{\zxGetVariable{content inner nodes}};
+  }%
+}
+
+\begin{ZX}
+ &  &                       &  &  &  &  & \\
+ &  & \MyGateMulti[style inner nodes={red,test/.style={fill=#1,opacity=.3},test=red}]{2}{3}{H} &  &  &  &  & \\
+ &  &                       &  &  &  &  & \\
+ &  &                       &  &  &  &  & \\
+ &  &                       &  &  &  &  & \\
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
@@ -2800,7 +3023,7 @@ A                                             & B                               
 \end{pgfmanualentry}
 
 
-\subsection{Caching pictures via an externalization library}
+\subsection{Caching pictures via an externalization library}\label{sec:externalization}
 
 The pictures built with this package can easily take maybe 0.5 seconds per picture to be built, which can easily add up to a long compilation time. Caching externalization can save you a lot of time: I went from a tiny draft taking 30 seconds to be built to a built time of 2.5 seconds.
 
