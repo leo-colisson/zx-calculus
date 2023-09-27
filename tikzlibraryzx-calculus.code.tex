@@ -1070,10 +1070,10 @@
     },
     cl/.style={classical},
     connect -|/.style={
-      to path={(\tikztostart) -| (\tikztotarget)}
+      to path={(\tikztostart) -| (\tikztotarget) \tikztonodes}
     },
     connect |-/.style={
-      to path={(\tikztostart) |- (\tikztotarget)}
+      to path={(\tikztostart) |- (\tikztotarget) \tikztonodes}
     },
     %% To go to a subnode defined in a pic with from subnode=mysubnode.
     start subnode/.code={%
@@ -3155,7 +3155,7 @@
     add label advanced={}{####1},
   },
 ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[draw, inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
+  \node[draw, inner sep=1.3mm, rectangle, fill=white, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
   minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
   /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleBoxMainNode,
@@ -3303,6 +3303,7 @@
     % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:
     \node[
       draw,
+      fill=white, 
       a=\zxGetVariable{gate multi alias},
       inner sep=0pt,
       fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
@@ -3329,11 +3330,11 @@
 
 % white ctrl
 \NewExpandableDocumentCommand{\zxOCtrl}{O{}m}{%
-  \node[zx main node, circle, inner sep=2pt, draw, #1]{};
+  \node[zx main node, circle, inner sep=2pt, fill=white, draw, #1]{};
 }
 
 \NewExpandableDocumentCommand{\zxNot}{O{}m}{%
-  \node[zx main node, circle, inner sep=2.5pt, draw, append after command={(\tikzlastnode.north) edge (\tikzlastnode.south) (\tikzlastnode.east) edge (\tikzlastnode.west)}, #1]{};
+  \node[zx main node, circle, inner sep=2.5pt, draw, fill=white, append after command={(\tikzlastnode.north) edge (\tikzlastnode.south) (\tikzlastnode.east) edge (\tikzlastnode.west)}, #1]{};
 }
 
 \NewExpandableDocumentCommand{\zxCross}{O{}m}{%
@@ -3613,10 +3614,24 @@
 }
 
 \NewExpandableDocumentCommand{\zxNamedBox}{O{}O{blue}mO{}m}{
-  \node[inner sep=2pt, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
-  %\node[fit margins={}, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
-  %\node[inner sep=2pt, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
+  \node[l/.style={fit margins={all=1mm}},inner sep=2pt, node on layer=background, rounded corners, draw=#2,dashed, fill={#2!50!white}, opacity=.5, fit=#3,label={[#4]#5},#1]{};
 }
+
+% Cont is for container, equivalent of zxNamedBox but inside the matrix directly
+\NewExpandableDocumentCommand{\zxCont}{O{}O{blue}mmO{}m}{%
+  \zxExecuteAtEndPicture{%
+    \zxNamedBox[#1][#2]{(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\numexpr #3-1\relax}{\numexpr #4-1\relax})}[#5]{#6}%
+  }%
+}
+
+% Cont is for container, equivalent of zxNamedBox but inside the matrix directly
+% this is the version where you specify the name of the node and not the relative pos
+\NewExpandableDocumentCommand{\zxContName}{O{}O{blue}mO{}m}{%
+  \zxExecuteAtEndPicture{%
+    \zxNamedBox[#1][#2]{(\zxGetNameRelativeNode{0}{0})#3}[#4]{#5}%
+  }%
+}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

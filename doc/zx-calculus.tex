@@ -1219,6 +1219,13 @@ You can customize the default spacing with |\def\zxDefaultColumnSepCircuit{4mm}|
   \end{ZX}
 \end{codeexample}
 }
+Note that the column will adapt to fit the content if it is too long:
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+  \rar       & \zxGateMulti{1}{2}{HHHHHHHHHH} & \rar       & \\
+  \zxGate{H} & \zxGate{H}                     & \zxGate{H} & \zxGate{H} & 
+\end{ZX}
+\end{codeexample}
 You can also customize its behavior in a number of ways using the above listed styles. |a| will just give the main node an alias, which can be used to refer to that node later using |to=nameAlias|, |main| and |main text| allows you to change the style of the main node and the main text:
 \begin{codeexample}[]
 \begin{ZX}[circuit]
@@ -3112,13 +3119,29 @@ or wrap your element around |\begin{tikzpicture}\node{your figure};\end{tikzpict
 
 \subsection{How to visually group multiple nodes}\label{subsec:decoration}
 
+
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxNamedBox\oarg{style}\oarg{color}\marg{nodes to fit}\oarg{label style}\marg{Text of label}\@@
+  \extractcommand\zxCont\oarg{style}\oarg{color}\marg{nb rows}\marg{nb columns}\oarg{label style}\marg{Text of label}\@@
+  \extractcommand\zxContName\oarg{style}\oarg{color}\marg{(nodes)(to)(fit)}\oarg{label style}\marg{Text of label}\@@
+  \extractcommand\zxNamedBox\oarg{style}\oarg{color}\marg{(nodes)(to)(fit)}\oarg{label style}\marg{Text of label}\@@
   \pgfmanualbody
-  This command is used to highlight a part of a diagram, like:
+  These commands are used to highlight a part of a diagram (|Cont| is for ``Container''), the main difference is that the |Cont| version can be used inside the matrix and will automatically contain the current node (you must then either by specifying the size of the box or the name of the other nodes to fit), while |\zxNamedBox| must be inserted later (so you might not use it much), like:
+\begin{codeexample}[width=0cm]
+  \begin{ZX}
+    \zxN{} \rar & [\zxwCol] \zxZ{} \zxCont{2}{1}{\textsc{cnot}} \dar \rar & [\zxwCol] \zxN{} \\
+    \zxN{} \rar & \zxX{} \rar                                             & [\zxwCol] \zxN{} \\
+  \end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0cm]
+  \begin{ZX}
+    \zxN{} \rar & [\zxwCol] \zxZ{} \zxContName{(endCnot)}{\textsc{cnot}} \dar \rar & [\zxwCol] \zxN{} \\
+    \zxN{} \rar & \zxX[a=endCnot]{} \rar                                             & [\zxwCol] \zxN{} \\
+  \end{ZX}
+\end{codeexample}
 \begin{codeexample}[width=0cm]
   \begin{ZX}[
+    % \zxCont offers a more practical interface
     execute at end picture={
       \zxNamedBox{(cnot1)(cnot2)}{
         below:\textsc{cnot}
@@ -3130,7 +3153,7 @@ or wrap your element around |\begin{tikzpicture}\node{your figure};\end{tikzpict
   \end{ZX}
 \end{codeexample}
 
-Note that the |fit| library cannot fit a wire. So if you want to include the wires around a node, the simpler thing might be to manually increase the size of the box in the style. We provide for that an helper command |fit margins={top=1mm,bottom=2mm,right=2.2mm,left=2.2mm}| (the |inner sep| and |shift| commands of tikz are not really practical to move a single border).
+Note that the |fit| library cannot fit a wire. So if you want to include the wires around a node, the simpler thing might be to manually increase the size of the box in the style. We provide for that an helper command |fit margins={top=1mm,bottom=2mm,right=2.2mm,left=2.2mm}| (the |inner sep| and |shift| commands of tikz are not really practical to move a single border), you can also use |horizontal|, |vertical|, or |all|, and |l| is a shorcut to add larger margins instead of |fit margins={all=1mm}|.
 \begin{codeexample}[width=0cm]
   \begin{ZX}[
     execute at end picture={
