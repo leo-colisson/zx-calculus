@@ -3220,17 +3220,22 @@
       % we save the content in a box:
       % I asked here if there is a better approach:
       % https://tex.stackexchange.com/questions/696964/cannot-set-sbox-inside-tikz
+      %% Old version (dirty)
+      % \begin{lrbox}{\zx@tmp@box}%
+      %   \let\selectfont\pgf@selectfontorig\begin{tikzpicture}\zxBox{#4}\end{tikzpicture}%
+      %   % I don't know why, but adding a second, empty tikzpicture help, otherwise it sets a huge bounding box for the first element.
+      %   % maybe tikzpicture's variable are not all set locally?
+      %   \begin{tikzpicture}\end{tikzpicture}%
+      % \end{lrbox}%
+      % New version:
       \begin{lrbox}{\zx@tmp@box}%
-        \let\selectfont\pgf@selectfontorig\begin{tikzpicture}\zxBox{#4}\end{tikzpicture}%
-        % I don't know why, but adding a second, empty tikzpicture help, otherwise it sets a huge bounding box for the first element.
-        % maybe tikzpicture's variable are not all set locally?
-        \begin{tikzpicture}\end{tikzpicture}%
+        \begin{pgfinterruptpicture}%
+          \begin{pgfpicture}%
+            \zxBox{#4}%
+          \end{pgfpicture}%
+        \end{pgfinterruptpicture}%
       \end{lrbox}%
-      % \sbox{\zx@tmp@box}{#4 xxxx}%
-      % \sbox\zx@tmp@box{\begin{tikzpicture}\node{xxx};\end{tikzpicture}}%
-      % % \usebox{\zx@tmp@box}
-      % \message{\the\dimexpr\the\ht\zx@tmp@box\relax}
-      % % we measure the content of the box (2 times since we have left and right margins):
+      % % we measure the content of the box (##x appears 2 times since we have left and right margins):
       \edef\zx@totalheight{\the\dimexpr\ht\zx@tmp@box + \dp\zx@tmp@box + ##1 + ##1\relax}%
       \edef\zx@width{\the\dimexpr\wd\zx@tmp@box + ##2 + ##2\relax}%
       \edef\zx@width{\the\dimexpr\wd\zx@tmp@box\relax}%
