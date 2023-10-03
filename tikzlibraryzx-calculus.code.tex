@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Version: 2023/09/06
+%%% Version: 2023/10/03
 %%% License: MIT
 %%% Author: Léo Colisson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,6 +27,7 @@
 \RequirePackage{ifthen} % For conditions
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
+\RequirePackage{xstring} % For \IfInteger
 
 \usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections,fit}
 % Declare layers.
@@ -86,8 +87,8 @@
 \newcommand{\zxDefaultColumnSepCircuit}{4mm}
 \newcommand{\zxDefaultRowSepCircuit}{4mm}
 % To cancel the default tow separation
-\newcommand{\zxZeroCol}{-\zxDefaultColumnSep}
-\newcommand{\zxZeroRow}{-\zxDefaultRowSep}
+\newcommand{\zxZeroCol}{-\pgfmatrixcolumnsep}%\zxDefaultColumnSep}
+\newcommand{\zxZeroRow}{-\pgfmatrixrowsep}%\zxDefaultRowSep}
 %% When adding two lines with only empty nodes, it can create quite a large space. Use this to reduce it
 %% Yes, we can add multiple arguments, space will add up (see documentation pgfmatrixnextcell)
 \newcommand{\zxNCol}{-\zxDefaultColumnSep,.5mm}
@@ -290,6 +291,14 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% For readability
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\NewExpandableDocumentCommand{\wire}{m}{
+  \arrow[r,#1]
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 %%%% Tikz styles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -590,6 +599,9 @@
     draw,
     -,
     line width=\zxDefaultLineWidth,
+    % This changes globally the thickness of boxes and wires, empty by default,
+    % mostly useful to change gates and wires at the same time
+    zx thickness wires style,
     %%% Useful shortcut (shorter lines means easy "align" of & symbols. Love M-x align in emacs btw.)
     ls/.style={looseness=##1},
     looseness wires only/.style={% Looseness used for wires only.
@@ -1070,10 +1082,21 @@
     },
     cl/.style={classical},
     connect -|/.style={
+      on layer={edgelayer},
       to path={(\tikztostart) -| (\tikztotarget) \tikztonodes}
     },
+    --|/.style={connect -|},
     connect |-/.style={
+      on layer={edgelayer},
       to path={(\tikztostart) |- (\tikztotarget) \tikztonodes}
+    },
+    |--/.style={connect |-},
+    % fake a wire being above by putting white stuff around
+    3d above/.style={
+      draw=white,
+      double=black,
+      double distance=\pgflinewidth,
+      very thick,
     },
     %% To go to a subnode defined in a pic with from subnode=mysubnode.
     start subnode/.code={%
@@ -1517,6 +1540,10 @@
     },
     zxTinyFont/.style={
       font={\fontsize{6}{6}\selectfont},
+    },
+    zxTinyFontAndSpacing/.style={
+      zxSpacingInsideNodes,
+      zxTinyFont,
     },
     % Practical styles to either vertically center the content, or fix the position of the baseline.
     content fixed baseline/.style={
@@ -1962,10 +1989,25 @@
     1-row diagram/.style={},
     %% usage: math baseline=wantedBaseline, where you have somewhere \zxX[a=wantedBaseline]{\beta}
     math baseline/.style={baseline={([yshift=-axis_height]##1)}},
-    math baseline row/.style={math baseline=\zxCurrentDiagram-##1-1},
+    % math baseline row/.style={math baseline=\zxCurrentDiagram-##1-1},
+    math baseline row/.code={%
+      \IfInteger{##1}{%
+        \pgfkeysalso{math baseline=\zxCurrentDiagram-##1-1}%
+      }{%
+        % We have a non-integer value like 1.5 that means between both values.
+        % We first extract these values:
+        \pgfmathtruncatemacro{\zx@first@index}{floor(##1)}%
+        \pgfmathtruncatemacro{\zx@second@index}{floor(##1)+1}%
+        \pgfmathsetmacro{\zx@percent}{##1-floor(##1)}%
+        \pgfkeysalso{math baseline/.expanded={$(\zxCurrentDiagram-\zx@first@index-1)!\zx@percent!(\zxCurrentDiagram-\zx@second@index-1)$}}% 
+      }%
+    },
     math baseline row/.default={1},
     mbr/.style={math baseline row={##1}},
     mbr/.default={1},
+    thick lines/.style={
+      /tikz/zx thickness wires style/.style={thick, line cap=round},
+    },
     % In circuits (mostly gates), the default separation feels too small, so we adjust it here
     circuit/.style={
       column sep=\zxDefaultColumnSepCircuit,
@@ -2199,7 +2241,7 @@
         \else%
           \coordinate[
           % yshift=axis_height, % We already do that elsewhere
-          name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];
+          name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn];%
         \fi%
       \fi%
     },
@@ -2385,13 +2427,18 @@
   \coordinate[#1,#2](\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn);
 }
 
+\NewDocumentCommand{\zxMainNodeAlreadySet}{m}{\def\zxMainNodeAlreadySetMacro{}}
+
 \tikzset{
   % When using the \node{}; instead of |[foo]| bar structure, no name is given to the node. This is fixed with
   % this:
   zx main node/.code={%
     % If we are in a matrix, we can give it the name of the current column
     \ifdefined\zxCurrentDiagram%
-      \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn}%
+      %  Useful to temporarily disable this, for instance useful in matrix to change the size of a single cell.
+      \ifdefined\zxMainNodeAlreadySetMacro\else%
+        \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn}%
+      \fi%
     \fi%
   },
   zx subnode/.code={
@@ -2423,7 +2470,15 @@
 %% here you can use previously defined variables if you created them
 %% will only work inside environments where \zxOriginalRow/Col are defined
 \NewExpandableDocumentCommand{\zxGetNameRelativeNode}{mm}{%
-  \zxCurrentDiagram-\the\numexpr\zxOriginalRow+#1\relax-\the\numexpr\zxOriginalCol+#2\relax%
+  \ifdefined\zxOriginalRow%
+    \zxCurrentDiagram-\the\numexpr\zxOriginalRow+#1\relax-\the\numexpr\zxOriginalCol+#2\relax%
+  \else%
+    \zxCurrentDiagram-\the\numexpr\the\pgfmatrixcurrentrow+#1\relax-\the\numexpr\the\pgfmatrixcurrentcolumn+#2\relax%
+  \fi%
+}%
+
+\NewExpandableDocumentCommand{\zxGetNameRelativeNodeStartOne}{mm}{%
+  \zxGetNameRelativeNode{\numexpr #1-1\relax}{\numexpr #2-1\relax}%
 }%
 
 
@@ -2431,12 +2486,33 @@
 \NewExpandableDocumentCommand{\zxExecuteAtEndPicture}{m}{%
   \def\zx@tmp@args{#1}%
   \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@before@paths@hook{%
+      % We give random value just to avoid having errors when it is not yet defined, but you should always specify the
+      % to and from.
+      \noexpand\def\noexpand\tikzcd@currentrow{In execute at end picture}%
+      \noexpand\def\noexpand\tikzcd@currentcolumn{In execute at end picture}%
+      \noexpand\def\noexpand\tikzcd@lineno{In zxArrowNow}%
         \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
         \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
       \expandonce\zx@tmp@args%
     }%
   }%
   \zx@tmp%
+}
+
+\NewExpandableDocumentCommand{\zxExecuteWhenDrawingArrows}{m}{%
+  \def\zx@tmp@args{#1}%
+  \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@savedpaths{%
+        \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
+        \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
+      \expandonce\zx@tmp@args%
+    }%
+  }%
+  \zx@tmp%
+}
+
+% like \ar but run it directly. Usually run it in \zxExecuteWhenDrawingArrows.
+\NewExpandableDocumentCommand{\zxArrowNow}{O{}m}{%
+  \path[/tikz/commutative diagrams/.cd,every arrow,#1] (\tikzcd@ar@start\tikzcd@startanchor) to (\tikzcd@ar@target\tikzcd@endanchor);%
 }
 
 % \zxExecuteAtCellAbsolute{1}{2}{\node{A};} will execute at cell row 1, column 2 the code \node{A};, just make sure that nothing is already present in that cell
@@ -2540,7 +2616,53 @@
   \expandafter\show\csname zxGateMultiVariable-\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol-#1\endcsname%
 }
 
+%%%%%%%%%%
+%%% Slices
+%%%%%%%%%%
 
+\tikzset{
+  /zx/slice label style/.style={
+    align=center,pos=0, black, anchor=south,zxTinyFont,
+  },
+  /zx/slice line style/.style={
+    dashed, red, thick,
+  },
+}
+
+\NewDocumentCommand{\zxSlice}{O{}O{}m}{%
+  \zxExecuteAtEndPicture{
+    \draw[/zx/slice line style,#2]
+    (\tikzcdmatrixname.north-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!.5!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
+    -- (\tikzcdmatrixname.south-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!.5!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
+    node[rotated/.style={anchor=south west,yshift=-.5ex,rotate=####1},rotated/.default=30, /zx/slice label style,#1]{#3};
+  }
+}
+
+\tikzset{
+  /zx/vertical slice label style/.style={
+    align=center,pos=1, black, anchor=west,zxTinyFont,
+  },
+  /zx/vertical slice line style/.style={
+    dashed, red, thick,
+  },
+}
+
+\NewDocumentCommand{\zxVSlice}{O{}O{}m}{%
+  \zxExecuteAtEndPicture{%
+    % \pgfextra{
+      \pgfpointanchor{\tikzcdmatrixname}{west}%
+      \pgfgetlastxy{\zx@tmp@west@x}{\zx@tmp@west@y}%
+      \pgfpointanchor{\tikzcdmatrixname}{east}%
+      \pgfgetlastxy{\zx@tmp@east@x}{\zx@tmp@east@y}%
+      \pgfmathparse{\zx@tmp@east@x-\zx@tmp@west@x}%
+      \edef\zxMatrixWidth{\pgfmathresult pt}%
+    % }%
+    \draw[/zx/vertical slice line style,#2]
+    (\tikzcdmatrixname.west|-{$(\zxCurrentDiagram-\zxOriginalRow-1)!.5!(\zxCurrentDiagram-\the\numexpr\zxOriginalRow+1\relax-1)$})
+    -- (\tikzcdmatrixname.east|-{$(\zxCurrentDiagram-\zxOriginalRow-1)!.5!(\zxCurrentDiagram-\the\numexpr\zxOriginalRow+1\relax-1)$})
+    node[rotated/.style={anchor=south west,yshift=-.5ex,rotate=####1},rotated/.default=30, /zx/vertical slice label style,#1]{#3};
+  }
+}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3140,6 +3262,7 @@
     \coordinate(true south) at (true east); % Synonyme, useful to determine where to start
 }
 
+%% A bit a refactoring might be useful to avoid repeating ourself
 % %% Box, that just draws... a box
 \zxNewNodeFromPic{Box}[
   main/.style={
@@ -3155,15 +3278,15 @@
     add label advanced={}{####1},
   },
 ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[draw, inner sep=1.3mm, rectangle, fill=white, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
+  \node[draw, inner sep=1.3mm, rectangle, zx filling style, zx thickness wires style, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
   minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
   /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
     /zx/picCustomStyleBoxMainNode,
   ]{\tikzpictext};%
-  \coordinate(fake center north) at (.north);%
-  \coordinate(fake center west) at (.west);%
-  \coordinate(fake center east) at (.east);%  
-  \coordinate(fake center south) at (.south);%
+  \coordinate(fake center north) at (.center);%
+  \coordinate(fake center west) at (.center);%
+  \coordinate(fake center east) at (.center);%  
+  \coordinate(fake center south) at (.center);%
 }
 
 
@@ -3185,6 +3308,10 @@
   \coordinate(fake center east) at (.east);%  
   \coordinate(fake center south) at (.south);%
 }
+
+% \NewExpandableDocumentCommand{\zxEltMulti}{O{}mmm}{
+%   \zxGateMulti[#1]{#2}{#3}{#4}
+% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gate Multi (user part)
@@ -3303,7 +3430,8 @@
     % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:
     \node[
       draw,
-      fill=white, 
+      zx filling style,
+      zx thickness wires style,
       a=\zxGetVariable{gate multi alias},
       inner sep=0pt,
       fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
@@ -3324,22 +3452,31 @@
 %%% Circuit-related gates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\tikzset{
+  zx filling style/.style={
+    fill=white
+  },
+  % To change the thickness of wires and boxes at the same time
+  zx thickness wires style/.style={
+  },
+}
+
 \NewExpandableDocumentCommand{\zxCtrl}{O{}m}{%
   \node[zx main node, circle, inner sep=2pt, fill=black, #1]{};
 }
 
 % white ctrl
 \NewExpandableDocumentCommand{\zxOCtrl}{O{}m}{%
-  \node[zx main node, circle, inner sep=2pt, fill=white, draw, #1]{};
+  \node[zx main node, circle, inner sep=2pt, zx filling style, zx thickness wires style, draw, #1]{};
 }
 
 \NewExpandableDocumentCommand{\zxNot}{O{}m}{%
-  \node[zx main node, circle, inner sep=2.5pt, draw, fill=white, append after command={(\tikzlastnode.north) edge (\tikzlastnode.south) (\tikzlastnode.east) edge (\tikzlastnode.west)}, #1]{};
+  \node[zx main node, circle, inner sep=2.5pt, draw, zx filling style, zx thickness wires style, append after command={(\tikzlastnode.north) edge[zx thickness wires style] (\tikzlastnode.south) (\tikzlastnode.east) edge[zx thickness wires style] (\tikzlastnode.west)}, #1]{};
 }
 
 \NewExpandableDocumentCommand{\zxCross}{O{}m}{%
   \zxMainCoordinate{}
-  \node[at={(0,0)}, rectangle, inner sep=3pt, append after command={(\tikzlastnode.north east) edge[line cap=round] (\tikzlastnode.south west) (\tikzlastnode.south east) edge[line cap=round] (\tikzlastnode.north west)}, #1]{};
+  \node[at={(0,0)}, rectangle, inner sep=3pt, append after command={(\tikzlastnode.north east) edge[line cap=round,zx thickness wires style] (\tikzlastnode.south west) (\tikzlastnode.south east) edge[line cap=round,zx thickness wires style] (\tikzlastnode.north west)}, #1]{};
 }
 
 % Loosely inspired by
@@ -3360,6 +3497,321 @@
   \scalebox{\pgfmathresult}{\usebox{\zxMeterBox}}%
 }
 
+% ---------------------------------
+% --- (Circuit/Gate) inputs/outputs
+% ---------------------------------
+% I found no great way to pass the style to the label... but it seems like somehow the font color
+% of the parent node is automatically transferred to the label, so the interface is not too bad
+
+\pgfkeys{
+  /zx/input style/.style={
+    align=center,
+    inner sep=2pt,
+    zxNormalFont,
+    anchor=east,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxInput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/input style,#1] at (\zxGetNameRelativeNode{0}{0}){$#2$};}%
+}
+
+\pgfkeys{
+  /zx/output style/.style={
+    align=center,
+    inner sep=2pt,
+    zxNormalFont,
+    anchor=west,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxOutput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/output style,#1] at (\zxGetNameRelativeNode{0}{0}){$#2$};}%
+}
+
+\pgfkeys{
+  /zx/input multi style/.style={
+    decorate,
+    decoration={brace, mirror, raise=2pt},
+  },
+  /zx/input multi label style/.style={swap,outer sep=5pt,zxNormalFont},
+}
+
+% https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+%
+\NewExpandableDocumentCommand{\zxInputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0},
+      to=\zxGetNameRelativeNodeStartOne{#3}{1},
+      /zx/input multi style/.try,
+      #1,
+      "#4" {/zx/input multi label style, #2},
+      ]{}
+  }%
+}
+
+\pgfkeys{
+  /zx/output multi style/.style={
+    decorate,
+    decoration={brace, raise=2pt},
+  },
+  /zx/output multi label style/.style={outer sep=5pt,zxNormalFont},
+}
+
+% https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+%
+\NewExpandableDocumentCommand{\zxOutputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0},
+      to=\zxGetNameRelativeNodeStartOne{#3}{1},
+      /zx/output multi style/.try,
+      #1,
+      "#4" {/zx/output multi label style, #2},
+      ]{}
+  }%
+}
+
+
+\pgfkeys{
+  /zx/gate input multi style/.style={
+    decorate,
+    decoration={brace, raise=2pt},
+  },
+  /zx/gate input multi label style/.style={
+    outer sep=4pt,
+    zxTinyFontAndSpacing
+  },
+}
+
+
+\NewExpandableDocumentCommand{\zxGateInputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0}.west,
+      to=\zxGetNameRelativeNodeStartOne{#3}{1}.west,
+      /zx/gate input multi style/.try,
+      #1,
+      "#4" {/zx/gate input multi label style, #2},
+      ]{}
+  }%
+}
+
+\pgfkeys{
+  /zx/gate output multi style/.style={
+    decorate,
+    decoration={brace, mirror, raise=2pt},
+  },
+  /zx/gate output multi label style/.style={
+    swap,
+    outer sep=4pt,
+    zxTinyFontAndSpacing
+  },
+}
+
+% https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+%
+\NewExpandableDocumentCommand{\zxGateOutputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0}.east,
+      to=\zxGetNameRelativeNodeStartOne{#3}{1}.east,
+      /zx/gate output multi style/.try,
+      #1,
+      "#4" {/zx/gate output multi label style, #2},
+      ]{}
+  }%
+}
+
+
+\pgfkeys{
+  /zx/gate output style/.style={
+    align=center,
+    inner sep=2pt,
+    zxTinyFontAndSpacing,
+    anchor=east,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxGateOutput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/gate output style,#1] at (\zxGetNameRelativeNode{0}{0}.east){$#2$};}%
+}
+
+\pgfkeys{
+  /zx/gate input style/.style={
+    align=center,
+    inner sep=2pt,
+    zxTinyFontAndSpacing,
+    anchor=west,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxGateInput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/gate input style,#1] at (\zxGetNameRelativeNode{0}{0}.west){$#2$};}%
+}
+
+% --- Same, but reading bottom to top
+
+\pgfkeys{
+  /zx/vertical input style/.style={
+    align=center,
+    inner sep=2pt,
+    zxNormalFont,
+    anchor=north,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxVInput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/vertical input style,#1] at (\zxGetNameRelativeNode{0}{0}){$#2$};}%
+}
+
+\pgfkeys{
+  /zx/vertical output style/.style={
+    align=center,
+    inner sep=2pt,
+    zxNormalFont,
+    anchor=south,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxVOutput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/vertical output style,#1] at (\zxGetNameRelativeNode{0}{0}){$#2$};}%
+}
+
+\pgfkeys{
+  /zx/vertical input multi style/.style={
+    decorate,
+    decoration={brace, mirror, raise=2pt},
+  },
+  /zx/vertical input multi label style/.style={swap,outer sep=5pt,zxNormalFont},
+}
+
+% https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+%
+\NewExpandableDocumentCommand{\zxVInputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0},
+      to=\zxGetNameRelativeNodeStartOne{1}{2},
+      % to=\zxGetNameRelativeNodeStartOne{1}{#3},
+      /zx/vertical input multi style/.try,
+      #1,
+      "#4" {/zx/vertical input multi label style, #2},
+      ]{}
+  }%
+}
+
+\pgfkeys{
+  /zx/vertical output multi style/.style={
+    decorate,
+    decoration={brace, raise=2pt},
+  },
+  /zx/vertical output multi label style/.style={outer sep=5pt,zxNormalFont},
+}
+
+% https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+%
+\NewExpandableDocumentCommand{\zxVOutputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0},
+      to=\zxGetNameRelativeNodeStartOne{1}{#3},
+      /zx/vertical output multi style/.try,
+      #1,
+      "#4" {/zx/vertical output multi label style, #2},
+      ]{}
+  }%
+}
+
+
+\pgfkeys{
+  /zx/vertical gate input multi style/.style={
+    decorate,
+    decoration={brace, raise=2pt},
+  },
+  /zx/vertical gate input multi label style/.style={
+    outer sep=4pt,
+    zxTinyFontAndSpacing
+  },
+}
+
+
+\NewExpandableDocumentCommand{\zxVGateInputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0}.south,
+      to=\zxGetNameRelativeNodeStartOne{1}{#3}.south,
+      /zx/vertical gate input multi style/.try,
+      #1,
+      "#4" {/zx/vertical gate input multi label style, #2},
+      ]{}
+  }%
+}
+
+\pgfkeys{
+  /zx/vertical gate output multi style/.style={
+    decorate,
+    decoration={brace, mirror, raise=2pt},
+  },
+  /zx/vertical gate output multi label style/.style={
+    swap,
+    outer sep=4pt,
+    zxTinyFontAndSpacing
+  },
+}
+
+% https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+%
+\NewExpandableDocumentCommand{\zxVGateOutputMulti}{O{}O{}mm}{%
+  \zxExecuteWhenDrawingArrows{%
+    \zxArrowNow[
+      from=\zxGetNameRelativeNode{0}{0}.north,
+      to=\zxGetNameRelativeNodeStartOne{1}{#3}.north,
+      /zx/vertical gate output multi style/.try,
+      #1,
+      "#4" {/zx/vertical gate output multi label style, #2},
+      ]{}
+  }%
+}
+
+
+\pgfkeys{
+  /zx/vertical gate output style/.style={
+    align=center,
+    inner sep=2pt,
+    zxTinyFontAndSpacing,
+    anchor=north,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxVGateOutput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/vertical gate output style,#1] at (\zxGetNameRelativeNode{0}{0}.north){$#2$};}%
+}
+
+\pgfkeys{
+  /zx/vertical gate input style/.style={
+    align=center,
+    inner sep=2pt,
+    zxTinyFontAndSpacing,
+    anchor=south,
+  },
+}
+
+\NewExpandableDocumentCommand{\zxVGateInput}{O{}m}{%
+  \zxExecuteAtEndPicture{\node[/zx/vertical gate input style,#1] at (\zxGetNameRelativeNode{0}{0}.south){$#2$};}%
+}
+
+%% If people prefer to read from top:
+
+\let\zxTOutput\zxVInput
+\let\zxTInput\zxVOutput
+\let\zxTOutputMulti\zxVInputMulti
+\let\zxTInputMulti\zxVOutputMulti
+\let\zxTGateOutputMulti\zxVGateInputMulti
+\let\zxTGateInputMulti\zxVGateOutputMulti
+\let\zxTGateInput\zxVGateOutput
+\let\zxTGateOutput\zxVGateInput
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -3618,10 +4070,15 @@
 }
 
 % Cont is for container, equivalent of zxNamedBox but inside the matrix directly
-\NewExpandableDocumentCommand{\zxCont}{O{}O{blue}mmO{}m}{%
+\NewExpandableDocumentCommand{\zxCont}{O{}O{blue}mmO{}O{}m}{%
   \zxExecuteAtEndPicture{%
-    \zxNamedBox[#1][#2]{(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\numexpr #3-1\relax}{\numexpr #4-1\relax})}[#5]{#6}%
+    \zxNamedBox[zx subnode=wrapper,#1][#2]{(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\numexpr #3-1\relax}{\numexpr #4-1\relax})#6}[#5]{#7}%
   }%
+}
+
+% Cont is for container, equivalent of zxNamedBox but inside the matrix directly
+\NewExpandableDocumentCommand{\zxGroupGates}{O{}mmO{}O{}m}{%
+  \zxCont[fill=none,rounded corners=0pt,solid,opacity=1,zx thickness wires style,draw=black,rectangle,fit margins={all=.5mm},#1]{#2}{#3}[#4][#5]{#6}
 }
 
 % Cont is for container, equivalent of zxNamedBox but inside the matrix directly

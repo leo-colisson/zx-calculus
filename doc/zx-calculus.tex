@@ -13,6 +13,8 @@
 \usepackage{braket}
 \usepackage{tikz}
 \usetikzlibrary{shadows,fit}
+\usetikzlibrary{snakes}
+\usetikzlibrary{nfold} % needs very recent CTAN > 2023, or manually copy the .tex files
 % \usetikzlibrary fails because file is not in current directory, lazy to setup TEXINPUTS
 \makeatletter
   \input{../tikzlibraryzx-calculus.code.tex}
@@ -113,7 +115,7 @@ Since 24/02/2023, we also provide ways to easily create new, highly customizable
 
 Since 2023-09-27, you can also do advanced operations on multi-gate elements or use our default style:
 \begin{codeexample}[]
-\begin{ZX}[circuit]
+\begin{ZX}[circuit, thick lines]
   \rar & \zxGate{H} \rar & \zxGateMulti{2}{3}{H} &  & \rar & \\
   \rar & \zxGate{H} \rar &                       &  & \rar & 
 \end{ZX}
@@ -123,12 +125,32 @@ and create more traditional circuits:
 
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
+\begin{ZX}[circuit, thick lines]
+  \zxInput{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+                            & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,--|] \\
+  \ar[r]                    & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+                            &                        & \zxBox{H} \rar      & \zxOutput{\ket{\phi}}
+\end{ZX}
+\end{codeexample}
+
+\begin{codeexample}[width=0pt]
 \begin{ZX}[circuit]
-  \zxElt{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
-  & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,connect -|] \\
-  \ar[r]                  & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
-  &  & \zxBox{H} \rar & 
-\end{ZX}    
+  \ar[rr]                           &  & [\zxZeroCol] \zxCtrl{} \dar \ar[rr]    & [\zxZeroCol] &                   \\
+  \rar \zxInputMulti{2}{\ket{\psi}} & \zxGateMulti{3}{3}{U} \zxGateInputMulti{2}{x}
+                                    &  & \rar \zxGateOutputMulti{2}{x \oplus y} & \zxOutputMulti{2}{\text{Output}} \\
+  \rar                              & 
+                                    &  & \rar                                   &                                  \\
+  \rar \zxInput{\ket{0}}            & \zxGateInput{y}
+                                    &  & \rar \zxGateOutput{y \oplus 1}         & \zxOutput{\ket{1}}
+\end{ZX}
+\end{codeexample}
+
+\begin{codeexample}[width=0cm]
+  \begin{ZX}[circuit]
+    \ar[rr] && \zxCtrl{} \ar[dl, end subnode=wrapper] \ar[rr] && \\
+    \rar    & \zxCtrl{} \dar \rar \zxGroupGates{2}{3}{below:\textsc{swap}} & \zxNot{} \dar \rar                             & \zxCtrl{} \dar \rar & \\
+    \rar    & \zxNot{} \rar                                                & \zxCtrl{} \rar                                 & \zxNot{} \rar       & 
+  \end{ZX}
 \end{codeexample}
 }
 
@@ -866,15 +888,29 @@ Also, if you find your diagram a bit ``too high'', check that you did not forget
 \end{codeexample}
 \end{stylekey}
 
-\begin{stylekey}{/zx/defaultEnv/math baseline row=row to center}
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/defaultEnv/math baseline row=row to center (default {1})\@nil%
+  \extractkey/zx/defaultEnv/mbr=row to center (default {1})\@nil%
+  \makeatother
   You can also choose directly a line to center on: for instance to center on the first line, use: |math baseline row=1|, or, equivalently |mbr=1| or directly |mbr|:
 \begin{codeexample}[width=0pt]
   $\begin{ZX}[mbr]
     \zxN{} \rar[B] & [\zxwCol] \zxMatrix{A} \rar[B] &[\zxwCol] \zxN{}
   \end{ZX} = A$
 \end{codeexample}
-\end{stylekey}
-
+Since 2023/10/03 you can also use a float value to specify that you want to set the center between two lines:
+\begin{codeexample}[width=0pt]
+  Compare $G = \begin{ZX}[circuit]
+    \rar     & \zxGate{G} \rar & \zxGate{H} \rar & \\
+    \ar[rrr] &                 &                 & 
+  \end{ZX}$ with $G = \begin{ZX}[circuit,mbr=1.5]
+    \rar     & \zxGate{G} \rar & \zxGate{H} \rar & \\
+    \ar[rrr] &                 &                 & 
+  \end{ZX}$.
+\end{codeexample}
+\end{pgfmanualentry}
 
 \subsubsection{Ground}
 
@@ -1310,21 +1346,188 @@ Note that even if you enable |safe fit|, we first run |fit content| even before 
   \def\extrakeytext{style, }
   \extractkey/zx/wires definition/classical\@nil%
   \extractkey/zx/wires definition/cl\@nil%
-  \extractkey/zx/wires definition/connect =-\textbar\@nil%
-  \extractkey/zx/wires definition/connect =\textbar-\@nil%
+  \extractkey/zx/wires definition/=--\textbar\@nil%
+  \extractkey/zx/wires definition/=\textbar--\@nil%
   \makeatother
   \pgfmanualbody
-  |\zxElt| is like |\zxGate| but without any border (useful to add spacing around elements like |\ket{\psi}|), and the other commands just create the corresponding symbols that you can link together as you want as usual using |\ar| (note that |\zxMeter{}| is node a node but just an icon, so place it yourself inside |\zxGate| or |\zxGateMulti|). The style are wire styles, and are useful to print classical wires (|cl| is an alias for |classical|) and wires bent with a 90 degrees angle. Note that I could not write the right name in the doc, you should remove the equal sign like in \texttt{connect -\textbar}.
+  |\zxElt| is like |\zxGate| but without any border (useful to add spacing around elements like |\ket{\psi}|, but you might prefer |\zxInput| that does not reserve any space in the matrix for the content and allows an easier align of wires), and the other commands just create the corresponding symbols that you can link together as you want as usual using |\ar| (note that |\zxMeter{}| is node a node but just an icon, so place it yourself inside |\zxGate| or |\zxGateMulti|). The style are wire styles, and are useful to print classical wires (|cl| is an alias for |classical|) and wires bent with a 90 degrees angle. Note that I could not write the right name in the doc, you should remove the equal sign like in \texttt{--\textbar}.
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 \begin{ZX}[circuit]
   \zxElt{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
-  & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,connect -|] \\
+  & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,--|] \\
   \ar[r]                  & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
   &  & \zxBox{H} \rar & 
 \end{ZX}    
 \end{codeexample}
 }
+\end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxInput\opt{\oarg{style}}\marg{text}\@@
+  \extractcommand\zxInputMulti\opt{\oarg{style}}\opt{\oarg{label style}}\marg{nb rows}\marg{text}\@@
+  \extractcommand\zxOutput\opt{\oarg{style}}\marg{text}\@@
+  \extractcommand\zxOutputMulti\opt{\oarg{style}}\opt{\oarg{label style}}\marg{nb rows}\marg{text}\@@
+  \extractcommand\zxGateInput\opt{\oarg{style}}\marg{text}\@@
+  \extractcommand\zxGateInputMulti\opt{\oarg{style}}\opt{\oarg{label style}}\marg{nb rows}\marg{text}\@@
+  \extractcommand\zxGateOutput\opt{\oarg{style}}\marg{text}\@@
+  \extractcommand\zxGateOutputMulti\opt{\oarg{style}}\opt{\oarg{label style}}\marg{nb rows}\marg{text}\@@
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/input style=\marg{style}\@nil%
+  \extractkey/zx/output style=\marg{style}\@nil%
+  \extractkey/zx/input multi style=\marg{style}\@nil%
+  \extractkey/zx/output multi style=\marg{style}\@nil%
+  \extractkey/zx/input multi label style=\marg{style}\@nil%
+  \extractkey/zx/output multi label style=\marg{style}\@nil%
+  \extractkey/zx/gate input style=\marg{style}\@nil%
+  \extractkey/zx/gate output style=\marg{style}\@nil%
+  \extractkey/zx/gate input multi style=\marg{style}\@nil%
+  \extractkey/zx/gate output multi style=\marg{style}\@nil%
+  \extractkey/zx/gate input multi label style=\marg{style}\@nil%
+  \extractkey/zx/gate output multi label style=\marg{style}\@nil%
+  \makeatother
+  \pgfmanualbody
+
+Use these functions in order to label the input or outputs of circuits (you can also label any diagram made with this library) or gates (the variant you want to use should be clear from the name. You can customize the arrow and label using the optional arguments or globally using the corresponding style (note that the style for the gate inputs was inspired by the great Quantikz package). The command should be located on the row where the brace should start (either in the cell containing the wire or inside the gate directly):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+  \rar \zxInputMulti[blue]{2}{\ket{\psi}}   & \zxGateMulti{3}{2}{U} \zxGateInputMulti{2}{x}
+   & \rar \zxGateOutputMulti{2}{x \oplus y} & \zxOutputMulti[red][green]{2}{\text{Output}} \\
+  \rar                                      & 
+   & \rar                                   &                                           \\
+  \rar \zxInput{\ket{0}}                    & \zxGateInput{y}
+   & \rar \zxGateOutput{y \oplus 1}                  & \zxOutput{\ket{1}}
+\end{ZX}
+\end{codeexample}
+}
+
+You can prefix the above commands with |V| (for vertical) when reading from bottom to top (the associated style starts with |vertical|):
+
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \dar \zxVOutputMulti{2}{\text{Output}}                   & \dar & \dar \zxVOutput{\ket{1}} \\ 
+  \zxGateMulti{2}{3}{U} \zxVGateOutputMulti{2}{x \oplus y} &      & \zxVGateOutput{y \oplus 1}        \\
+  \dar \zxVGateInputMulti{2}{x}                            & \dar & \dar \zxVGateInput{y}    \\
+  \zxVInputMulti{2}{\ket{\psi}}                            &      & \zxVInput{\ket{0}}
+\end{ZX}
+\end{codeexample}
+}
+
+You can also use |\zxT| (for Top) instead of |\zxV| if you prefer the convention where inputs are located at the top of the diagram):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \dar \zxTInputMulti{2}{\ket{\psi}}             & \dar & \dar \zxTInput{\ket{0}}         \\ 
+  \zxGateMulti{2}{3}{U} \zxTGateInputMulti{2}{x} &      & \zxTGateInput{y}                \\
+  \dar \zxTGateOutputMulti{2}{x\oplus y}         & \dar & \dar \zxTGateOutput{y \oplus 1} \\
+  \zxTOutputMulti{2}{\text{Output}}              &      & \zxTOutput{\ket{1}}
+\end{ZX}
+\end{codeexample}
+}
+Note that these labels are not taken into account when computing the width of the gate box, so you might need to manually adapt their width of the column, for instance by setting the content of an individual cell like:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \dar \zxTInputMulti{2}{\ket{\psi}}             & \dar & \dar \zxTInput{\ket{0}}                                                                                                 \\ 
+  \zxGateMulti{2}{3}{U} \zxTGateInputMulti{2}{x} &      & \zxTGateInput{y}                                                                                                        \\
+  \dar \zxTGateOutputMulti{2}{x\oplus y}         & \dar
+    %% We replace the cell with a larger cell:
+    & \zxGate[zxTinyFontAndSpacing]{\phantom{y \oplus 1 \oplus x}};
+    %% This is useful or the cell will be replaced by another cell during the fit:
+   \zxMainNodeAlreadySet{} \dar \zxTGateOutput{y \oplus 1 \oplus x} \\
+  \zxTOutputMulti{2}{\text{Output}}              &      & \zxTOutput{\ket{1}}
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxSlice\opt{\oarg{style label}}\opt{\oarg{style line}}\marg{text}\@@
+  \extractcommand\zxVSlice\opt{\oarg{style label}}\opt{\oarg{style line}}\marg{text}\@@
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/slice label style=\marg{style}\@nil%
+  \extractkey/zx/slice line style=\marg{style}\@nil%
+  \extractkey/zx/vertical slice label style=\marg{style}\@nil%
+  \extractkey/zx/vertical slice line style=\marg{style}\@nil%
+  \makeatother
+  \pgfmanualbody
+
+  You can add a slice in your diagram or circuit using |\zxSlice{text}| at the corresponding column:
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit]
+    \rar & \zxGate{X} \zxSlice{1} \rar & \zxGate{Y} \zxSlice{Part\\2} \rar & \zxGate{\zxMeter{}} \\
+    \rar & \zxGate{H} \rar                       & \zxGate{Y} \rar & 
+  \end{ZX}
+\end{codeexample}
+We also provide a style |rotated=angle| to rotate the label (the default angle is 30 degrees):
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \rar & \zxGate{X} \zxSlice[rotated]{First part} \rar
+       & \zxGate{Y} \zxSlice[rotated]{Second part} \rar & \zxGate{\zxMeter{}} \\
+  \rar & \zxGate{H} \rar                       & \zxGate{Y} \rar & 
+\end{ZX}
+\end{codeexample}
+You can also customize it as you want using the two optional arguments (for the label first and for the line after):
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit]
+  \rar
+   & \zxGate{Y} \rar
+    \zxSlice[rotate=90,anchor=east,pos=1,blue][solid,blue,decorate,decoration={snake}]{Why not \\below?}
+   & \zxGate{\zxMeter{}} \\
+  \rar & \zxGate{H} \rar & \zxGate{Y} \rar & 
+\end{ZX}
+\end{codeexample}
+Finally, the |\zxVSlice| version works similarly, but for vertical slices (make sure to insert it \textbf{before} the newline):
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit]
+    \zxElt{\text{Alice}} &[\zxZeroCol] \rar & \zxGate{X} \rar & \zxGate{Y} \rar & \zxGate{\zxMeter{}}
+    \zxVSlice{No communication}\\
+    \zxElt{\text{Bob}} & \rar & \zxGate{H} \rar & \zxGate{Y} \rar & 
+  \end{ZX}
+\end{codeexample}
+You can configure it as before, for instance to obtain this fancy effect:
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit]
+    \rar & \zxCtrl{} \rar \dar & \zxGate{Y} \rar & \zxGate{\zxMeter{}}
+    \zxVSlice[][
+      black,
+      double distance=4pt,
+      double,
+      solid,
+      decorate,
+      decoration={snake,segment length=2cm},
+      % Also funny:
+      % decoration={random steps,segment length=.2cm},
+      on layer=foreground
+    ]{Repeat $n$ times}\\[3mm]
+    \rar & \zxCtrl{} \dar \rar & \zxGate{Y} \rar & \zxGate{\zxMeter{}}\\
+    \rar & \zxGate{X} \rar & \zxGate{Y} \rar & \zxGate{\zxMeter{}}
+  \end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/tikz/zx filling style=\marg{your style} (default {fill=white})\@nil%
+  \makeatother
+  \pgfmanualbody
+We can also disable or set any custom filling using this style:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit,/tikz/zx filling style/.style={}]
+  \zxInput{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+                            & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,--|] \\
+  \ar[r]                    & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+                            &                        & \zxBox{H} \rar      & \zxOutput{\ket{\phi}}
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 \subsection{Wires}
@@ -1334,8 +1537,9 @@ Note that even if you enable |safe fit|, we first run |fit content| even before 
 \begin{pgfmanualentry}
   \extractcommand\arrow\opt{\oarg{options}}\@@
   \extractcommand\ar\opt{\oarg{options}}\@@
+  \extractcommand\wire\marg{options}\@@
   \pgfmanualbody
-  These synonym commands (actually coming from |tikz-cd|) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down). It's also possible to specify a node alias as a source or destination as shown below.
+  These synonym commands (actually coming from |tikz-cd|, except for the last |\wire| that is introduced in this library in 2023-10-03 for readability, note that |\wire| additionally adds by default a |r| to go right) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down). It's also possible to specify a node alias as a source or destination as shown below.
 \begin{codeexample}[]
 \zx{\zxZ{} \ar[r] & \zxX{}} = \zx{\zxX{} \arrow[rd] \\ & \zxZ{}}
 \end{codeexample}
@@ -1352,6 +1556,13 @@ Note that even if you enable |safe fit|, we first run |fit content| even before 
 \end{ZX}
 \end{codeexample}
 }
+The |\wire| can be used as follows:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit, row sep={.6cm,between origins}]
+\wire{} & \zxCross{} \wire{} \wire{d} & \\
+\wire{} & \zxCross{} \wire{}          & 
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 As explained in |tikz-cd|, there are further shortened forms:
@@ -1444,6 +1655,48 @@ In that setting, it is often useful to enable the debug mode via |\def\zxDebugMo
   \end{ZX}
 }
 \end{codeexample}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/wires definition/3d above\@nil%
+  \makeatother
+  \pgfmanualbody
+This style is useful to fake a 3D effect to put a wire above another one like \begin{ZX}[]
+ \zxN{} \ar[d,C] \ar[rd,s] & [\zxWCol] \zxN{} \dar[C-] \\[\zxWRow]
+ \zxN{} \ar[ru,s,3d above] & \zxN{}                     
+\end{ZX} using:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[]
+ \zxN{} \ar[d,C] \ar[rd,s] & [\zxWCol] \zxN{} \dar[C-] \\[\zxWRow]
+ \zxN{} \ar[ru,s,3d above,very thick] & \zxN{}                     
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/zx/defaultEnv/thick lines\@nil%
+  \extractkey/tikz/zx thickness wires style=your style\@nil%
+  \makeatother
+When designing circuits, you might prefer a thicker line style, following the style of Quantikz. This is not enabled by default since for ZX diagrams we want to maintain an important difference between this version and the bold version, but you can enable it with |thick lines|, that internally sets the style |zx thickness wires style| to |thick, line cap=round|.
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+Compare \begin{ZX}[circuit, thick lines]
+  \zxInput{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+                            & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,--|] \\
+  \ar[r]                    & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+                            &                        & \zxBox{H} \rar      & \zxOutput{\ket{\phi}}
+\end{ZX} with \begin{ZX}[circuit]
+  \zxInput{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+                            & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,--|] \\
+  \ar[r]                    & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+                            &                        & \zxBox{H} \rar      & \zxOutput{\ket{\phi}}
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
 
 \subsubsection{Wire styles (new generation)}
 
@@ -2754,7 +3007,7 @@ Note that you can also combine it with |to| and |alias|:
 
 
 
-\subsection{Create your own multi-column/row gate}
+\subsubsection{Create your own multi-column/row gate}
 
 We provide since 2023/09/23 a number of functions in order to deal with gates spawning multiple rows or columns, including to create your own multi-columns/rows gates. We present first the individual functions, and show after how to combine them to create more advanced styles. Note that the following define commands, but you can easily insert them in a style using:
 \begin{verbatim}
@@ -2784,6 +3037,7 @@ or by creating a new style with |my style/.code={\yourCommand}|.
   \extractcommand\zxOriginalRow\@@
   \extractcommand\zxOriginalCol\@@
   \extractcommand\zxGetNameRelativeNode\marg{relative row}\marg{relative column}\@@
+  \extractcommand\zxGetNameRelativeNodeStartOne\marg{relative row}\marg{relative column}\@@
   \pgfmanualbody%
   |execute at end picture| is first annoying to use, but it also runs after the definition of the wires, meaning that it is not possible to point to nodes defined in that portion of the code. To solve these issues, we define |\zxExecuteAtEndPicture{your code}| that you can insert inside a node. Note that in |your code| you can use |\zxOriginalRow| and |\zxOriginalCol| that will contain the position of the column and row where you inserted that command, and |\zxGetNameRelativeNode| will allow you to get the name of the neighbour nodes by specifying the difference of columns and the difference of lines. Note that these variables and commands are usable in |\zxExecuteAtCellRelative| and |\zxExecuteAtCellAbsolute| as well.
 \begin{codeexample}[]
@@ -2801,6 +3055,7 @@ or by creating a new style with |my style/.code={\yourCommand}|.
   A & B                          & C & D \\
 \end{ZX}
 \end{codeexample}
+The |zxGetNameRelativeNodeStartOne| variant index elements from $1$ instead of $0$.
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -3122,11 +3377,12 @@ or wrap your element around |\begin{tikzpicture}\node{your figure};\end{tikzpict
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxCont\oarg{style}\oarg{color}\marg{nb rows}\marg{nb columns}\oarg{label style}\marg{Text of label}\@@
+  \extractcommand\zxCont\oarg{style}\oarg{color}\marg{nb rows}\marg{nb columns}\oarg{label style}\oarg{(other)(nodes)(to)(fit)}\marg{Text of label}\@@
+  \extractcommand\zxGroupGates\oarg{style}\marg{nb rows}\marg{nb columns}\oarg{label style}\oarg{(other)(nodes)(to)(fit)}\marg{Text of label}\@@
   \extractcommand\zxContName\oarg{style}\oarg{color}\marg{(nodes)(to)(fit)}\oarg{label style}\marg{Text of label}\@@
   \extractcommand\zxNamedBox\oarg{style}\oarg{color}\marg{(nodes)(to)(fit)}\oarg{label style}\marg{Text of label}\@@
   \pgfmanualbody
-  These commands are used to highlight a part of a diagram (|Cont| is for ``Container''), the main difference is that the |Cont| version can be used inside the matrix and will automatically contain the current node (you must then either by specifying the size of the box or the name of the other nodes to fit), while |\zxNamedBox| must be inserted later (so you might not use it much), like:
+  These commands are used to highlight a part of a diagram (|Cont| is for ``Container''), or, for |\zxGroupGates|, to group gates together (it is like |Cont| but with a different style), the main difference is that the |Cont| version can be used inside the matrix and will automatically contain the current node (you must then either by specifying the size of the box or the name of the other nodes to fit), while |\zxNamedBox| must be inserted later (so you might not use it much), like:
 \begin{codeexample}[width=0cm]
   \begin{ZX}
     \zxN{} \rar & [\zxwCol] \zxZ{} \zxCont{2}{1}{\textsc{cnot}} \dar \rar & [\zxwCol] \zxN{} \\
@@ -3168,6 +3424,14 @@ Note that the |fit| library cannot fit a wire. So if you want to include the wir
     \zxN[a=bellA]{} \rar \dar[C] & [\zxwCol] \zxX*{x\pi} \rar   & \zxZ*{z\pi} \rar & \zxN{} \\[\zxwCol]
     \zxN[a=bellB]{} \rar         & \zxX[a=measX]{x\pi} \dar[C-] &                           \\
     \zxN{} \rar                  & \zxZ[a=measZ]{z\pi}
+  \end{ZX}
+\end{codeexample}
+This will automatically create a subnode |wrapper| pointing to the wrapping node. You can use it to link to that node (note that you should be sure that the wire points to the top left element of the group):
+\begin{codeexample}[width=0cm]
+  \begin{ZX}[circuit]
+    \ar[rr] && \zxCtrl{} \ar[dl, end subnode=wrapper] \ar[rr] && \\
+    \rar    & \zxCtrl{} \dar \rar \zxGroupGates{2}{3}{below:\textsc{swap}} & \zxNot{} \dar \rar                             & \zxCtrl{} \dar \rar & \\
+    \rar    & \zxNot{} \rar                                                & \zxCtrl{} \rar                                 & \zxNot{} \rar       & 
   \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
@@ -4168,6 +4432,18 @@ You can further customize your drawings using any functionality from \tikzname{}
     \zxN{} \rar & \zxFracZ-{\pi}{4} \ar[ru,('] \ar[rr,o.] &            & \zxX{} \ar[rr] &  & \zxN{}
   \end{ZX}
 \end{codeexample}
+You can also use the tikz |between origins| option in order to specify the distance between the center of the rows and not between their borders. This is particularly practical when gates have different heights, or if you want to compare two diagram with different content (you might also want to use something like |mbr=1.5| to set the math baseline between two lines):
+\begin{codeexample}[width=0pt]
+$\begin{ZX}[circuit, row sep={.6cm,between origins}]
+\rar & \zxCross{} \rar \dar & \\
+\rar & \zxCross{} \rar      & 
+\end{ZX} =
+\begin{ZX}[circuit, row sep={.6cm,between origins}]
+\rar & \zxN{} \ar[rd,s] & \zxN{} \rar & \\
+\rar & \zxN{} \ar[ru,s] & \zxN{} \rar & 
+\end{ZX}$
+\end{codeexample}
+
 Or we can define our own style to create blocks:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
@@ -4214,20 +4490,40 @@ We can also use for instance |fit|, |alias|, |execute at end picture| and layers
 Because this code is quite lengthy and useful, we provide in \cref{subsec:decoration} a shorter syntax.
 }
 
+You can also use other libraries, in particular |nfold| can be practical to insert many wires at once (note that you need a recent version since it was introduced in CTAN 2023, or you need to manually install the library):
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+% \usetikzlibrary{nfold} % needs very recent CTAN > 2023, or manually copy the .tex files
+\begin{ZX}[circuit]
+ \rar[scaling nfold=5]
+ & \zxGate{X} \rar[rd, line join=round, double distance=2pt, scaling nfold=3,--|] & \\
+ &                                                                                & \zxGate{Y}
+\end{ZX}
+\end{codeexample}
+}
+
+
 \section{Future works}
 
 There is surely many things to improve in this library, and given how young it is there is surely many undiscovered bugs. So feel free to propose ideas or report bugs \mylink{https://github.com/leo-colisson/zx-calculus/issues}{one the github page}. The intersections code is also quite slow, so I would be curious to check if I can optimize it (the first goal was to make it work). I should also work on the compatibility with tikzit (basically just write tikz configuration files that you can just use and document how to use tikzit with it), or even write a dedicated graphical tool (why not based on tikzit itself, or \mylink{https://tikzcd.yichuanshen.de/}{this tool}). I also want to find a nicer way to merge cells (for now I propose to use the |fit| library but it's not very robust against overlays) and to nest ZX diagrams. And of course fix typos in the documentation and write other styles, including notations not specific to ZX-calculus. Feel free to submit Pull Requests to solve that, or to submit bug reports to explain uncovered use-cases!
 
 \section{Acknowledgement}
 
-I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav, Qrrbrbirlbel\dots{}). I also thank Robert Booth for making me realize how my old style was ugly, and for giving advices on how to improve it. Thanks to John van de Wetering, whose style has also been a source of inspiration~\cite{van20_ZXcalculusWorkingQuantum}.
+I'm very grateful of course to everybody that worked on these amazing field which made diagramatic quantum computing possible, and to the many StackExchange users that helped me to understand a bit more \LaTeX{} and \tikzname{} (sorry, I don't want to risk an incomplete list, but many thanks to egreg, David Carlisle, cfr, percusse, Andrew Stacey, Henri Menke, SebGlav, Qrrbrbirlbel\dots{}). I also thank Robert Booth for making me realize how my old style was ugly, and for giving advices on how to improve it. Thanks to John van de Wetering and Alastair Kay (author of Quantikz), whose styles have also been a source of inspiration~\cite{van20_ZXcalculusWorkingQuantum}, and to Augusto Stoffel for the great tikzcd package on which this library is built.
 
 \section{Changelog}
 
 \begin{itemize}
 \item 2023/09/26:
+  Many updates in the past months:
   \begin{itemize}
-  \item Many updates in the past months, custom nodes are made easy, multi-gates nodes as well, added |post arrow style if start node| and other similar commands, updated the doc to use the latest version of robust-externalize that is much simpler to use now\dots Some nodes can also now be usable outside tikzcd, but I've not tried (I should provide more options for this).
+  \item Custom nodes are made easy
+  \item Multi-gates nodes and many circuit-related functions
+  \item Added |post arrow style if start node| and other similar commands
+  \item updated the doc to use the latest version of robust-externalize that is much simpler to use now\dots
+  \item Some nodes can also now be usable outside tikzcd, but I've not tried (I should provide more options for this).
+  \item Group gates
+  \item 
   \end{itemize}
 \item 2022/02/09:
   \begin{itemize}
@@ -4239,10 +4535,13 @@ I'm very grateful of course to everybody that worked on these amazing field whic
 
 \section{TODO}
 \begin{itemize}
-\item I think that some anchors are not properly configured in stuff like |\zxBox| etc
-\item I set some global options like |/zx/internals/postRun...| but I should make sure to reset them for every pictures, or I might get weird behaviors (not sure why they don't seem to appear right now?)
-\item Make zxNamedBox usable inside cells directly
-\item Clean the code since it sta
+\item I think that some anchors are not properly configured in stuff like |\zxBox| etc, so a nice sanity check should be done
+\item Clean the code, eventually
+\item Consider subnodes as anchors (fake center etc)
+\item more circuit related stuff
+\item multigate invisible element
+\item curly braces made easy
+\item lstick
 \end{itemize}
 
 \printindex
