@@ -533,6 +533,26 @@ When the top left cell is empty, you may get an error at the compilation |Single
 \end{codeexample}
 \end{pgfmanualentry}
 
+\begin{pgfmanualentry}
+  \extractcommand\zxCoordinateMain\opt{\oarg{coordinate style}}\marg{}\@@
+  \extractcommand\zxCoordinateSubnode\opt{\oarg{coordinate style}}\marg{name subnode}\@@
+  \pgfmanualbody
+  (starting from 2023-10-03) Since coordinates expect their name to be given in the argument, we cannot use |zx main node| or |zx subnode| on them: these two commands are the equivalent of these styles for coordinates. Note that this is mostly useful if you start to build your own nodes: this way you can easily place the anchors followed by |bezier|-based wires (|fake center {east,north,south,west}|) and |C|-based wires (|true {east,north,south,west}|): For instance, we show how to create a node such that bezier arriving from right will be connected to the south east part of the node while bezier leaving from the left will start at the north east anchor:
+\begin{codeexample}[width=0pt]
+\NewExpandableDocumentCommand{\myWeirdNode}{m}{%
+  \node[zx main node,alias=tmp,fill=pink,rounded corners,inner sep=2pt]{A};
+  % will be used by bezier curves to know how to connect:
+  \zxCoordinateSubnode[at={(tmp.north east)}]{fake center east}
+  \zxCoordinateSubnode[at={(tmp.south west)}]{fake center west}
+}
+
+\begin{ZX}
+  \myWeirdNode{A} \ar[rd, s] \ar[C,dr] &                                               & \myWeirdNode{B} \\
+                                       & \zxZ{a \oplus b \oplus c \oplus d} \ar[ru, s] & 
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
 You may also get the error |Single ampersand used with wrong catcode| when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|. Note however that in recent versions ($\geq$ 2022/02/09) this should not happen anymore.
 \begin{codeexample}[vbox]
 \begin{align}
@@ -1750,6 +1770,26 @@ The \meta{radius ratio} parameter can be used to turn the circle into an ellipse
     \zxZ{} \ar[r,C.=2]           & \zxX{}
   \end{ZX}.
 \end{codeexample}
+
+Note that you can customize like for other nodes the direction of the wire using something like |\ar[d, C, end anchor=south]| or |\ar[d, C, end subnode=mySubnode]|. For more advanced users, you can create your own gates and specify directly inside the gate where the |C|-like shapes should connect to. The algorithm followed is:
+\begin{itemize}
+\item First, it tries to connect to the center of a |true west|, |true east|, |true north|, |true south| subnode (depending on the variation of |C|).
+\item Then, it tries to connect to a |true west|, |true east|, |true north|, |true south| \textbf{anchor}
+\item Otherwise, it falls back to the |west|, |east|, |north|, |south| anchors.
+\end{itemize}
+
+\begin{codeexample}[width=0pt]
+\NewExpandableDocumentCommand{\myWeirdGate}{}{
+  \zxBox[a=foo]{D}
+  \node[circle,fill=green,zx subnode=true west,inner sep=2pt,at=(foo.south west)]{};
+}
+
+\begin{ZX}
+  A \dar[C]  \\
+ \myWeirdGate
+\end{ZX}
+\end{codeexample}
+
 \end{pgfmanualentry}
 
 
@@ -2240,6 +2280,20 @@ Note that it's possible to automatically start wires on the border of the node, 
   \makeatother
   \pgfmanualbody
   To create a bezier wire. These styles are not really meant to be used for the final user because they are long to type and would not be changed document-wise when the style is changed, but most styles are based on these styles. For the |bezier 4 *| versions, the two first arguments are the relative position of the first anchor (|x| and |y| position), the next two of the second anchor. In the |bezier *| versions, the value of |1-| will be the relative |x| position of the first point, |1L| the relative position of the second, and |2-| and |2L| will be for the second point (the advantage of this is that it is also possible to specify angles using |1al={angle}{length}|\dots{} as explained in the |-andL| syle). They are said to be relative in the sense that |{0}{0}| is the coordinate of the first point, and |{1}{1}| the second point. The |bezier x| and |bezier 4 y| are useful when the node are supposed to be horizontally or vertically aligned: the distance are now expressed as a fraction of the horizontal (respectively vertical) distance between the two nodes. Using relative coordinates has the advantage that if the nodes positions are moved, the aspect of the wire does not change (it is just squeezed), while this is not true with |in|/|out| wires which preserves angles but not shapes.
+Note that all arrows that are based on the |bezier| style (most of the keys: |o|-like, |N|-like, |<|-like, |s|-like) can try to connect to subnodes or anchors called |fake center {east/north/west/south}| in order to start the wire in between the real center and an |east/...| coordinate (note that some variations can use another anchor, for instance |<'| will set the end anchor to |west| by default). Since adding manually an anchor to a node can be quite tedious, it is often easier to create a subnode, using either |zx subnode=name of subnode| or |\zxCoordinateSubnode{name of subnode}|. For instance, we show how to create a node such that bezier arriving from right will be connected to the south east part of the node while bezier leaving from the left will start at the north east anchor:
+\begin{codeexample}[width=0pt]
+\NewExpandableDocumentCommand{\myWeirdNode}{m}{%
+  \node[zx main node,alias=tmp,fill=pink,rounded corners,inner sep=2pt]{A};
+  % will be used by bezier curves to know how to connect:
+  \zxCoordinateSubnode[at={(tmp.north east)}]{fake center east}
+  \zxCoordinateSubnode[at={(tmp.south west)}]{fake center west}
+}
+
+\begin{ZX}
+  \myWeirdNode{A} \ar[rd, s] \ar[C,dr] &                                               & \myWeirdNode{B} \\
+                                       & \zxZ{a \oplus b \oplus c \oplus d} \ar[ru, s] & 
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 

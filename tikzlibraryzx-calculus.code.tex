@@ -207,6 +207,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newsavebox{\zx@tmp@box}%
 
+%%%%%%%%%%%%%%%%%%%%%
+%%%% Utils
+%%%%%%%%%%%%%%%%%%%%%
+
+% by default "execute at end node" accumulate by adding at the end of the existing value,
+% it can be helpful to reset completely the value, or add it before
+\tikzset{
+  zx execute before end node/.code={%
+    \def\zx@options{#1}%
+    \edef\zx@cmd{%
+      \noexpand\def\noexpand\tikz@atend@node{\expandonce{\zx@options}\expandonce{\tikz@atend@node}}%
+    }%
+    \zx@cmd%
+  },
+  zx set execute at begin node/.code={%
+    \def\tikz@atbegin@node{#1}%
+  },
+  zx set execute at end node/.code={%
+    \def\tikz@atend@node{#1}%
+  },
+}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Adding anchors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -586,6 +609,12 @@
   \fi%
 }%
 
+\def\zxRevertToNormalSpacing{%
+  \thinmuskip=3.0mu\relax%
+  \medmuskip=4.0mu plus 2.0mu minus 4.0mu\relax%
+  \thickmuskip=5.0mu plus 5.0mu\relax%
+}
+
 % Styles. User should not modify "wires definition", but is free to change:
 % - "/zx/default style nodes/" to change completely the node style
 % - "/zx/user overlay nodes" to add stuff on current node style
@@ -715,30 +744,34 @@
     C@generic/.style n args={8}{ % min/max, angle1, angle2, anchor, \x or \y, \y or \x, where to move,radius code (for circle should be "radius=\n3")
       to path={
         \pgfextra{%% <- we will use def... so need to "exit" a few seconds pgf
+          \zxTryFirstSubnodeThenAnchorThenNode{\tikztostart}{true ##4}{##4}%
+          \edef\StartPoint{\zx@result}%
+          % % Test if tikztostart is a point or a node, and define StartPoint accordingly.
+          % \ifPgfpointOrNode{\tikztostart}{%
+          %   \def\StartPoint{\tikztostart}%
+          % }{%
+          %   % For some nodes, "north" might not point to north (notably after a rotation). So we can define some anchors "true north" that actually point
+          %   % to the north.
+          %   % Test if "true north" etc exists:
+          %   \ifAnchorExistsNodeSpecific{\tikztostart}{true ##4}{%
+          %     \def\StartPoint{\tikztostart.true ##4}%
+          %   }{%
+          %     \def\StartPoint{\tikztostart.##4}%
+          %   }%  
+          % }%
           % Test if tikztostart is a point or a node, and define StartPoint accordingly.
-          \ifPgfpointOrNode{\tikztostart}{%
-            \def\StartPoint{\tikztostart}%
-          }{%
-            % For some nodes, "north" might not point to north (notably after a rotation). So we can define some anchors "true north" that actually point
-            % to the north.
-            % Test if "true north" etc exists:
-            \ifAnchorExistsNodeSpecific{\tikztostart}{true ##4}{%
-              \def\StartPoint{\tikztostart.true ##4}%
-            }{%
-              \def\StartPoint{\tikztostart.##4}%
-            }%  
-          }%
-          % Test if tikztostart is a point or a node, and define StartPoint accordingly.
-          \ifPgfpointOrNode{\tikztotarget}{%
-            \def\TargetPoint{\tikztotarget}%
-          }{%
-            % Test if "true north" etc exists:
-            \ifAnchorExistsNodeSpecific{\tikztotarget}{true ##4}{%
-              \def\TargetPoint{\tikztotarget.true ##4}%
-            }{%
-              \def\TargetPoint{\tikztotarget.##4}%
-            }%  
-          }%
+          \zxTryFirstSubnodeThenAnchorThenNode{\tikztotarget}{true ##4}{##4}%
+          \edef\TargetPoint{\zx@result}%
+          % \ifPgfpointOrNode{\tikztotarget}{%
+          %   \def\TargetPoint{\tikztotarget}%
+          % }{%
+          %   % Test if "true north" etc exists:
+          %   \ifAnchorExistsNodeSpecific{\tikztotarget}{true ##4}{%
+          %     \def\TargetPoint{\tikztotarget.true ##4}%
+          %   }{%
+          %     \def\TargetPoint{\tikztotarget.##4}%
+          %   }%  
+          % }%
         }%
         (\StartPoint) % <- the path starts at StartPoint
         %%% Get x coordinate of left-most point
@@ -956,39 +989,49 @@
         bezier 4 y={\pgfkeysvalueof{/zx/args/-andL/1-}}{\pgfkeysvalueof{/zx/args/-andL/1L}}{\pgfkeysvalueof{/zx/args/-andL/2-}}{\pgfkeysvalueof{/zx/args/-andL/2L}}
       }%
     },
+    %% /zx/utils/change@tikz@fake@center={\tikztostart}{fake center west}{\myoutput} will set \myoutput to be the coordinate of the fake center
+    %% if it exists, and of center otherwise (and if tikztostart is already a coordinate, we just set myoutput to this coordinate):
     % Directions: configure start/end points to "fake center *" if it exists.
     % If the input is not a node, it's copied to ##3
     /zx/utils/change@tikz@fake@center/.code n args={3}{%
       % ##1: \tikztostart or \tikztotarget,
       % ##2: fake center north...
       % ##3 name of result. e.g. \tikztostart
-      \ifPgfpointOrNode{##1}{%
-        %%% Sometimes, ##1 is not (1pt,2pt) but "tikz-1-2.north east". Since later we use
-        %%% a parsing mechanism which assumes that we have a coordinate... this is a problem.
-        \edef##3{##1}%
-        % This is a great explaination of how parsing is done in tikz:
-        % https://tex.stackexchange.com/a/516897/116348
-      }{% This is a node, not a point:
-        % "zx add anchor to node" might define per-node anchors, and they are stored in
-        % a macro called like \pgf@sh@ma@tikz@f@3-2-2, so we need to read this first:
-        % TODO: maybe use pp@name everywhere? (see comment beginning of this file)
-        \begingroup% This group avoids pollution done by executing pgf@sh@ma@NODENAME
-          \pgfutil@ifundefined{pgf@sh@ma@\tikz@pp@name{##1}}{}{%
-            % We the per-node macro exists, we run it.
-            \csname pgf@sh@ma@\tikz@pp@name{##1}\endcsname%
-          }%
-          \ifAnchorExists{##1}{##2}{%
-            \pgfpointanchor{##1}{##2}%
-          }{%
-            \pgfpointanchor{##1}{center}%
-          }%
-          %%% Whoo, pgfpoint only redefine pgf@x/pgf@y, but in no way it stores it!!!
-          %%% So can't do \pgfpoint{\pgf@x}{\pgf@y}...
-          %%% I needed to create my own system... see \zx@parse@coordx.
-          \xdef##3{\the\pgf@x,\the\pgf@y}%
-        \endgroup%
-      }%
+      % This sets \zx@result to the appropriate node or to center if no exists:
+      \zxTryFirstSubnodeThenAnchorThenNodeToCoordinate{##1}{##2}{center}%
+      \edef##3{\zx@result}%
     },
+    % /zx/utils/change@tikz@fake@center/.code n args={3}{%
+    %   % ##1: \tikztostart or \tikztotarget,
+    %   % ##2: fake center north...
+    %   % ##3 name of result. e.g. \tikztostart
+    %   \ifPgfpointOrNode{##1}{%
+    %     %%% Sometimes, ##1 is not (1pt,2pt) but "tikz-1-2.north east". Since later we use
+    %     %%% a parsing mechanism which assumes that we have a coordinate... this is a problem.
+    %     \edef##3{##1}%
+    %     % This is a great explaination of how parsing is done in tikz:
+    %     % https://tex.stackexchange.com/a/516897/116348
+    %   }{% This is a node, not a point:
+    %     % "zx add anchor to node" might define per-node anchors, and they are stored in
+    %     % a macro called like \pgf@sh@ma@tikz@f@3-2-2, so we need to read this first:
+    %     % TODO: maybe use pp@name everywhere? (see comment beginning of this file)
+    %     \begingroup% This group avoids pollution done by executing pgf@sh@ma@NODENAME
+    %       \pgfutil@ifundefined{pgf@sh@ma@\tikz@pp@name{##1}}{}{%
+    %         % We the per-node macro exists, we run it.
+    %         \csname pgf@sh@ma@\tikz@pp@name{##1}\endcsname%
+    %       }%
+    %       \ifAnchorExists{##1}{##2}{%
+    %         \pgfpointanchor{##1}{##2}%
+    %       }{%
+    %         \pgfpointanchor{##1}{center}%
+    %       }%
+    %       %%% Whoo, pgfpoint only redefine pgf@x/pgf@y, but in no way it stores it!!!
+    %       %%% So can't do \pgfpoint{\pgf@x}{\pgf@y}...
+    %       %%% I needed to create my own system... see \zx@parse@coordx.
+    %       \xdef##3{\the\pgf@x,\the\pgf@y}%
+    %     \endgroup%
+    %   }%
+    % },
     % Directions: configure start/end points to the intersection between
     % the "fake center *" if it exists and the "fake center *" of the destination.
     % If the input is not a node, nothing is done.
@@ -1100,63 +1143,69 @@
     },
     %% To go to a subnode defined in a pic with from subnode=mysubnode.
     start subnode/.code={%
-      \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@start}%
-      % First, rewrite \tikzcd@ar@start so that it equals the name of the current node without alias
-      \ifcsname \zx@tmp\endcsname% There exists an alias
-        \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
-        \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname}%
-      \else%
-        \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
-      \fi
-      % First, we check if there is a node with this name on this node. If not, we will try with the parent node
-      \@ifundefined{pgf@sh@ns@\tikzcd@ar@start ##1}{%
-        % The current node has no such subnode name: let's start its parent.
-        \@ifundefined{\tikzcd@ar@start -zxOriginalRow}{%
-          % There is no original coordinate: error
-          \PackageError{zx-calculus}{In "start subnode=##1", the subnode ##1 of node \tikzcd@ar@start \zx@tmp@alias does not exist.}{}%
-        }{%
-          % There is an original coordinate: we try to see if the original node admits a subnode.
-          \edef\zx@tmp@originalRow{\csname \tikzcd@ar@start-zxOriginalRow\endcsname}%
-          \edef\zx@tmp@originalCol{\csname \tikzcd@ar@start-zxOriginalCol\endcsname}%
-          \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}{%
-            \PackageError{zx-calculus}{In "start subnode=##1", the subnode ##1 of aliased node \tikzcd@ar@start{} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}{}%
-          }{%
-            \edef\tikzcd@ar@start{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}%%
-          }%
-        }%
-      }{% There exists a subnode in the current name
-        \edef\tikzcd@ar@start{\tikzcd@ar@start ##1}%%
-      }%
+      \zxGetSubnodeOfNode{\tikzcd@ar@start}{##1}{\edef\tikzcd@ar@start{\zx@result}}{\PackageError{zx-calculus}{In "start subnode=##1", \zx@error}}%
     },
+    % start subnode/.code={%
+    %   \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@start}%
+    %   % First, rewrite \tikzcd@ar@start so that it equals the name of the current node without alias
+    %   \ifcsname \zx@tmp\endcsname% There exists an alias
+    %     \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
+    %     \edef\tikzcd@ar@start{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@start\endcsname}%
+    %   \else%
+    %     \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
+    %   \fi
+    %   % First, we check if there is a node with this name on this node. If not, we will try with the parent node
+    %   \@ifundefined{pgf@sh@ns@\tikzcd@ar@start ##1}{%
+    %     % The current node has no such subnode name: let's start its parent.
+    %     \@ifundefined{\tikzcd@ar@start -zxOriginalRow}{%
+    %       % There is no original coordinate: error
+    %       \PackageError{zx-calculus}{In "start subnode=##1", the subnode ##1 of node \tikzcd@ar@start \zx@tmp@alias does not exist.}{}%
+    %     }{%
+    %       % There is an original coordinate: we try to see if the original node admits a subnode.
+    %       \edef\zx@tmp@originalRow{\csname \tikzcd@ar@start-zxOriginalRow\endcsname}%
+    %       \edef\zx@tmp@originalCol{\csname \tikzcd@ar@start-zxOriginalCol\endcsname}%
+    %       \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}{%
+    %         \PackageError{zx-calculus}{In "start subnode=##1", the subnode ##1 of aliased node \tikzcd@ar@start{} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}{}%
+    %       }{%
+    %         \edef\tikzcd@ar@start{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}%%
+    %       }%
+    %     }%
+    %   }{% There exists a subnode in the current name
+    %     \edef\tikzcd@ar@start{\tikzcd@ar@start ##1}%%
+    %   }%
+    % },
     end subnode/.code={% The edef is needed, or it always go into the first loop and might give errors later
-      \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@target}%
-      % First, rewrite \tikzcd@ar@target so that it equals the name of the current node without alias
-      \ifcsname \zx@tmp\endcsname% There exists an alias
-        \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
-        \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname}%
-      \else%
-        \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
-      \fi
-      % First, we check if there is a node with this name on this node. If not, we will try with the parent node
-      \@ifundefined{pgf@sh@ns@\tikzcd@ar@target ##1}{%
-        % The current node has no such subnode name: let's start its parent.
-        \@ifundefined{\tikzcd@ar@target -zxOriginalRow}{%
-          % There is no original coordinate: error
-          \PackageError{zx-calculus}{In "end subnode=##1", the subnode ##1 of node \tikzcd@ar@target{} \zx@tmp@alias does not exist.}{}%
-        }{%
-          % There is an original coordinate: we try to see if the original node admits a subnode.
-          \edef\zx@tmp@originalRow{\csname \tikzcd@ar@target-zxOriginalRow\endcsname}%
-          \edef\zx@tmp@originalCol{\csname \tikzcd@ar@target-zxOriginalCol\endcsname}%
-          \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}{%
-            \PackageError{zx-calculus}{In "end subnode=##1", the subnode ##1 of aliased node \tikzcd@ar@target{} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}{}%
-          }{%
-            \edef\tikzcd@ar@target{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}%%
-          }%
-        }%
-      }{% There exists a subnode in the current name
-        \edef\tikzcd@ar@target{\tikzcd@ar@target ##1}%%
-      }%
+      \zxGetSubnodeOfNode{\tikzcd@ar@target}{##1}{\edef\tikzcd@ar@target{\zx@result}}{\PackageError{zx-calculus}{In "end subnode=##1", \zx@error}}%
     },
+    % end subnode/.code={% The edef is needed, or it always go into the first loop and might give errors later
+    %   \edef\zx@tmp{zx@alias@\zxCurrentDiagram @\tikzcd@ar@target}%
+    %   % First, rewrite \tikzcd@ar@target so that it equals the name of the current node without alias
+    %   \ifcsname \zx@tmp\endcsname% There exists an alias
+    %     \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
+    %     \edef\tikzcd@ar@target{\csname zx@alias@\zxCurrentDiagram @\tikzcd@ar@target\endcsname}%
+    %   \else%
+    %     \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
+    %   \fi
+    %   % First, we check if there is a node with this name on this node. If not, we will try with the parent node
+    %   \@ifundefined{pgf@sh@ns@\tikzcd@ar@target ##1}{%
+    %     % The current node has no such subnode name: let's start its parent.
+    %     \@ifundefined{\tikzcd@ar@target -zxOriginalRow}{%
+    %       % There is no original coordinate: error
+    %       \PackageError{zx-calculus}{In "end subnode=##1", the subnode ##1 of node \tikzcd@ar@target{} \zx@tmp@alias does not exist.}{}%
+    %     }{%
+    %       % There is an original coordinate: we try to see if the original node admits a subnode.
+    %       \edef\zx@tmp@originalRow{\csname \tikzcd@ar@target-zxOriginalRow\endcsname}%
+    %       \edef\zx@tmp@originalCol{\csname \tikzcd@ar@target-zxOriginalCol\endcsname}%
+    %       \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}{%
+    %         \PackageError{zx-calculus}{In "end subnode=##1", the subnode ##1 of aliased node \tikzcd@ar@target{} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}{}%
+    %       }{%
+    %         \edef\tikzcd@ar@target{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol ##1}%%
+    %       }%
+    %     }%
+    %   }{% There exists a subnode in the current name
+    %     \edef\tikzcd@ar@target{\tikzcd@ar@target ##1}%%
+    %   }%
+    % },
     %% Forced versions are versions which do not nicely fallback to center if shape does not
     %% have "fake center XXX". This is used mostly for wires based on in/out (our function b.
     %% Not sure how to have a code which always fallback to center if shape does not.
@@ -1533,6 +1582,9 @@
     % Style for empty nodes
     zxSpacingInsideNodes/.style={
       execute at begin node={\thinmuskip=0mu\medmuskip=0mu\thickmuskip=0mu}, % Reduce space around +/-...
+    },
+    zxNormalSpacing/.style={
+      execute at begin node={\thinmuskip=3.0mu\medmuskip=4.0mu plus 2.0mu minus 4.0mu\thickmuskip=5.0mu plus 5.0mu}, %
     },
     %% Normalize fonts to avoid different rendering when document has a different font shape.
     zxNormalFont/.style={
@@ -2094,6 +2146,11 @@
           \fi%          
         \fi%
       },
+      %% To allow blocks
+      block/.style={
+        zx set execute at begin node={\begin{varwidth}{15em}},
+        zx set execute at end node={\end{varwidth}},
+      },
       %% This allows nodes to specify styles for the arrows that start/end from them.
       %% This style will be loaded last as otherwise we don't know yet the starting and ending point.
       %% See how we apply it on the arrow side using "every arrow post"
@@ -2387,6 +2444,111 @@
   \fi%
 }
 
+% \zxGetSubnodeOfNode{\tikzcd@ar@start}{mysubnode}{True branch}{False branch} will set \zx@result to the corresponding node if it exits and run True branch
+% otherwise it will run False branch, where \zx@error will contain more details on why it failed. This function also try to use \zxOriginalRow to find
+% a possible parent.
+\def\zxGetSubnodeOfNode#1#2#3#4{%
+  \edef\zx@result{#1}%
+  % First we try to see if there is an alias:
+  \edef\zx@tmp{zx@alias@\zxCurrentDiagram @#1}%
+  % First, rewrite #1 so that it equals the name of the current node without alias
+  \ifcsname \zx@tmp\endcsname% There exists an alias
+    \edef\zx@tmp@alias{(alias \zx@tmp) }% Mostly for the error message
+    \edef\zx@result{\csname zx@alias@\zxCurrentDiagram @#1\endcsname}%
+  \else%
+    \edef\zx@tmp@alias{(no alias) }% Mostly for the error message
+  \fi
+  % First, we check if there is a node with this name on this node. If not, we will try with the parent node
+  \@ifundefined{pgf@sh@ns@\zx@result #2}{%
+    % The current node has no such subnode name: let's start its parent.
+    \@ifundefined{\zx@result -zxOriginalRow}{%
+      % There is no original coordinate: error
+      \def\zx@error{the subnode #2 of node \zx@result  \zx@tmp@alias does not exist.}%
+      #4%
+    }{%
+      % There is an original coordinate: we try to see if the original node admits a subnode.
+      \edef\zx@tmp@originalRow{\csname \zx@result -zxOriginalRow\endcsname}%
+      \edef\zx@tmp@originalCol{\csname \zx@result -zxOriginalCol\endcsname}%
+      \@ifundefined{pgf@sh@ns@\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol #2}{%
+        \def\zx@error{the subnode #2 of aliased node \zx@result {} \zx@tmp@alias does not exist (even in the parent node at coordinate \zx@tmp@originalRow - \zx@tmp@originalCol).}%
+        #4%
+      }{%
+        \edef\zx@result{\zxCurrentDiagram-\zx@tmp@originalRow-\zx@tmp@originalCol #2}%%
+        #3%
+      }%
+    }%
+  }{% There exists a subnode in the current name
+    \edef\zx@result{\zx@result #2}%%
+    #3%
+  }%
+}
+
+% \zxTryFirstSubnodeThenAnchorThenNode{\tikztostart}{true north}{north} will set \zx@result to the corresponding subnode if it exists, otherwise the true north anchor,
+% otherwise the north anchor
+\def\zxTryFirstSubnodeThenAnchorThenNode#1#2#3{%
+  \zxGetSubnodeOfNode{#1}{#2}{%
+    % The subnode exists: we forward \zx@result
+  }{%
+    % No submode exists:
+    % Test if it is a point or a node, and define StartPoint accordingly.
+    \ifPgfpointOrNode{#1}{%
+      \edef\zx@result{#1}%
+    }{% This is a node
+      % "zx add anchor to node" might define per-node anchors, and they are stored in
+      % a macro called like \pgf@sh@ma@tikz@f@3-2-2, so we need to read this first:
+      % TODO: maybe use pp@name everywhere? (see comment beginning of this file)
+      \begingroup% This group avoids pollution done by executing pgf@sh@ma@NODENAME
+      \pgfutil@ifundefined{pgf@sh@ma@\tikz@pp@name{##1}}{}{%
+        % We the per-node macro exists, we run it.
+        \csname pgf@sh@ma@\tikz@pp@name{##1}\endcsname%
+      }%
+      % Test if "true north" etc exists:
+      \ifAnchorExistsNodeSpecific{#1}{#2}{%
+        \xdef\zx@result{#1.#2}%
+      }{%
+        \xdef\zx@result{#1.#3}%
+      }%
+      \endgroup%
+    }%
+  }
+}
+
+% Like zxTryFirstSubnodeThenAnchorThenNodeToCoordinate but \zx@result will contain coordinates of the final point.
+\def\zxTryFirstSubnodeThenAnchorThenNodeToCoordinate#1#2#3{%
+  \zxGetSubnodeOfNode{#1}{#2}{%
+    % The subnode exists: we forward \zx@result after turning it in a coordinate
+    \ifPgfpointOrNode{\zx@result}{}{%
+      % this is a node, so we take the center
+      \pgfpointanchor{\zx@result}{#3}%
+      \def\zx@result{\the\pgf@x,\the\pgf@y}%
+    }%
+  }{%
+    % No submode exists:
+    % Test if it is a point or a node, and define StartPoint accordingly.
+    \ifPgfpointOrNode{#1}{%
+      \edef\zx@result{#1}%
+    }{% This is a node
+      % "zx add anchor to node" might define per-node anchors, and they are stored in
+      % a macro called like \pgf@sh@ma@tikz@f@3-2-2, so we need to read this first:
+      % TODO: maybe use pp@name everywhere? (see comment beginning of this file)
+      \begingroup% This group avoids pollution done by executing pgf@sh@ma@NODENAME
+      \pgfutil@ifundefined{pgf@sh@ma@\tikz@pp@name{#1}}{}{%
+        % We the per-node macro exists, we run it.
+        \csname pgf@sh@ma@\tikz@pp@name{#1}\endcsname%
+      }%
+      % Test if "true north" etc exists:
+      \ifAnchorExistsNodeSpecific{#1}{#2}{%
+        \pgfpointanchor{#1}{#2}%
+      }{%
+        \pgfpointanchor{#1}{#3}%
+      }%
+      \xdef\zx@result{\the\pgf@x,\the\pgf@y}%
+      \endgroup%
+    }%
+  }
+}
+
+
 %%% Create different kinds of dots...
 %% https://tex.stackexchange.com/questions/617959
 %% https://tex.stackexchange.com/questions/528774/excess-vertical-space-in-vdots/528775#528775
@@ -2423,8 +2585,12 @@
 % (in a later cell, or at the end of the picture), together with
 % a way to pass any kind of variables for later
 
-\NewExpandableDocumentCommand{\zxMainCoordinate}{O{}m}{
+\NewExpandableDocumentCommand{\zxCoordinateMain}{O{}m}{
   \coordinate[#1,#2](\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn);
+}
+
+\NewExpandableDocumentCommand{\zxCoordinateSubnode}{O{}m}{
+  \coordinate[#1](\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#2);
 }
 
 \NewDocumentCommand{\zxMainNodeAlreadySet}{m}{\def\zxMainNodeAlreadySetMacro{}}
@@ -2444,9 +2610,11 @@
   zx subnode/.code={
     \ifdefined\zxCurrentDiagram%
       \ifdefined\zxOriginalRow%
-        \tikzset{name=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
+        \tikzset{alias=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
+        % \tikzset{name=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
       \else%
-        \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
+        \tikzset{alias=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
+        % \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
       \fi%
     \else%
       \message{Warning: you or outside of a tikzcd environment, so you will not be able to implement subnodes for now. But you might want to try to define zxCurrentDiagram, pgfmatrixcurrentrow and pgfmatrixcurrentcolumn yourself, you might be lucky.}%
@@ -3273,6 +3441,7 @@
       label={[inner sep=1.8pt,zxTinyFont,####1]####2},
     },
   },
+  block/.style={main={/tikz/block}},
   % label already exists
   add label/.style={
     add label advanced={}{####1},
@@ -3475,7 +3644,7 @@
 }
 
 \NewExpandableDocumentCommand{\zxCross}{O{}m}{%
-  \zxMainCoordinate{}
+  \zxCoordinateMain{}
   \node[at={(0,0)}, rectangle, inner sep=3pt, append after command={(\tikzlastnode.north east) edge[line cap=round,zx thickness wires style] (\tikzlastnode.south west) (\tikzlastnode.south east) edge[line cap=round,zx thickness wires style] (\tikzlastnode.north west)}, #1]{};
 }
 
