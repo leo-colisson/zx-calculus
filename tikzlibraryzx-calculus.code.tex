@@ -2607,6 +2607,7 @@
       \fi%
     \fi%
   },
+  zx at origin/.style={at={(0,0)}},
   zx subnode/.code={
     \ifdefined\zxCurrentDiagram%
       \ifdefined\zxOriginalRow%
@@ -3430,33 +3431,81 @@
     \coordinate(true south) at (true east); % Synonyme, useful to determine where to start
 }
 
-%% A bit a refactoring might be useful to avoid repeating ourself
-% %% Box, that just draws... a box
-\zxNewNodeFromPic{Box}[
-  main/.style={
-    /zx/picCustomStyleBoxMainNode/.append style={####1},
+%% Gates
+
+\pgfkeys{
+  /zx/every box/.style={
+    draw,
+    inner sep=1.3mm,
+    rectangle,
+    zx filling style,
+    zx thickness wires style,
+    zx main node,
+    %execute at begin node=$, execute at end node=$,
+    minimum width=\zxBoxMinimumWidth,
+    minimum height=\zxBoxMinimumHeight,
   },
-  add label advanced/.style 2 args={
-    main={
-      label={[inner sep=1.8pt,zxTinyFont,####1]####2},
+  % https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+  /zx/boxes/.code={%
+    \scantokens{%
+      \pgfkeysalso{%
+        /zx/every box/.append style={#1}%
+      }%
+    }%
+  },
+  /zx/box load style/.style={
+    add label advanced/.style 2 args={
+      label={[inner sep=1.8pt,zxTinyFont,##1]##2},
+    },
+    add label/.style={
+      add label advanced={}{##1},
     },
   },
-  block/.style={main={/tikz/block}},
-  % label already exists
-  add label/.style={
-    add label advanced={}{####1},
-  },
-][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[draw, inner sep=1.3mm, rectangle, zx filling style, zx thickness wires style, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
-  minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
-  /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
-    /zx/picCustomStyleBoxMainNode,
-  ]{\tikzpictext};%
-  \coordinate(fake center north) at (.center);%
-  \coordinate(fake center west) at (.center);%
-  \coordinate(fake center east) at (.center);%  
-  \coordinate(fake center south) at (.center);%
 }
+
+\NewExpandableDocumentCommand{\zxBox}{O{}m}{
+  \node[%
+    zx main node,
+    zx at origin,
+    alias=zxTmp,
+    /zx/box load style,
+    /zx/every box,%
+    #1%
+  ]{#2};%
+  % Nicer if you want '> to work  
+  \coordinate(fake center north) at (zxTmp.center);%
+  \coordinate(fake center west) at (zxTmp.center);%
+  \coordinate(fake center east) at (zxTmp.center);%  
+  \coordinate(fake center south) at (zxTmp.center);%
+}
+
+% %% A bit a refactoring might be useful to avoid repeating ourself
+% % %% Box, that just draws... a box
+% \zxNewNodeFromPic{Box}[
+%   main/.style={
+%     /zx/picCustomStyleBoxMainNode/.append style={####1},
+%   },
+%   add label advanced/.style 2 args={
+%     main={
+%       label={[inner sep=1.8pt,zxTinyFont,####1]####2},
+%     },
+%   },
+%   block/.style={main={/tikz/block}},
+%   % label already exists
+%   add label/.style={
+%     add label advanced={}{####1},
+%   },
+% ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
+%   \node[draw, inner sep=1.3mm, rectangle, zx filling style, zx thickness wires style, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
+%   minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
+%   /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+%     /zx/picCustomStyleBoxMainNode,
+%   ]{\tikzpictext};%
+%   \coordinate(fake center north) at (.center);%
+%   \coordinate(fake center west) at (.center);%
+%   \coordinate(fake center east) at (.center);%  
+%   \coordinate(fake center south) at (.center);%
+% }
 
 
 \NewCommandCopy\zxGate\zxBox
@@ -3574,11 +3623,6 @@
       add label advanced={}{##1},
     },
     #1,
-    % % /tikz/column sep/.show code,
-    % /utils/exec={
-    %   \message{\pgfmatrixcolumnsep}
-    %   \show\pgfmatrixcolumnsep
-    % },
   }%
   % Store the content for letter use
   \zxSetVariableExpandOnce{content inner nodes}{\myContent}%
@@ -3589,11 +3633,10 @@
   \zxSetVariableExpandOnce{additional code}{\zxGateMultiAdditionalCode}%
   \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
     \zxBox[%
-    main={zx main node,
       draw,
       opacity=0,
       zx style from variable={style inner nodes},
-    }]{\zxGetVariable{content inner nodes}}
+    ]{\zxGetVariable{content inner nodes}}
   }%
   \zxExecuteAtEndPicture{
     % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:

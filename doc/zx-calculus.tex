@@ -533,26 +533,6 @@ When the top left cell is empty, you may get an error at the compilation |Single
 \end{codeexample}
 \end{pgfmanualentry}
 
-\begin{pgfmanualentry}
-  \extractcommand\zxCoordinateMain\opt{\oarg{coordinate style}}\marg{}\@@
-  \extractcommand\zxCoordinateSubnode\opt{\oarg{coordinate style}}\marg{name subnode}\@@
-  \pgfmanualbody
-  (starting from 2023-10-03) Since coordinates expect their name to be given in the argument, we cannot use |zx main node| or |zx subnode| on them: these two commands are the equivalent of these styles for coordinates. Note that this is mostly useful if you start to build your own nodes: this way you can easily place the anchors followed by |bezier|-based wires (|fake center {east,north,south,west}|) and |C|-based wires (|true {east,north,south,west}|): For instance, we show how to create a node such that bezier arriving from right will be connected to the south east part of the node while bezier leaving from the left will start at the north east anchor:
-\begin{codeexample}[width=0pt]
-\NewExpandableDocumentCommand{\myWeirdNode}{m}{%
-  \node[zx main node,alias=tmp,fill=pink,rounded corners,inner sep=2pt]{A};
-  % will be used by bezier curves to know how to connect:
-  \zxCoordinateSubnode[at={(tmp.north east)}]{fake center east}
-  \zxCoordinateSubnode[at={(tmp.south west)}]{fake center west}
-}
-
-\begin{ZX}
-  \myWeirdNode{A} \ar[rd, s] \ar[C,dr] &                                               & \myWeirdNode{B} \\
-                                       & \zxZ{a \oplus b \oplus c \oplus d} \ar[ru, s] & 
-\end{ZX}
-\end{codeexample}
-\end{pgfmanualentry}
-
 You may also get the error |Single ampersand used with wrong catcode| when |&| has already a different meaning, for instance in |align|, in that case you may change the |&| character into |\&| using |[ampersand replacement=\&]|. Note however that in recent versions ($\geq$ 2022/02/09) this should not happen anymore.
 \begin{codeexample}[vbox]
 \begin{align}
@@ -1192,7 +1172,6 @@ You can also set globally the styles like |/zx/picCustomStyleBeforeUserMatrix| (
 }
 \end{pgfmanualentry}
 
-
 \subsubsection{Circuit-related}
 
 Since 2023-09-17, we provide a number of options to typeset circuits.
@@ -1201,16 +1180,26 @@ Since 2023-09-17, we provide a number of options to typeset circuits.
   \def\extrakeytext{style, }
   \extractcommand\zxBox\opt{\oarg{style}}\marg{box text}\@@
   \extractcommand\zxGate\opt{\oarg{style}}\marg{box text}\@@
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/zx/every box=style\@nil%
+  \extractkey/zx/boxes=\marg{style to add}\@nil%
+  \makeatother
   \pgfmanualbody
-  (both commands are alias) You can add simple boxes using |\zxBox{X}| (in math mode), possibly adding additional styling to the main box using |main={your style}|:
+  (both commands are alias) You can add simple gates using |\zxGate{X}| (the content is typeset in math mode by default), possibly adding additional styling to the main box using the optional argument or |/zx/every box/.style={your replacement style}| or |/zx/boxes={your style to add}|:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[]
 \begin{ZX}
-  \zxBox{G} \rar[B]                    & [\zxwCol] \zxN{}\\
-  \zxBox[main={fill=green}]{G_A} \rar[B] & [\zxwCol] \zxN{}
+  \zxBox{G} \rar[B]                      & [\zxwCol] \zxN{} \\
+  \zxBox[fill=green]{G_A} \rar[B] & [\zxwCol] \zxN{}
 \end{ZX}
 \end{codeexample}
 }
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit, thick lines]
+  \rar & \zxGate[add label={below:\text{Hadamard}}]{H} \rar & 
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -2686,9 +2675,11 @@ You might also want to combine it with the |non bold| option to temporarily set 
 
 \subsection{Custom nodes}\label{subsec:customNodes}
 
-\textbf{NB}: this functionality was added on 24/02/2023.
+\textbf{NB}: a number of functionalities needed in this section were added on 24/02/2023 and 03/10/2023, so be sure to have the latest version.
 
-Technically, there is nothing preventing a user to create any style to create custom nodes like:
+\subsubsection{Creating your own node: method 1}
+
+Technically, you can create any tikz style to create custom nodes like:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
   \begin{ZX}
@@ -2710,7 +2701,50 @@ possibly using |\tikzset| and/or |\NewExpandableDocumentCommand| to avoid repeti
   \end{ZX}
 \end{codeexample}
 }
-However, this method has several limitations: first, it is non-trivial to define complex shapes this way (you have a single node, so you need to use more advanced tikz primitives to make it right), it is even harder to create variations of this shape without repeating yourself (like different rotations of the same shape), and it is quite hard to define anchors to start/stop arrows like |\rar[<']| at the right position\footnote{In that case, the center of the shape will be used even if it might not be desirable}… not even mentioning multiple anchors. We therefore provide below some helper functions.
+
+\begin{pgfmanualentry}
+  \def\extrakeytext{style, }
+  \extractcommand\zxCoordinateSubnode\opt{\oarg{style}}\marg{name of subnode}\@@
+  \extractcommand\zxCoordinateMain\opt{\oarg{style}}\marg{}\@@
+  \makeatletter% should not be letter for \@@... strange
+  \extractkey/tikz/zx main node\@nil%
+  \extractkey/tikz/zx subnode=\marg{name of subnode}\@nil%
+  \extractkey/tikz/zx at origin\@nil%
+  \extractkey/tikz/start subnode=\marg{name of subnode}\@nil%
+  \extractkey/tikz/end subnode=\marg{name of subnode}\@nil%
+  \makeatother
+  \pgfmanualbody%
+
+However, we recommend users to use the |\node[zx main node,zx at origin, ...]{...};| syntax rather than:
+\begin{verbatim}
+|[...]| ...
+\end{verbatim}
+for multiple reasons: first, it will be more robust (for instance you need the |\node| syntax if you plan to insert this in |zxExecuteAtEndPicture| or in a regular tikz picture which is not contained in a matrix), but you also have more freedom since you can create nodes having multiples subnodes, anchors etc.
+You should note the |zx main node| that is needed to give a name to the current node so that |\arrow| can find it, otherwise you will get an error saying that the node does not exists when you try to link to it, and |zx at origin| that will just do |at={(0,0)}| (which is the default position anyway) but that might be useful later in order to easily place a node outside of a matrix. We also provide |\zxCoordinateMain| as the equivalent of |zx main node| for coordinates since they would not accept a name via a style.
+
+Subnodes are a kind of generalization of anchors: you can define an existing node as a subnode with |zx subnode=your subnode| and link from/to this node using |start subnode=your subnode| and |end subnode=your subnode|:
+
+\begin{codeexample}[width=0pt]
+\NewExpandableDocumentCommand{\zxMyDoubleNode}{O{}m}{
+  \node[fill=blue!20, zx main node, inner sep=3mm,alias=zxtmp,#1] {\text{#2}};
+  \node[circle,fill=red!70, inner sep=.8mm,zx subnode=redNode] at ([shift={(0mm,1.5mm)}]zxtmp.west) {};
+  \node[circle,fill=orange!70, inner sep=.8mm,zx subnode=orangeNode] at ([shift={(0mm,-1.5mm)}]zxtmp.west) {};
+  \node[circle,fill=green!70, inner sep=.8mm,zx subnode=greenNode] at ([shift={(0mm,-1.5mm)}]zxtmp.east) {};
+}
+\begin{ZX}
+  A \rar[end subnode=redNode] \rar[end subnode=orangeNode]
+    & [5mm] \zxMyDoubleNode{Hey} \dar \rar[start subnode=greenNode,end subnode=orangeNode]
+    & \zxMyDoubleNode[fill=pink]{Hey}\\
+  B \ar[ru, end subnode=orangeNode]                        & 
+\end{ZX}
+\end{codeexample}
+Node that you can also set some special subnodes called |fake center {north,south,east,west}| in order to help bezier-based wires to find where to start, and |true {north,south,east,west}| to say to |C| where to start (see the corresponding section for more details). Since we often want to specify coordinates here to be precise, you can use |\zxCoordinateSubnode| to place the coordinate at the right place.
+\end{pgfmanualentry}
+
+
+\subsubsection{Method 2: using pic}
+
+We also provide a second approach to create custom nodes (the syntax is actually very close) based on |pic|. This has pro and cons compared to the above approach: it is a bit more complicated and involve more dark magic under the hood, but only creates a single node, provides reusable styles that might be easier to integrate in a tikz picture, and we also provide some automatic way to deal with rotations, scaling etc... Historically, this was created before we realized that cells could contain multiple nodes and that it was possible to use subnodes to anchors, but now that subnodes have been introduced both approaches are relatively close. Nonetheless, all tricks introduced here can be used with the first method, except that anchors should be replaced with subnodes.
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
@@ -3197,7 +3231,7 @@ A & B                                         & C  \\
 \end{ZX}
 \end{codeexample}
 The difference between |\zxSetVariable|, |\zxSetVariableExpandOnce| and |\zxSetVariableExpand| is that they respectively don't expand their input like |\gdef|, expand it once, or expand it completely like |\gxdef|. This can be useful in more complex setups, for instance if you store the style/variable in a macro first using pgfkeys:
-\begin{codeexample}[]
+\begin{codeexample}[width=0pt]
 \NewExpandableDocumentCommand{\MyGateMulti}{O{}mmm}{
   % The path; here is useful to help tikzcd to see that it is a node as it tries to search for path and \pgfkeys does not look like a path
   % If you forget it, you will get something like \node is not defined
