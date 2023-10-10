@@ -28,6 +28,7 @@
 \RequirePackage{xparse} % For NewDocumentComments
 \RequirePackage{bm} % For bold math fonts
 \RequirePackage{xstring} % For \IfInteger
+\RequirePackage{varwidth} % For varwidth
 
 \usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections,fit}
 % Declare layers.
@@ -2150,7 +2151,7 @@
       },
       %% To allow blocks
       block/.style={
-        zx set execute at begin node={\begin{varwidth}{15em}},
+        zx set execute at begin node={\begin{varwidth}{50cm}}, % 50cm is just hardcoded to be long enough so that any content fits inside
         zx set execute at end node={\end{varwidth}},
       },
       %% This allows nodes to specify styles for the arrows that start/end from them.
@@ -3442,7 +3443,9 @@
     rectangle,
     zx filling style,
     zx thickness wires style,
-    %execute at begin node=$, execute at end node=$,
+    % not sure why, but seems to be already in math mode (maybe global options), and writing it twice disturbs the system
+    % execute at begin node=$, execute at end node=$,
+    execute at begin node={\renewcommand{\arraystretch}{1}\setlength\arraycolsep{2pt}},
     minimum width=\zxBoxMinimumWidth,
     minimum height=\zxBoxMinimumHeight,
   },
@@ -3700,6 +3703,17 @@
         rectangle,
         execute at begin node=$,
         execute at end node=$,
+        % alias should be set on the fit node, not here:
+        a/.style={},
+        alias/.style={},
+        % Similarly, measuring nodes should not be done here
+        add label advanced/.style 2 args={},
+        % label already exists
+        add label/.style={},
+        #1,% needed for instance for the block stuff
+        % We disable stuff that should rather be set for the fit node
+        draw=none,
+        fill=none,
         at=(zxMainNode.center),
         alias=zxMainNodeText,
         zx style from variable={style main text node}]{#5};

@@ -30,6 +30,25 @@
 \usepackage{cleveref}
 \usepackage{mathtools}
 \usepackage{listings}
+\usepackage [
+n,
+lambda,
+advantage,
+operators,
+sets,
+adversary,
+landau,
+probability,
+notions,
+logic,
+ff,
+mm,
+primitives,
+events,
+complexity,
+asymptotics,
+keys
+] {cryptocode}
 
 %%%% Bibliography
 % I want to have separate references for appendix and main body
@@ -1200,6 +1219,17 @@ Since 2023-09-17, we provide a number of options to typeset circuits.
   \rar & \zxGate[add label={below:\text{Hadamard}}]{H} \rar & 
 \end{ZX}
 \end{codeexample}
+Note that you can also use matrices inside:
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \rar & \zxGate{
+    \begin{pmatrix}
+      a & b\\
+      c & d
+    \end{pmatrix}
+  } \rar & \zxGate{f} \rar &
+\end{ZX}
+\end{codeexample}
 \end{pgfmanualentry}
 
 \begin{pgfmanualentry}
@@ -1264,7 +1294,6 @@ You can customize the default spacing with |\def\zxDefaultColumnSepCircuit{4mm}|
 \end{codeexample}
 }
 Note that the column will adapt to fit the content if it is too long:
-\message{NNNNNNNNNNNNNNNNNnowwwww!}
 \begin{codeexample}[]
 \begin{ZX}[circuit]
   \rar       & \zxGateMulti{1}{2}{HHHHHHHHHH} & \rar       & \\
@@ -1556,6 +1585,37 @@ We can also disable or set any custom filling using this style:
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
+
+
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  \extractkey/tikz/every node/block\@nil%
+  \makeatother
+This is useful if you wish to typeset a block that must be wrapped inside a minipage-like environment (actually we use varwidth):
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \rar & \zxGate[block]{
+    \procedureblock[linenumbering]{$\indcpa_\enc^\adv(\secpar)$}{
+      b \sample \bin\\
+      (\pk,\sk)\sample \kgen(\secparam)
+    }
+  } \rar & \zxGate{f} \rar &
+\end{ZX}
+\end{codeexample}
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit, zx column sep=6mm]
+  \rar["k"] & \zxGateMulti[block]{2}{3}{
+    \procedureblock[linenumbering]{$\mathsf{Enc}(k,m)$}{
+      \pclinecomment{This is the standard one-time pad:} \\
+      \pcreturn k \oplus m
+    }
+  }         &  & \rar["c"] & \zxGate{\mathcal{A}} \rar["\tilde{m}"] & \\
+  \rar["m"]&&  &      &                 & 
+\end{ZX}
+\end{codeexample}
+\end{pgfmanualentry}
+
 
 \subsection{Wires}
 
