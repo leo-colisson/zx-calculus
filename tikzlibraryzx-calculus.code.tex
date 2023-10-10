@@ -3582,8 +3582,6 @@
     % note that we take as a reference the content of \pgfmatrixcolumnsep which might not be constant: if you change the width of the columns,
     % you are on your own.
     fit content/.code n args={4}{
-      \message{running fit content}%
-      \show\def
       % New version:
       \begin{lrbox}{\zx@tmp@box}%
         \begin{pgfinterruptpicture}%
@@ -3725,130 +3723,6 @@
     #2,
   }
 }
-
-% % TODO: try to clean and write a generic version: https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo
-% \NewExpandableDocumentCommand{\zxGateMulti}{O{}mmm}{
-%   % The coordinate here is useful to help tikzcd to see that it is a node as it tries to search for path
-%   \path;\pgfkeys{
-%     /zx/gateMulti/.cd,
-%     content inner nodes/.store in=\myContent,
-%     content inner nodes={#4},
-%     a/.store in=\zxGateMultiAlias,
-%     a=,
-%     style inner nodes/.store in=\zxGateMultiStyle,
-%     style inner nodes={},
-%     % style for the main style
-%     main/.store in=\zxGateMultiMainStyle,
-%     main={},
-%     main text/.store in=\zxGateMultiMainTextStyle,
-%     main text={},
-%     % Run additional code after the last \node
-%     additional code/.store in=\zxGateMultiAdditionalCode,
-%     additional code=,
-%     % This will compute the size of the content, and adapt the width of the inner nodes
-%     % leaving around a margin specified in the 2 first arguments (row/column), the last argument is the minimum width of the inner nodes
-%     % note that we take as a reference the content of \pgfmatrixcolumnsep which might not be constant: if you change the width of the columns,
-%     % you are on your own.
-%     fit content/.code n args={4}{
-%       % First, we compute the width of the content.
-%       % \newdimen\zx@totalheight% + total height of box + margin
-%       % \newdimen\zx@width% width of box + margin
-%       % we save the content in a box:
-%       % I asked here if there is a better approach:
-%       % https://tex.stackexchange.com/questions/696964/cannot-set-sbox-inside-tikz
-%       %% Old version (dirty)
-%       % \begin{lrbox}{\zx@tmp@box}%
-%       %   \let\selectfont\pgf@selectfontorig\begin{tikzpicture}\zxBox{#4}\end{tikzpicture}%
-%       %   % I don't know why, but adding a second, empty tikzpicture help, otherwise it sets a huge bounding box for the first element.
-%       %   % maybe tikzpicture's variable are not all set locally?
-%       %   \begin{tikzpicture}\end{tikzpicture}%
-%       % \end{lrbox}%
-%       % New version:
-%       \begin{lrbox}{\zx@tmp@box}%
-%         \begin{pgfinterruptpicture}%
-%           \begin{pgfpicture}%
-%             \zxBox{#4}%
-%           \end{pgfpicture}%
-%         \end{pgfinterruptpicture}%
-%       \end{lrbox}%
-%       % % we measure the content of the box (##x appears 2 times since we have left and right margins):
-%       \edef\zx@totalheight{\the\dimexpr\ht\zx@tmp@box + \dp\zx@tmp@box + ##1 + ##1\relax}%
-%       \edef\zx@width{\the\dimexpr\wd\zx@tmp@box + ##2 + ##2\relax}%
-%       \edef\zx@width{\the\dimexpr\wd\zx@tmp@box\relax}%
-%       % \show\zx@totalheight
-%       % \show\zx@width
-%       %% We compute now the width/total height of each node. Basically, we have #3 blocks, and #3-1 column separations, so we want to find x such that:
-%       %% x*#2 + (#2-1)*\pgfmatrixcolumnsep = \zx@width, i.e.
-%       %% x = (\zx@width - (#2-1)*\pgfmatrixcolumnsep)/#2,
-%       \pgfmathsetmacro{\zx@final@width@block}{max(##4,(\zx@width - (#3-1)*\pgfmatrixcolumnsep)/(#3))}%
-%       \pgfmathsetmacro{\zx@final@height@block}{max(##3,(\zx@totalheight - (#2-1)*\pgfmatrixrowsep)/(#2))}%
-%       \pgfkeysalso{%
-%         content inner nodes={},
-%         style inner nodes/.expanded={
-%           inner sep=0pt,
-%           outer sep=0pt,
-%           opacity=0,
-%           minimum width=\zx@final@width@block pt,
-%           minimum height=\zx@final@height@block pt,
-%         },
-%       }%
-%     },
-%     fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth},
-%     /utils/exec={
-%       \ifdefined\zxDisableFitContent\else%
-%         \pgfkeysalso{fit content}%
-%       \fi%
-%     },
-%     safe fit/.style={
-%       style inner nodes={},
-%       content inner nodes={#4},
-%     },
-%     add label advanced/.style 2 args={
-%       main={
-%         label={[align=center,inner sep=1.8pt,zxTinyFont,##1]##2},
-%       },
-%     },
-%     % label already exists
-%     add label/.style={
-%       add label advanced={}{##1},
-%     },
-%     #1,
-%   }%
-%   % Store the content for letter use
-%   \zxSetVariableExpandOnce{content inner nodes}{\myContent}%
-%   \zxSetVariableExpandOnce{style inner nodes}{\zxGateMultiStyle}%
-%   \zxSetVariableExpandOnce{style main node}{\zxGateMultiMainStyle}%
-%   \zxSetVariableExpandOnce{style main text node}{\zxGateMultiMainTextStyle}%
-%   \zxSetVariableExpandOnce{gate multi alias}{\zxGateMultiAlias}%
-%   \zxSetVariableExpandOnce{additional code}{\zxGateMultiAdditionalCode}%
-%   \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
-%     \zxBox[%
-%       draw,
-%       opacity=0,
-%       zx style from variable={style inner nodes},
-%     ]{\zxGetVariable{content inner nodes}}
-%   }%
-%   \zxExecuteAtEndPicture{
-%     % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:
-%     \node[
-%       draw,
-%       zx filling style,
-%       zx thickness wires style,
-%       a=\zxGetVariable{gate multi alias},
-%       inner sep=0pt,
-%       fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
-%       alias=zxMainNode,
-%       /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
-%       /zx/picCustomStyleBoxMainNode,
-%       zx style from variable={style main node}]{};
-%       \node[rectangle, execute at begin node=$, execute at end node=$, at=(zxMainNode.center),alias=zxMainNodeText,zx style from variable={style main text node}]{#4};
-%       % \message{\zxGetVariable{additional code}}
-%       % \expandafter\show\let
-%       \scantokens{%
-%         \zxGetVariable{additional code}%
-%       }%
-%   }
-% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Circuit-related gates
