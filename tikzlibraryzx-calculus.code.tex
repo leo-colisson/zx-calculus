@@ -154,6 +154,8 @@
 % Since these two values are quite close, lets take the maximum (1.83em) to have a square shape
 \def\zxBoxMinimumWidth{1.83em}
 \def\zxBoxMinimumHeight{1.83em}
+\def\zxEltMinimumWidth{1.83em}
+\def\zxEltMinimumHeight{1.83em}
 
 
 % 0.4pt is default in tikz. Also used to ensure it has not been modified document wise by other libraries
@@ -3440,7 +3442,6 @@
     rectangle,
     zx filling style,
     zx thickness wires style,
-    zx main node,
     %execute at begin node=$, execute at end node=$,
     minimum width=\zxBoxMinimumWidth,
     minimum height=\zxBoxMinimumHeight,
@@ -3473,59 +3474,55 @@
     #1%
   ]{#2};%
   % Nicer if you want '> to work  
-  \coordinate(fake center north) at (zxTmp.center);%
-  \coordinate(fake center west) at (zxTmp.center);%
-  \coordinate(fake center east) at (zxTmp.center);%  
-  \coordinate(fake center south) at (zxTmp.center);%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center north};%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center south};%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center east};%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center west};%
 }
-
-% %% A bit a refactoring might be useful to avoid repeating ourself
-% % %% Box, that just draws... a box
-% \zxNewNodeFromPic{Box}[
-%   main/.style={
-%     /zx/picCustomStyleBoxMainNode/.append style={####1},
-%   },
-%   add label advanced/.style 2 args={
-%     main={
-%       label={[inner sep=1.8pt,zxTinyFont,####1]####2},
-%     },
-%   },
-%   block/.style={main={/tikz/block}},
-%   % label already exists
-%   add label/.style={
-%     add label advanced={}{####1},
-%   },
-% ][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-%   \node[draw, inner sep=1.3mm, rectangle, zx filling style, zx thickness wires style, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
-%   minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
-%   /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
-%     /zx/picCustomStyleBoxMainNode,
-%   ]{\tikzpictext};%
-%   \coordinate(fake center north) at (.center);%
-%   \coordinate(fake center west) at (.center);%
-%   \coordinate(fake center east) at (.center);%  
-%   \coordinate(fake center south) at (.center);%
-% }
 
 
 \NewCommandCopy\zxGate\zxBox
 
-% Like box, but don't draw the border. Useful for instance in \zxElt{\ket{\psi}}
-\zxNewNodeFromPic{Elt}[
-  main/.style={
-    /zx/picCustomStyleEltMainNode/.append style={####1},
+\pgfkeys{
+  /zx/every elt/.style={
+    zx main node,
+    minimum width=\zxEltMinimumWidth,
+    minimum height=\zxEltMinimumHeight,
   },
-][zx create anchors={fake center north,fake center south,fake center east,fake center west}]{%
-  \node[inner sep=1.3mm, rectangle, zx main node, execute at begin node=$, execute at end node=$,%alias=hello,
-  minimum width=\zxBoxMinimumWidth, minimum height=\zxBoxMinimumHeight,
-  /zx/picCustomStyleEltMainNode/.append style={}, % Make sure it exists to avoid errors
-    /zx/picCustomStyleEltMainNode,
-  ]{\tikzpictext};%
-  \coordinate(fake center north) at (.north);%
-  \coordinate(fake center west) at (.west);%
-  \coordinate(fake center east) at (.east);%  
-  \coordinate(fake center south) at (.south);%
+  % https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
+  /zx/elts/.code={%
+    \scantokens{%
+      \pgfkeysalso{%
+        /zx/every elt/.append style={#1}%
+      }%
+    }%
+  },
+  /zx/elt load style/.style={
+    add label advanced/.style 2 args={
+      label={[inner sep=1.8pt,zxTinyFont,##1]##2},
+    },
+    add label/.style={
+      add label advanced={}{##1},
+    },
+  },
 }
+
+\NewExpandableDocumentCommand{\zxElt}{O{}m}{
+  \node[%
+    zx main node,
+    zx at origin,
+    alias=zxTmp,
+    /zx/elt load style,
+    /zx/every elt,%
+    #1%
+  ]{#2};%
+  % Nicer if you want '> to work  
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center north};%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center south};%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center east};%
+  \zxCoordinateSubnode[at={(zxTmp.center)}]{fake center west};%
+}
+
 
 % \NewExpandableDocumentCommand{\zxEltMulti}{O{}mmm}{
 %   \zxGateMulti[#1]{#2}{#3}{#4}
@@ -3535,48 +3532,60 @@
 %%% Gate Multi (user part)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% TODO: maybe try to clean: https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo
-\NewExpandableDocumentCommand{\zxGateMulti}{O{}mmm}{
-  % The coordinate here is useful to help tikzcd to see that it is a node as it tries to search for path
-  \path;\pgfkeys{
-    /zx/gateMulti/.cd,
+\NewExpandableDocumentCommand{\zxGenericMulti}{m}{%
+  \path;%
+  \pgfkeys{%
+    /zx/generic multi/.cd,%
+    %%% Some default styles
+    /tikz/cleanup style for measure node/.style={
+      a/.style={},%
+    },
+    cleanup style for fit node/.store in=\zx@cleanupStyleFitNode,
+    cleanup style for fit node={},
+    %%% this part is mostly used by the wrapping macro (e.g. to create \zxGateMulti)
+    command to run to measure node/.store in=\zx@commandToRunToMeasureNode,
+    command to run to create inner nodes/.store in=\zx@commandToRunToCreateInnerNodes,
+    command to run to create the fit node/.store in=\zx@commandToCreateTheFitNode,
+    command to run to create the main label/.store in=\zx@commandToCreateTheMainLabel,%
+    minimum height inner nodes/.store in=\zx@minimumHeightInnerNodes,
+    minimum width inner nodes/.store in=\zx@minimumWidthInnerNodes,
+    number rows/.store in=\zx@nbRows,
+    number columns/.store in=\zx@nbColumns,%
+    %%% this part can be used by the end user, and may be used inside the above commands
+    %%% Note that the wrapping macro should also initialize these values that might be changed by the user
+    %%% It might seem like this part is redundant, but not really, as this part can be changed by the user
+    %%% and is more fine grained that the above commands
     content inner nodes/.store in=\myContent,
-    content inner nodes={#4},
-    a/.store in=\zxGateMultiAlias,
-    a=,
-    style inner nodes/.store in=\zxGateMultiStyle,
+    %%% TODO: in the function: content inner nodes={#4},
+    style inner nodes/.store in=\zx@genericMultiStyle,
     style inner nodes={},
+    % this will be set by fit content not to override the user value
+    before style inner nodes/.store in=\zx@genericBeforeStyleInnerNodes,
+    before style inner nodes={},
     % style for the main style
-    main/.store in=\zxGateMultiMainStyle,
+    main/.store in=\zx@genericMultiMainStyle,
     main={},
-    main text/.store in=\zxGateMultiMainTextStyle,
+    main text/.store in=\zx@genericMultiMainTextStyle,
     main text={},
+    original content/.store in=\zx@GenericMultiOriginalContent,
     % Run additional code after the last \node
-    additional code/.store in=\zxGateMultiAdditionalCode,
-    additional code=,   
+    additional code/.store in=\zx@genericMultiAdditionalCode,
+    additional code=,
+    do not run fit content/.code={\def\zx@donotrunfitcontent{}},
+    run fit content/.code={\let\zx@donotrunfitcontent\undefined},
+    run fit content,
     % This will compute the size of the content, and adapt the width of the inner nodes
     % leaving around a margin specified in the 2 first arguments (row/column), the last argument is the minimum width of the inner nodes
     % note that we take as a reference the content of \pgfmatrixcolumnsep which might not be constant: if you change the width of the columns,
     % you are on your own.
     fit content/.code n args={4}{
-      % First, we compute the width of the content.
-      % \newdimen\zx@totalheight% + total height of box + margin
-      % \newdimen\zx@width% width of box + margin
-      % we save the content in a box:
-      % I asked here if there is a better approach:
-      % https://tex.stackexchange.com/questions/696964/cannot-set-sbox-inside-tikz
-      %% Old version (dirty)
-      % \begin{lrbox}{\zx@tmp@box}%
-      %   \let\selectfont\pgf@selectfontorig\begin{tikzpicture}\zxBox{#4}\end{tikzpicture}%
-      %   % I don't know why, but adding a second, empty tikzpicture help, otherwise it sets a huge bounding box for the first element.
-      %   % maybe tikzpicture's variable are not all set locally?
-      %   \begin{tikzpicture}\end{tikzpicture}%
-      % \end{lrbox}%
+      \message{running fit content}%
+      \show\def
       % New version:
       \begin{lrbox}{\zx@tmp@box}%
         \begin{pgfinterruptpicture}%
           \begin{pgfpicture}%
-            \zxBox{#4}%
+            \zx@commandToRunToMeasureNode%
           \end{pgfpicture}%
         \end{pgfinterruptpicture}%
       \end{lrbox}%
@@ -3589,76 +3598,243 @@
       %% We compute now the width/total height of each node. Basically, we have #3 blocks, and #3-1 column separations, so we want to find x such that:
       %% x*#2 + (#2-1)*\pgfmatrixcolumnsep = \zx@width, i.e.
       %% x = (\zx@width - (#2-1)*\pgfmatrixcolumnsep)/#2,
-      \pgfmathsetmacro{\zx@final@width@block}{max(##4,(\zx@width - (#3-1)*\pgfmatrixcolumnsep)/(#3))}%
-      \pgfmathsetmacro{\zx@final@height@block}{max(##3,(\zx@totalheight - (#2-1)*\pgfmatrixrowsep)/(#2))}%
+      \pgfmathsetmacro{\zx@final@width@block}{max(##4,(\zx@width - (\zx@nbColumns-1)*\pgfmatrixcolumnsep)/(\zx@nbColumns))}%
+      \pgfmathsetmacro{\zx@final@height@block}{max(##3,(\zx@totalheight - (\zx@nbRows-1)*\pgfmatrixrowsep)/(\zx@nbRows))}%
       \pgfkeysalso{%
         content inner nodes={},
-        style inner nodes/.expanded={
+        before style inner nodes/.expanded={
           inner sep=0pt,
           outer sep=0pt,
-          opacity=0,
-          % fill=red,
+          % opacity=0,
           minimum width=\zx@final@width@block pt,
           minimum height=\zx@final@height@block pt,
         },
+        % we disable it not to run it more than once in case the user decided to run it
+        do not run fit content,
       }%
     },
-    fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth},
+    fit content/.default={0mm}{0mm}{\zx@minimumHeightInnerNodes}{\zx@minimumWidthInnerNodes},
+    safe fit/.style={
+      before style inner nodes={},
+      content inner nodes/.expand once={\zx@GenericMultiOriginalContent},
+      do not run fit content,
+    },
+    #1,
     /utils/exec={
-      \ifdefined\zxDisableFitContent\else%
+      \ifdefined\zx@donotrunfitcontent\else%
         \pgfkeysalso{fit content}%
       \fi%
     },
-    safe fit/.style={
-      style inner nodes={},
-      content inner nodes={#4},
-    },
-    add label advanced/.style 2 args={
-      main={
-        label={[align=center,inner sep=1.8pt,zxTinyFont,##1]##2},
-      },
-    },
-    % label already exists
-    add label/.style={
-      add label advanced={}{##1},
-    },
-    #1,
   }%
   % Store the content for letter use
   \zxSetVariableExpandOnce{content inner nodes}{\myContent}%
-  \zxSetVariableExpandOnce{style inner nodes}{\zxGateMultiStyle}%
-  \zxSetVariableExpandOnce{style main node}{\zxGateMultiMainStyle}%
-  \zxSetVariableExpandOnce{style main text node}{\zxGateMultiMainTextStyle}%
-  \zxSetVariableExpandOnce{gate multi alias}{\zxGateMultiAlias}%
-  \zxSetVariableExpandOnce{additional code}{\zxGateMultiAdditionalCode}%
-  \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
-    \zxBox[%
-      draw,
-      opacity=0,
-      zx style from variable={style inner nodes},
-    ]{\zxGetVariable{content inner nodes}}
+  \zxSetVariableExpandOnce{style inner nodes}{\zx@genericMultiStyle}%
+  \zxSetVariableExpandOnce{before style inner nodes}{\zx@genericBeforeStyleInnerNodes}%
+  \zxSetVariableExpandOnce{style main node}{\zx@genericMultiMainStyle}%
+  \zxSetVariableExpandOnce{style main text node}{\zx@genericMultiMainTextStyle}%
+  \zxSetVariableExpandOnce{additional code}{\zx@genericMultiAdditionalCode}%
+  \zxSetVariableExpandOnce{command to run to create inner nodes}{\zx@commandToRunToCreateInnerNodes}%
+  \zxSetVariableExpandOnce{command to run to create the fit node}{\zx@commandToCreateTheFitNode}%
+  \zxSetVariableExpandOnce{command to run to create the main label}{\zx@commandToCreateTheMainLabel}%
+  \zxSetVariableExpandOnce{cleanup style for fit node}{\zx@cleanupStyleFitNode}%
+  \zxExecuteAtRegionRelativeAndOrigin{\zx@nbRows}{\zx@nbColumns}{%
+    \zxGetVariable{command to run to create inner nodes}%
   }%
-  \zxExecuteAtEndPicture{
+  \zxExecuteAtEndPicture{%
     % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:
-    \node[
-      draw,
-      zx filling style,
-      zx thickness wires style,
-      a=\zxGetVariable{gate multi alias},
-      inner sep=0pt,
-      fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
-      alias=zxMainNode,
-      /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
-      /zx/picCustomStyleBoxMainNode,
-      zx style from variable={style main node}]{};
-      \node[rectangle, execute at begin node=$, execute at end node=$, at=(zxMainNode.center),alias=zxMainNodeText,zx style from variable={style main text node}]{#4};
-      % \message{\zxGetVariable{additional code}}
-      % \expandafter\show\let
-      \scantokens{%
-        \zxGetVariable{additional code}%
-      }%
+    \scantokens{%
+      \zxGetVariable{command to run to create the fit node}%
+      \zxGetVariable{command to run to create the main label}%
+      \zxGetVariable{additional code}%
+    }%
   }
 }
+
+% the first style is kind of the style that is applied by default to the elements when
+% it makes sense, but for most precise stuff use the second argument that can individually address other
+% elements
+\NewExpandableDocumentCommand{\zxGateMulti}{O{}O{}mmm}{%
+  \zxGenericMulti{
+    command to run to measure node={%
+      \zxBox[%
+        % we disable a here since we do not want to use alias when measuring the node
+        cleanup style for measure node,
+        % Similarly, measuring nodes should not be done here
+        add label advanced/.style 2 args={},
+        % label already exists
+        add label/.style={},
+        #1%
+      ]{#5}%
+    },
+    original content={#5},
+    command to run to create inner nodes={
+      \zxBox[%
+        opacity=0,
+        zx style from variable={before style inner nodes},
+        zx style from variable={style inner nodes},
+      ]{\zxGetVariable{content inner nodes}}
+    },
+    command to run to create the fit node={%
+      \node[
+        /zx/box load style,
+        /zx/every box,%
+        zx style from variable={cleanup style for fit node},
+        add label advanced/.style 2 args={
+          label={[align=center,inner sep=1.8pt,zxTinyFont,####1]####2},
+        },
+        % label already exists
+        add label/.style={
+          add label advanced={}{####1},
+        },
+        #1,% this can set the alias for instance
+        inner sep=0pt,
+        minimum width=0pt,
+        minimum height=0pt,
+        alias=zxMainNode,%needed to place the main label
+        fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#3-1\relax}{\the\numexpr#4-1\relax}),
+        zx style from variable={style main node},
+      ]{};%
+    },
+    command to run to create the main label={
+      \node[
+        rectangle,
+        execute at begin node=$,
+        execute at end node=$,
+        at=(zxMainNode.center),
+        alias=zxMainNodeText,
+        zx style from variable={style main text node}]{#5};
+    },%    
+    minimum height inner nodes={\zxBoxMinimumHeight},
+    minimum width inner nodes={\zxBoxMinimumWidth},
+    number rows={#3},
+    number columns={#4},
+    #2,
+  }
+}
+
+% % TODO: try to clean and write a generic version: https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo
+% \NewExpandableDocumentCommand{\zxGateMulti}{O{}mmm}{
+%   % The coordinate here is useful to help tikzcd to see that it is a node as it tries to search for path
+%   \path;\pgfkeys{
+%     /zx/gateMulti/.cd,
+%     content inner nodes/.store in=\myContent,
+%     content inner nodes={#4},
+%     a/.store in=\zxGateMultiAlias,
+%     a=,
+%     style inner nodes/.store in=\zxGateMultiStyle,
+%     style inner nodes={},
+%     % style for the main style
+%     main/.store in=\zxGateMultiMainStyle,
+%     main={},
+%     main text/.store in=\zxGateMultiMainTextStyle,
+%     main text={},
+%     % Run additional code after the last \node
+%     additional code/.store in=\zxGateMultiAdditionalCode,
+%     additional code=,
+%     % This will compute the size of the content, and adapt the width of the inner nodes
+%     % leaving around a margin specified in the 2 first arguments (row/column), the last argument is the minimum width of the inner nodes
+%     % note that we take as a reference the content of \pgfmatrixcolumnsep which might not be constant: if you change the width of the columns,
+%     % you are on your own.
+%     fit content/.code n args={4}{
+%       % First, we compute the width of the content.
+%       % \newdimen\zx@totalheight% + total height of box + margin
+%       % \newdimen\zx@width% width of box + margin
+%       % we save the content in a box:
+%       % I asked here if there is a better approach:
+%       % https://tex.stackexchange.com/questions/696964/cannot-set-sbox-inside-tikz
+%       %% Old version (dirty)
+%       % \begin{lrbox}{\zx@tmp@box}%
+%       %   \let\selectfont\pgf@selectfontorig\begin{tikzpicture}\zxBox{#4}\end{tikzpicture}%
+%       %   % I don't know why, but adding a second, empty tikzpicture help, otherwise it sets a huge bounding box for the first element.
+%       %   % maybe tikzpicture's variable are not all set locally?
+%       %   \begin{tikzpicture}\end{tikzpicture}%
+%       % \end{lrbox}%
+%       % New version:
+%       \begin{lrbox}{\zx@tmp@box}%
+%         \begin{pgfinterruptpicture}%
+%           \begin{pgfpicture}%
+%             \zxBox{#4}%
+%           \end{pgfpicture}%
+%         \end{pgfinterruptpicture}%
+%       \end{lrbox}%
+%       % % we measure the content of the box (##x appears 2 times since we have left and right margins):
+%       \edef\zx@totalheight{\the\dimexpr\ht\zx@tmp@box + \dp\zx@tmp@box + ##1 + ##1\relax}%
+%       \edef\zx@width{\the\dimexpr\wd\zx@tmp@box + ##2 + ##2\relax}%
+%       \edef\zx@width{\the\dimexpr\wd\zx@tmp@box\relax}%
+%       % \show\zx@totalheight
+%       % \show\zx@width
+%       %% We compute now the width/total height of each node. Basically, we have #3 blocks, and #3-1 column separations, so we want to find x such that:
+%       %% x*#2 + (#2-1)*\pgfmatrixcolumnsep = \zx@width, i.e.
+%       %% x = (\zx@width - (#2-1)*\pgfmatrixcolumnsep)/#2,
+%       \pgfmathsetmacro{\zx@final@width@block}{max(##4,(\zx@width - (#3-1)*\pgfmatrixcolumnsep)/(#3))}%
+%       \pgfmathsetmacro{\zx@final@height@block}{max(##3,(\zx@totalheight - (#2-1)*\pgfmatrixrowsep)/(#2))}%
+%       \pgfkeysalso{%
+%         content inner nodes={},
+%         style inner nodes/.expanded={
+%           inner sep=0pt,
+%           outer sep=0pt,
+%           opacity=0,
+%           minimum width=\zx@final@width@block pt,
+%           minimum height=\zx@final@height@block pt,
+%         },
+%       }%
+%     },
+%     fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth},
+%     /utils/exec={
+%       \ifdefined\zxDisableFitContent\else%
+%         \pgfkeysalso{fit content}%
+%       \fi%
+%     },
+%     safe fit/.style={
+%       style inner nodes={},
+%       content inner nodes={#4},
+%     },
+%     add label advanced/.style 2 args={
+%       main={
+%         label={[align=center,inner sep=1.8pt,zxTinyFont,##1]##2},
+%       },
+%     },
+%     % label already exists
+%     add label/.style={
+%       add label advanced={}{##1},
+%     },
+%     #1,
+%   }%
+%   % Store the content for letter use
+%   \zxSetVariableExpandOnce{content inner nodes}{\myContent}%
+%   \zxSetVariableExpandOnce{style inner nodes}{\zxGateMultiStyle}%
+%   \zxSetVariableExpandOnce{style main node}{\zxGateMultiMainStyle}%
+%   \zxSetVariableExpandOnce{style main text node}{\zxGateMultiMainTextStyle}%
+%   \zxSetVariableExpandOnce{gate multi alias}{\zxGateMultiAlias}%
+%   \zxSetVariableExpandOnce{additional code}{\zxGateMultiAdditionalCode}%
+%   \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
+%     \zxBox[%
+%       draw,
+%       opacity=0,
+%       zx style from variable={style inner nodes},
+%     ]{\zxGetVariable{content inner nodes}}
+%   }%
+%   \zxExecuteAtEndPicture{
+%     % We cannot use fit directly as it misplace the text. According to the doc, we should place the text using another intermediate node:
+%     \node[
+%       draw,
+%       zx filling style,
+%       zx thickness wires style,
+%       a=\zxGetVariable{gate multi alias},
+%       inner sep=0pt,
+%       fit=(\zxGetNameRelativeNode{0}{0})(\zxGetNameRelativeNode{\the\numexpr#2-1\relax}{\the\numexpr#3-1\relax}),
+%       alias=zxMainNode,
+%       /zx/picCustomStyleBoxMainNode/.append style={}, % Make sure it exists to avoid errors
+%       /zx/picCustomStyleBoxMainNode,
+%       zx style from variable={style main node}]{};
+%       \node[rectangle, execute at begin node=$, execute at end node=$, at=(zxMainNode.center),alias=zxMainNodeText,zx style from variable={style main text node}]{#4};
+%       % \message{\zxGetVariable{additional code}}
+%       % \expandafter\show\let
+%       \scantokens{%
+%         \zxGetVariable{additional code}%
+%       }%
+%   }
+% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Circuit-related gates

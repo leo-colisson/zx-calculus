@@ -1233,18 +1233,17 @@ You can customize the default spacing with |\def\zxDefaultColumnSepCircuit{4mm}|
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxGateMulti\opt{\oarg{style}}\marg{number rows}\marg{number columns}\marg{box text}\@@
+  \extractcommand\zxGateMulti\opt{\oarg{style fit node}}\opt{\oarg{advanced styling}}\marg{number rows}\marg{number columns}\marg{box text}\@@
   \makeatletter
   \def\extrakeytext{style, }
-  \extractkey/zx/gateMulti/a=\marg{alias main node}\@nil%
-  \extractkey/zx/gateMulti/add label=\marg{label}\@nil%
-  \extractkey/zx/gateMulti/add label advanced=\marg{style}\marg{label}\@nil%
-  \extractkey/zx/gateMulti/content inner nodes=\marg{content inner nodes}\@nil%
-  \extractkey/zx/gateMulti/main=\marg{style}\@nil%
-  \extractkey/zx/gateMulti/main text=\marg{style}\@nil%
-  \extractkey/zx/gateMulti/additional code=\marg{code to add new nodes}\@nil%
-  \extractkey/zx/gateMulti/fit content=\opt{\marg{additional row margin}\marg{additional column margin}\marg{minimum height inner nodes}\marg{minimum width inner nodes}}\@nil%
-  \extractkey/zx/gateMulti/safe fit\@nil%
+  \extractkey/zx/generic multi/add label=\marg{label}\@nil%
+  \extractkey/zx/generic multi/add label advanced=\marg{style}\marg{label}\@nil%
+  \extractkey/zx/generic multi/content inner nodes=\marg{content inner nodes}\@nil%
+  \extractkey/zx/generic multi/main=\marg{style}\@nil%
+  \extractkey/zx/generic multi/main text=\marg{style}\@nil%
+  \extractkey/zx/generic multi/additional code=\marg{code to add new nodes}\@nil%
+  \extractkey/zx/generic multi/fit content=\opt{\marg{additional row margin}\marg{additional column margin}\marg{minimum height inner nodes}\marg{minimum width inner nodes}}\@nil%
+  \extractkey/zx/generic multi/safe fit\@nil%
   \makeatother
   \pgfmanualbody
   Create a multi-line/row gate:
@@ -1265,26 +1264,37 @@ You can customize the default spacing with |\def\zxDefaultColumnSepCircuit{4mm}|
 \end{codeexample}
 }
 Note that the column will adapt to fit the content if it is too long:
+\message{NNNNNNNNNNNNNNNNNnowwwww!}
 \begin{codeexample}[]
 \begin{ZX}[circuit]
   \rar       & \zxGateMulti{1}{2}{HHHHHHHHHH} & \rar       & \\
   \zxGate{H} & \zxGate{H}                     & \zxGate{H} & \zxGate{H} & 
 \end{ZX}
 \end{codeexample}
-You can also customize its behavior in a number of ways using the above listed styles. |a| will just give the main node an alias, which can be used to refer to that node later using |to=nameAlias|, |main| and |main text| allows you to change the style of the main node and the main text:
+You can also customize the style of a gate in a simple way using the first argument (the style will only be applied to the fitting box and to the box when computing its dimensions, but not to the content itself that is added in a separate node, see below for more fine-tuned configuration):
 \begin{codeexample}[]
 \begin{ZX}[circuit]
 A                                 & B                                    & C & D    & E              &  & \\
 \zxBox{H} \rar                    & \zxGateMulti[a=secondGate]{2}{3}{H}  &   & \rar & \zxBox{X}      &  & \\
 \zxBox{H} \rar                    &                                      &   &      & \zxBox{X} \lar &  & \\
 \zxBox{H} \rar \ar[dr,bend right] & \zxBox{H} \rar[to=secondGate]        &   &      &                &  & \\
-                                  & \zxGateMulti[main={fill=orange!50!white}, main text={red}]{1}{2}{H} & & 
+                                  & \zxGateMulti[,fill=orange!50!white]{1}{2}{H} & & 
+\end{ZX}
+\end{codeexample}
+You can also customize its behavior more precisely using the second optional argument using the above listed styles. |main| and |main text| allows you to change the style of the main node and the main text:
+\begin{codeexample}[]
+\begin{ZX}[circuit]
+A                                 & B                                    & C & D    & E              &  & \\
+\zxBox{H} \rar                    & \zxGateMulti[a=secondGate]{2}{3}{H}  &   & \rar & \zxBox{X}      &  & \\
+\zxBox{H} \rar                    &                                      &   &      & \zxBox{X} \lar &  & \\
+\zxBox{H} \rar \ar[dr,bend right] & \zxBox{H} \rar[to=secondGate]        &   &      &                &  & \\
+                                  & \zxGateMulti[][main={fill=orange!50!white}, main text={red}]{1}{2}{H} & & 
 \end{ZX}
 \end{codeexample}
 while |additional code| allows you to write arbitrary code after the creation of the main node (|zxMainNode| and |zxMainNodeText| are the alias of the main node and text node):
 \begin{codeexample}[]
 \begin{ZX}[circuit]
-  \zxBox{H} \rar       & \zxGateMulti[
+  \zxBox{H} \rar       & \zxGateMulti[][
     main={fill=orange!50!white},
     main text={red},
     additional code={
@@ -1301,6 +1311,7 @@ while |additional code| allows you to write arbitrary code after the creation of
     \zxBox[a=lastH]{H} &                                              
 \end{ZX}
 \end{codeexample}
+
 The |add label| and |add label advanced| allows you to add labels:
 \begin{codeexample}[width=0pt]
 \begin{ZX}[circuit]
@@ -1308,17 +1319,24 @@ The |add label| and |add label advanced| allows you to add labels:
   \rar & \rar[cl]                                                                       & 
 \end{ZX}
 \end{codeexample}
-Internally, in order to place the matrix, we place a number of inner nodes in the region of the matrix. You can customize them using |content inner nodes| and |style inner nodes|. This can be practical if you want to force the node to take less space for instance:
+Internally, in order to place the matrix, we place a number of inner nodes in the region of the matrix. You can customize them using |content inner nodes| and |style inner nodes|. This can be practical if you want to force the node to take less space for instance (but the content might go outside of the node):
 \begin{codeexample}[width=0pt]
   \begin{ZX}[circuit]
     &  &                       &  &  &  &  & \\
-    & \zxGate{H} \rar & \zxGateMulti[content inner nodes={}, style inner nodes={red,
-      minimum width=2pt, minimum height=2pt,
-      test/.style={fill=#1,opacity=.3}, test=red}]{2}{3}{HHHH} &  &  &  &  & \\
+    & \zxGate{H} \rar & \zxGateMulti[][
+      content inner nodes={},
+      main={opacity=.5},
+      style inner nodes={
+        red,
+        minimum width=2pt,
+        minimum height=2pt,
+        test/.style={fill=#1,opacity=.7}, test=red
+      }]{2}{3}{HHHH} &  &  &  &  & \\
     &  &                       &  &  &  &  & 
   \end{ZX}
 \end{codeexample}
-By default, we run |fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth}| which works by evaluating the width of the content, and by automatically setting the size of the inner nodes so that the content fits nicely at the end (it takes the default column sep of the matrix, so it will not see custom adjustment of the column size with |&[1cm]|), with a minimum size. You can also call instead |safe fit| that will just set all inner nodes to be equal to the size of the content (which might not be optimal in term of space). While it works well with nodes of small size, it gives weird results on large nodes:
+
+By default, we run |fit content/.default={0mm}{0mm}{\zxBoxMinimumHeight}{\zxBoxMinimumWidth}| which works by evaluating the width of the content, and by automatically setting the size of the inner nodes so that the content fits nicely at the end (it takes the default column sep of the matrix, so it will not see custom adjustment of the column size with |&[1cm]|), with a minimum size. You can also call instead |safe fit| in the second argument, that will just set all inner nodes to be equal to the size of the content (which might not be optimal in term of space). While it is faster and works well with nodes of small size, it gives weird results on large nodes:
 Compare
 \begin{codeexample}[width=0pt]
 \begin{ZX}[circuit]
@@ -1333,13 +1351,13 @@ with
 \begin{codeexample}[width=0pt]
 \begin{ZX}[circuit]
   & A              & B                                        & C         & D         & E         &  & \\
-  & \zxBox{H} \rar & \zxGateMulti[safe fit]{1}{3}{HHHH} &           & \rar      & \zxBox{H} &  & \\
+  & \zxBox{H} \rar & \zxGateMulti[][safe fit]{1}{3}{HHHH} &           & \rar      & \zxBox{H} &  & \\
   &                & \zxBox{H}                                & \zxBox{H} & \zxBox{H} &           &  & \\
   &                &                                          &           &           &           &  & \\
   &                &                                          &           &           &           &  & \\
 \end{ZX}
 \end{codeexample}
-Note that even if you enable |safe fit|, we first run |fit content| even before reading the user input, but you can disable it for efficiency reasons by setting |\def\zxDisableFitContent{}| before |\zxGateMulti| (|fit content| is significantly slower due to internal computations, but if time is an issue for you see our section on externalization \cref{sec:externalization}).
+Note that if time is an issue for you, see the section on externalization \cref{sec:externalization}.
 \end{pgfmanualentry}
 
 %{\catcode`\|=12 % Ensures | is not anymore \verb|...|
@@ -3207,7 +3225,7 @@ You can also do it for a whole region of size $n \times m$ using |\zxExecuteAtRe
   \NewExpandableDocumentCommand{\mySimpleMultigate}{mmmm}{
     \zxBox{#1}
     \zxExecuteAtCellRelative{1}{-1}{\node[zx main node, #2]{\text{I am relative}};}
-    \zxExecuteAtCellRelative{0}{1}{\zxBox[main={zx main node}]{\text{I am also relative}}}
+    \zxExecuteAtCellRelative{0}{1}{\zxBox[zx main node]{\text{I am also relative}}}
     \zxExecuteAtCellAbsolute{2}{4}{\node[zx main node, #4]{\text{I am absolute}};}
   }
   \begin{ZX}
@@ -3249,12 +3267,12 @@ The difference between |\zxSetVariable|, |\zxSetVariableExpandOnce| and |\zxSetV
   \zxSetVariableExpandOnce{content inner nodes}{\myContent}
   \zxSetVariableExpandOnce{style inner nodes}{\zxGateMultiStyle}
   \zxExecuteAtRegionRelativeAndOrigin{#2}{#3}{%
-  \zxBox[main={zx main node,
+  \zxBox[zx main node,
     % a if origin=\zxGateMultiAlias,
     draw,
     zx style from variable={style inner nodes},
     %/zx/gateMulti/style inner nodes aux
-  }]{\zxGetVariable{content inner nodes}};
+  ]{\zxGetVariable{content inner nodes}};
   }%
 }
 
