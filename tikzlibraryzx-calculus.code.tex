@@ -230,6 +230,10 @@
   zx set execute at end node/.code={%
     \def\tikz@atend@node{#1}%
   },
+  zx reset execute node/.style={
+    zx set execute at begin node={},
+    zx set execute at end node={},
+  },
 }
 
 
@@ -675,6 +679,10 @@
     BnArgs/.default={n}{},
     Bn-Args/.style 2 args={bold, "|" {rotate=-65,anchor=center,##2}, "##1" {right,xshift=2pt,##2}},
     Bn-Args/.default={n}{},
+    type'/.style={Bn'={##1}, non bold},
+    type./.style={Bn.={##1}, non bold},
+    type/.style={Bn={##1}, non bold},
+    type-/.style={Bn-={##1}, non bold},
     % boldnPos/.style={bold, "/" {anchor=center}, "##1" {yshift=3pt}},
     % boldnPos/.default={n}{pos=50},
     % boldn.Pos/.style={bold, "/" {anchor=center}, "##1" {below,yshift=-3pt}},
@@ -3446,6 +3454,7 @@
     % not sure why, but seems to be already in math mode (maybe global options), and writing it twice disturbs the system
     % execute at begin node=$, execute at end node=$,
     execute at begin node={\renewcommand{\arraystretch}{1}\setlength\arraycolsep{2pt}},
+    zxNormalFont,
     minimum width=\zxBoxMinimumWidth,
     minimum height=\zxBoxMinimumHeight,
   },
@@ -3699,6 +3708,7 @@
     command to run to create the main label={
       \node[
         rectangle,
+        zxNormalFont,
         execute at begin node=$,
         execute at end node=$,
         % alias should be set on the fit node, not here:
