@@ -1145,6 +1145,26 @@
       to path={(\tikztostart) |- (\tikztotarget) \tikztonodes}
     },
     |--/.style={connect |-},
+    horizontal |--/.style={
+      on layer={edgelayer},
+      to path={(\tikztostart |- \tikztotarget) -- (\tikztotarget) \tikztonodes}
+    },
+    horizontal --|/.style={
+      on layer={edgelayer},
+      to path={(\tikztostart) -- (\tikztostart -| \tikztotarget) \tikztonodes}
+    },
+    vertical |--/.style={
+      on layer={edgelayer},
+      to path={(\tikztostart) -- (\tikztostart |- \tikztotarget) \tikztonodes}
+    },
+    vertical --|/.style={
+      on layer={edgelayer},
+      to path={(\tikztostart -| \tikztotarget) -- (\tikztotarget) \tikztonodes}
+    },
+    h|--/.style={horizontal |--},
+    h--|/.style={horizontal --|},
+    v|--/.style={vertical |--},
+    v--|/.style={vertical --|},
     % fake a wire being above by putting white stuff around
     3d above/.style={
       draw=white,
@@ -4328,10 +4348,20 @@
     /tikz/.cd,
     inner xsep=\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
     inner ysep=\pgfkeysvalueof{/tikz/afit/top}+\pgfkeysvalueof{/tikz/afit/bottom},
-    xshift=-\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
-    yshift=-\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top}
+    %/utils/exec={\message{Last xishft is \pgfkeysvalueof{/tikz/afit/last xshift} and \pgfkeysvalueof{/tikz/afit/last yshift}}},
+    xshift/.evaluated=-\pgfkeysvalueof{/tikz/afit/last xshift}
+    -\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
+    yshift/.evaluated=-\pgfkeysvalueof{/tikz/afit/last yshift}
+    -\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top},
+    /tikz/afit/last xshift/.evaluated=-\pgfkeysvalueof{/tikz/afit/left}+\pgfkeysvalueof{/tikz/afit/right},
+    /tikz/afit/last yshift/.evaluated=-\pgfkeysvalueof{/tikz/afit/bottom}+\pgfkeysvalueof{/tikz/afit/top},
   },
   afit/.cd,
+  % used to save the last xshift done by fit margins, so that applying it twice does not shift twice
+  % since xshift=2cm,xshift=2cm is like xshift=4cm
+  last xshift/.initial=0pt,
+  last yshift/.initial=0pt,
+  % actual values
   left/.initial=1pt,
   right/.initial=1pt,
   bottom/.initial=1pt,
@@ -4364,7 +4394,9 @@
 
 % Cont is for container, equivalent of zxNamedBox but inside the matrix directly
 \NewExpandableDocumentCommand{\zxGroupGates}{O{}mmO{}O{}m}{%
-  \zxCont[fill=none,rounded corners=0pt,solid,opacity=1,zx thickness wires style,draw=black,rectangle,fit margins={all=.5mm},#1]{#2}{#3}[#4][#5]{#6}
+  \zxCont[fill=none,rounded corners=0pt,solid,opacity=1,zx thickness wires style,draw=black,rectangle,
+  fit margins={all=.5mm},
+  #1]{#2}{#3}[#4][#5]{#6}
 }
 
 % Cont is for container, equivalent of zxNamedBox but inside the matrix directly

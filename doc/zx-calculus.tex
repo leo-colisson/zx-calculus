@@ -1419,7 +1419,6 @@ Note that if time is an issue for you, see the section on externalization \cref{
 }
 \end{pgfmanualentry}
 
-
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
   \extractcommand\zxInput\opt{\oarg{style}}\marg{text}\@@
@@ -1790,6 +1789,85 @@ Compare \begin{ZX}[circuit, thick lines]
 We give now a list of wire styles provided in this library (|/zx/wires definition/| is an automatically loaded style). We recommend using them instead of manual styling to ensure they are the same document-wise, but they can of course be customized to your need. Note that the name of the styles are supposed (ahah, I do my best with what ASCII provides) to graphically represent the action of the style, and some characters are added to precise the shape: typically |'| means top, |.| bottom, |X-| is right to X (or should arrive with angle 0), |-X| is left to X (or should leave with angle zero). These shapes are usually designed to work when the starting node is left most (or above of both nodes have the same column). But they may work both way for some of them.
 
 Note that the first version of that library (which appeared one week before this new version\dots{} hopefully backward compatibility won't be too much of a problem) was using |in=| and |out=| to create these styles. However, it turns out to be not very reliable since the shape of the wire was changing (sometimes importantly) depending on the position of the nodes. This new version should be more reliable, but the older styles are still available by using |IO, nameOfWirestyle| (read more in \cref{subsub:IOwires}).
+
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }
+  % not sure how to do it in a cleaner way without manually defining everything
+  \pgfmanualentryheadline{{\ttfamily\declare{/zx/wires definition/|--}}\hfill(style, no default)}%
+  \pgfmanualpdflabel[\catcode`\|=12 ]{|--}{}
+  % the space after \textt is important or we get two different sections
+  % the 2 is just a random char since | does not work (the syntax is "stuff to group@actual text to print" as
+  % I understand)
+  \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!2--@\texttt {\protect\pgfmanualbar--}}
+  \pgfmanualentryheadline{{\ttfamily\declare{/zx/wires definition/--|}}\hfill(style, no default)}%
+  \pgfmanualpdflabel[\catcode`\|=12 ]{--|}{}
+  % the space after \textt is important or we get two different sections
+  % the 2 is just a random char since | does not work (the syntax is "stuff to group@actual text to print" as
+  % I understand)
+  \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!--2@\texttt {--\protect\pgfmanualbar}}
+  \makeatother
+  \pgfmanualbody
+  This gives a wire bent with a 90 degrees angle (respectively starting horizontally then vertically, or first vertically then horizontally).
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}[circuit]
+  \zxElt{\ket{\psi}} \rar & \zxBox{H} \rar         & \zxCtrl{} \dar \rar & \zxCross{} \dar \rar
+  & \zxBox[add label={Measure}]{\zxMeter{}} \ar[dr,classical,--|] \\
+  \ar[r]                  & \zxOCtrl{} \rar \ar[u] & \zxNot{} \rar       & \zxCross{} \ar[rr]
+  &  & \zxBox{H} \rar & 
+\end{ZX}    
+\end{codeexample}
+}
+\end{pgfmanualentry}
+}
+
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+  % I can't find a cleaner solution than manually calling pdflabel, pgfmanualentryheadline etc due to the |
+  % character
+\begin{pgfmanualentry}
+  \makeatletter
+  \def\extrakeytext{style, }\catcode`\|=12
+  \pgfmanualentryheadline{{\ttfamily\declare{/zx/wires definition/horizontal |--}}\hfill(style, no default)}%
+  \pgfmanualpdflabel[\catcode`\|=12 ]{horizontal |--}{}
+  % the space after \textt is important or we get two different sections
+  % the 2 is just a random char since | does not work (the syntax is "stuff to group@actual text to print" as
+  % I understand)
+  \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!horizontal 2--@\texttt {horizontal \protect\pgfmanualbar--}}
+  \pgfmanualentryheadline{{\ttfamily\declare{/zx/wires definition/horizontal --|}}\hfill(style, no default)}%
+  \pgfmanualpdflabel[\catcode`\|=12 ]{horizontal --|}{}
+  \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!horizontal --2@\texttt {horizontal --\protect\pgfmanualbar}}
+  \pgfmanualentryheadline{{\ttfamily\declare{/zx/wires definition/vertical |--}}\hfill(style, no default)}%
+  \pgfmanualpdflabel[\catcode`\|=12 ]{vertical |--}{}
+  % the space after \textt is important or we get two different sections
+  % the 2 is just a random char since | does not work (the syntax is "stuff to group@actual text to print" as
+  % I understand)
+  \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!vertical 2--@\texttt {vertical \protect\pgfmanualbar--}}
+  \pgfmanualentryheadline{{\ttfamily\declare{/zx/wires definition/vertical --|}}\hfill(style, no default)}%
+  \pgfmanualpdflabel[\catcode`\|=12 ]{vertical --|}{}
+  \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!vertical --2@\texttt {vertical --\protect\pgfmanualbar}}
+  \makeatother
+  \pgfmanualbody
+Like \texttt{--\textbar} \texttt{\textbar--} except that it only keeps the horizontal/vertical part. This is mostly useful when you want an horizontal/vertical wire starting/ending at a point without having to bother about shifting the other point to maintain horizontality:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \rar[horizontal |--, end subnode=A] \rar[horizontal |--, end subnode=B] &
+  \node[circle,fill=blue,zx subnode=A,yshift=2mm]{a}; \node[circle,fill=green,zx subnode=B,yshift=-2mm]{b};
+  \rar[horizontal --|, start subnode=A] \rar[horizontal --|, start subnode=B] &
+\end{ZX} and %
+\begin{ZX}
+  \dar[vertical --|, end subnode=A]
+  \dar[vertical --|, end subnode=B] \\
+  \node[circle,fill=blue,zx subnode=A,xshift=-2mm]{a};
+  \node[circle,fill=green,zx subnode=B,xshift=2mm]{b};
+  \dar[vertical |--, start subnode=A] \dar[vertical |--, start subnode=B] \\
+\end{ZX}
+\end{codeexample}
+}
+\end{pgfmanualentry}
+}
 
 \begin{pgfmanualentry}
   \makeatletter
