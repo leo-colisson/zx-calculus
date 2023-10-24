@@ -2640,16 +2640,23 @@
   },
   zx at origin/.style={at={(0,0)}},
   zx subnode/.code={
-    \ifdefined\zxCurrentDiagram%
-      \ifdefined\zxOriginalRow%
-        \tikzset{alias=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
-        % \tikzset{name=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
-      \else%
-        \tikzset{alias=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
-        % \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
-      \fi%
+    % we forbid empty subnode as otherwise it will be equivalent to "zx main node" due to the way we handle subnodes for now.
+    % and most of the time when it is empty it just means that the user does not want to set a subnode.
+    % test if empty: https://tex.stackexchange.com/questions/53068/how-to-check-if-a-macro-value-is-empty-or-will-not-create-text-with-plain-tex-co
+    \if\relax\detokenize{#1}\relax%
+      \message{Empty subnode name}%
     \else%
-      \message{Warning: you or outside of a tikzcd environment, so you will not be able to implement subnodes for now. But you might want to try to define zxCurrentDiagram, pgfmatrixcurrentrow and pgfmatrixcurrentcolumn yourself, you might be lucky.}%
+      \ifdefined\zxCurrentDiagram%
+        \ifdefined\zxOriginalRow%
+          \tikzset{alias=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
+          % \tikzset{name=\zxCurrentDiagram-\zxOriginalRow-\zxOriginalCol#1}%
+        \else%
+          \tikzset{alias=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
+          % \tikzset{name=\zxCurrentDiagram-\the\pgfmatrixcurrentrow-\the\pgfmatrixcurrentcolumn#1}%
+        \fi%
+      \else%
+        \message{Warning: you or outside of a tikzcd environment, so you will not be able to implement subnodes for now. But you might want to try to define zxCurrentDiagram, pgfmatrixcurrentrow and pgfmatrixcurrentcolumn yourself, you might be lucky.}%
+      \fi%
     \fi%
   },
   zx independent subnode/.style={
