@@ -1623,9 +1623,9 @@ This is useful if you wish to typeset a block that must be wrapped inside a mini
 \begin{pgfmanualentry}
   \extractcommand\arrow\opt{\oarg{options}}\@@
   \extractcommand\ar\opt{\oarg{options}}\@@
-  \extractcommand\wire\marg{options}\@@
+  \extractcommand\zxWire\marg{options}\@@
   \pgfmanualbody
-  These synonym commands (actually coming from |tikz-cd|, except for the last |\wire| that is introduced in this library in 2023-10-03 for readability, note that |\wire| additionally adds by default a |r| to go right) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down). It's also possible to specify a node alias as a source or destination as shown below.
+  These synonym commands (actually coming from |tikz-cd|, except for the last |\zxWire| that is introduced in this library in 2023-10-03 for readability, note that |\zxWire| additionally adds by default a |r| to go right) are used to draw wires between nodes. We refer to |tikz-cd| for an in-depth documentation, but what is important for our purpose is that the direction of the wires can be specified in the \meta{options} using a string of letters |r| (right), |l| (left), |u| (up), |d| (down). It's also possible to specify a node alias as a source or destination as shown below.
 \begin{codeexample}[]
 \zx{\zxZ{} \ar[r] & \zxX{}} = \zx{\zxX{} \arrow[rd] \\ & \zxZ{}}
 \end{codeexample}
@@ -1642,11 +1642,11 @@ This is useful if you wish to typeset a block that must be wrapped inside a mini
 \end{ZX}
 \end{codeexample}
 }
-The |\wire| can be used as follows:
+The |\zxWire| can be used as follows:
 \begin{codeexample}[width=0pt]
 \begin{ZX}[circuit, row sep={.6cm,between origins}]
-\wire{} & \zxCross{} \wire{} \wire{d} & \\
-\wire{} & \zxCross{} \wire{}          & 
+\zxWire{} & \zxCross{} \zxWire{} \zxWire{d} & \\
+\zxWire{} & \zxCross{} \zxWire{}          & 
 \end{ZX}
 \end{codeexample}
 \end{pgfmanualentry}
@@ -3542,8 +3542,10 @@ To use it, first install |robust-externalize| by copy/pasting robust-externalize
 \usepackage{robust-externalize}
 \robExtConfigure{
   % We create a new preset for zx pictures
-  ZX/.style={
+  new preset={ZX}{
     latex, % we inherit from the latex preset
+    % make sure to use the same font as the document, or the equations will not be properly aligned
+    add to latex options={11pt},
     add to preamble={  % we make sure the zx library is loaded when building cached images
       \usepackage{amsmath}
       \usepackage{zx-calculus}

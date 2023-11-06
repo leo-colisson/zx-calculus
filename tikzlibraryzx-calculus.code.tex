@@ -30,7 +30,7 @@
 \RequirePackage{xstring} % For \IfInteger
 \RequirePackage{varwidth} % For varwidth
 
-\usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections,fit}
+\usetikzlibrary{cd,backgrounds,positioning,shapes,calc,intersections,fit,decorations.pathreplacing}
 % Declare layers.
 \pgfdeclarelayer{background} % Fox boxes using "fit" to group parts of the graph.
 \pgfdeclarelayer{belownodelayer} % For nodes that always want to stay below any arrow...
@@ -324,7 +324,7 @@
 %%%% For readability
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\NewExpandableDocumentCommand{\wire}{m}{
+\NewExpandableDocumentCommand{\zxWire}{m}{
   \arrow[r,#1]
 }
 
@@ -2977,11 +2977,11 @@
   \end{tikzpicture}%
 }
 
-\NewDocumentEnvironment{ZXExt}{O{}O{}O{}+b}{%
+\NewDocumentEnvironment{ZXExt}{O{}O{}O{}b}{%
   \zxExt[#1][#2][#2]{#4}%
 }{}%
 
-\NewDocumentEnvironment{ZX}{O{}O{}O{}+b}{%
+\NewDocumentEnvironment{ZX}{O{}O{}O{}b}{%
   \zx[#1][#2][#3]{#4}%
 }{}
 
