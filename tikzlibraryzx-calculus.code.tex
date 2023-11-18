@@ -3250,7 +3250,8 @@
   % \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{t.t-t'O{}O{}m}{%
   %   |[#1={pic text={##6}, ##4}, ##5]|%
   % }%
-  \ExpandArgs{c}\NewExpandableDocumentCommand{zx#1}{O{}O{}t.t-t't/t*e_m}{%
+  % Actually ExpandArgs is not available before ~2023? maybe, so let’s use expandafter
+  \expandafter\NewExpandableDocumentCommand\csname zx#1\endcsname{O{}O{}t.t-t't/t*e_m}{%
     \node[zx main node, #1={
       pic text={##9},
       %% The alias=… should rather be called on the second element. But it's quite handy to write it here, so here we go:
