@@ -2082,7 +2082,7 @@
         \pgfmathtruncatemacro{\zx@first@index}{floor(##1)}%
         \pgfmathtruncatemacro{\zx@second@index}{floor(##1)+1}%
         \pgfmathsetmacro{\zx@percent}{##1-floor(##1)}%
-        \pgfkeysalso{math baseline/.expanded={$(\zxCurrentDiagram-\zx@first@index-1)!\zx@percent!(\zxCurrentDiagram-\zx@second@index-1)$}}% 
+        \pgfkeysalso{math baseline/.expanded={$(\noexpand\zxCurrentDiagram-\zx@first@index-1)!\zx@percent!(\noexpand\zxCurrentDiagram-\zx@second@index-1)$}}% 
       }%
     },
     math baseline row/.default={1},
