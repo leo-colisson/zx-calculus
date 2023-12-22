@@ -2691,7 +2691,7 @@
 
 % \zxExecuteAtEndPicture{\node{A};} will execute \node{A}; at the end of the picture (or rather after the draw of the matrix, but before the draw of the wires)
 \NewExpandableDocumentCommand{\zxExecuteAtEndPicture}{m}{%
-  \def\zx@tmp@args{#1}%
+  \edef\zx@tmp@args{\unexpanded{#1}}%
   \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@before@paths@hook{%
       % We give random value just to avoid having errors when it is not yet defined, but you should always specify the
       % to and from.
@@ -2707,7 +2707,7 @@
 }
 
 \NewExpandableDocumentCommand{\zxExecuteWhenDrawingArrows}{m}{%
-  \def\zx@tmp@args{#1}%
+  \edef\zx@tmp@args{\unexpanded{#1}}%
   \edef\zx@tmp{\noexpand\pgfutil@g@addto@macro\noexpand\tikzcd@savedpaths{%
         \noexpand\def\noexpand\zxOriginalRow{\the\pgfmatrixcurrentrow}%
         \noexpand\def\noexpand\zxOriginalCol{\the\pgfmatrixcurrentcolumn}%
@@ -2841,7 +2841,7 @@
     \draw[/zx/slice line style,#2]
     (\tikzcdmatrixname.north-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!.5!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
     -- (\tikzcdmatrixname.south-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!.5!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
-    node[rotated/.style={anchor=south west,yshift=-.5ex,rotate=####1},rotated/.default=30, /zx/slice label style,#1]{#3};
+    node[rotated/.style={anchor=south west,yshift=-.5ex,rotate=##1},rotated/.default=30, /zx/slice label style,#1]{#3};
   }
 }
 
@@ -3826,6 +3826,14 @@
   },
 }
 
+\def\zx@call@enlarge@brace#1{
+  \ifnum#1=1%
+    \pgfkeysalso{enlarge brace={\zxDefaultEnlargeBraceOne}}%
+  \else%
+    \pgfkeysalso{enlarge brace={\zxDefaultEnlargeBraceMulti}}%
+  \fi%  
+}
+
 \NewExpandableDocumentCommand{\zxInput}{O{}m}{%
   \zxExecuteAtEndPicture{\node[/zx/input style,#1] at (\zxGetNameRelativeNode{0}{0}){$#2$};}%
 }
@@ -3859,6 +3867,11 @@
       from=\zxGetNameRelativeNode{0}{0},
       to=\zxGetNameRelativeNodeStartOne{#3}{1},
       /zx/input multi style/.try,
+      enlarge brace/.style={
+        start anchor={[yshift=####1]},  
+        end anchor={[yshift=-####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/input multi label style, #2},
       ]{}
@@ -3875,11 +3888,18 @@
 
 % https://tex.stackexchange.com/questions/696958/simple-way-to-specify-a-pass-a-style-with-syntax-my-style-foo/697043
 %
+\def\zxDefaultEnlargeBraceMulti{.75mm}
+\def\zxDefaultEnlargeBraceOne{2mm}
 \NewExpandableDocumentCommand{\zxOutputMulti}{O{}O{}mm}{%
   \zxExecuteWhenDrawingArrows{%
     \zxArrowNow[
       from=\zxGetNameRelativeNode{0}{0},
       to=\zxGetNameRelativeNodeStartOne{#3}{1},
+      enlarge brace/.style={
+        start anchor={[yshift=####1]},  
+        end anchor={[yshift=-####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       /zx/output multi style/.try,
       #1,
       "#4" {/zx/output multi label style, #2},
@@ -3906,6 +3926,11 @@
       from=\zxGetNameRelativeNode{0}{0}.west,
       to=\zxGetNameRelativeNodeStartOne{#3}{1}.west,
       /zx/gate input multi style/.try,
+      enlarge brace/.style={
+        start anchor={[yshift=####1]},  
+        end anchor={[yshift=-####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/gate input multi label style, #2},
       ]{}
@@ -3932,6 +3957,11 @@
       from=\zxGetNameRelativeNode{0}{0}.east,
       to=\zxGetNameRelativeNodeStartOne{#3}{1}.east,
       /zx/gate output multi style/.try,
+      enlarge brace/.style={
+        start anchor={[yshift=####1]},  
+        end anchor={[yshift=-####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/gate output multi label style, #2},
       ]{}
@@ -4010,6 +4040,11 @@
       to=\zxGetNameRelativeNodeStartOne{1}{2},
       % to=\zxGetNameRelativeNodeStartOne{1}{#3},
       /zx/vertical input multi style/.try,
+      enlarge brace/.style={
+        start anchor={[xshift=-####1]},  
+        end anchor={[xshift=####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/vertical input multi label style, #2},
       ]{}
@@ -4032,6 +4067,11 @@
       from=\zxGetNameRelativeNode{0}{0},
       to=\zxGetNameRelativeNodeStartOne{1}{#3},
       /zx/vertical output multi style/.try,
+      enlarge brace/.style={
+        start anchor={[xshift=-####1]},  
+        end anchor={[xshift=####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/vertical output multi label style, #2},
       ]{}
@@ -4057,6 +4097,11 @@
       from=\zxGetNameRelativeNode{0}{0}.south,
       to=\zxGetNameRelativeNodeStartOne{1}{#3}.south,
       /zx/vertical gate input multi style/.try,
+      enlarge brace/.style={
+        start anchor={[xshift=-####1]},  
+        end anchor={[xshift=####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/vertical gate input multi label style, #2},
       ]{}
@@ -4083,12 +4128,16 @@
       from=\zxGetNameRelativeNode{0}{0}.north,
       to=\zxGetNameRelativeNodeStartOne{1}{#3}.north,
       /zx/vertical gate output multi style/.try,
+      enlarge brace/.style={
+        start anchor={[xshift=-####1]},  
+        end anchor={[xshift=####1]},  
+      },
+      /utils/exec={\zx@call@enlarge@brace{#3}},
       #1,
       "#4" {/zx/vertical gate output multi label style, #2},
       ]{}
   }%
 }
-
 
 \pgfkeys{
   /zx/vertical gate output style/.style={

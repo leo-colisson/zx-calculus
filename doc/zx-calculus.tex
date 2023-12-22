@@ -1431,6 +1431,7 @@ Note that if time is an issue for you, see the section on externalization \cref{
   \extractcommand\zxGateOutputMulti\opt{\oarg{style}}\opt{\oarg{label style}}\marg{nb rows}\marg{text}\@@
   \makeatletter
   \def\extrakeytext{style, }
+  \extractkey/zx/enlarge brace=\marg{+ or - distance}\@nil%
   \extractkey/zx/input style=\marg{style}\@nil%
   \extractkey/zx/output style=\marg{style}\@nil%
   \extractkey/zx/input multi style=\marg{style}\@nil%
@@ -1459,6 +1460,22 @@ Use these functions in order to label the input or outputs of circuits (you can 
 \end{ZX}
 \end{codeexample}
 }
+
+You can enlarge or reduce the distance of the braces (set by default to |\zxDefaultEnlargeBraceOne| for braces on single wires, and |\zxDefaultEnlargeBraceMulti| for braces on multiple wires) using |enlarge brace|:
+\begin{codeexample}[width=0pt]
+\begin{ZX}
+  \zxBox[a=A]{A} \rar & \zxOutputMulti{1}{\parbox{2.2cm}{\raggedright\tiny
+      This is the default spacing for one multi-output}} \\
+  \zxBox{B} \rar &  \zxOutputMulti{2}{\parbox{2.2cm}{\raggedright\tiny
+      This is the default spacing for multiple outputs}} \\
+  \zxBox[a=B]{B} \rar & \\
+  \zxBox[a=A]{A} \rar & \zxOutputMulti[enlarge brace=1mm]{1}{\parbox{2.2cm}{\raggedright\tiny
+      You can increase or decrease the spacing}} \\
+  \zxBox{B} \rar &  \zxOutputMulti[enlarge brace=-\zxDefaultEnlargeBraceMulti]{2}{\parbox{2.2cm}{
+      \raggedright\tiny You can increase or decrease the spacing}} \\
+  \zxBox[a=B]{B} \rar & \\
+\end{ZX}
+\end{codeexample}
 
 You can prefix the above commands with |V| (for vertical) when reading from bottom to top (the associated style starts with |vertical|):
 
