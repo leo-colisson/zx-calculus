@@ -234,6 +234,13 @@
     zx set execute at begin node={},
     zx set execute at end node={},
   },
+  %% Like bar/.store in=\foo except that bar={mystyle={fill=#1}} is valid
+  %% as we do not expand the argument
+  /handlers/.style store in/.code={%
+    \pgfkeysalso{%
+      \pgfkeyscurrentpath/.code={\edef#1{\unexpanded{##1}}},%
+    }%
+  },
 }
 
 
@@ -2966,7 +2973,12 @@
 %%%%% We will create an alias \zx, but when we use externalization we
 %%%%% wrap it around a figure.
 \NewDocumentCommand{\zxNoExt}{O{}+m}{% Warning, expl syntax removes space.
-  \tl_rescan:nn { \char_set_catcode_active:N \& } { \begin{ZXNoExt}[#1] #2 \end{ZXNoExt} }
+  %%\tl_rescan:nn { \char_set_catcode_active:N \& } { \begin{ZXNoExt}[#1] #2 \end{ZXNoExt} }
+  %% -> tl_rescan has the issue of forbidding the # character, at least in my experience:
+  % https://tex.stackexchange.com/a/707336/116348
+  \tl_set:Nn \l_tmpa_tl {\begin{ZXNoExt}[#1] #2 \end{ZXNoExt}}
+  \regex_replace_all:nnN { \& } { \cA\& } \l_tmpa_tl
+  \tl_use:N \l_tmpa_tl
 }
 \ExplSyntaxOff
 
@@ -3580,7 +3592,7 @@
     /tikz/cleanup style for measure node/.style={
       a/.style={},%
     },
-    cleanup style for fit node/.store in=\zx@cleanupStyleFitNode,
+    cleanup style for fit node/.style store in=\zx@cleanupStyleFitNode,
     cleanup style for fit node={},
     %%% this part is mostly used by the wrapping macro (e.g. to create \zxGateMulti)
     command to run to measure node/.store in=\zx@commandToRunToMeasureNode,
@@ -3597,15 +3609,15 @@
     %%% and is more fine grained that the above commands
     content inner nodes/.store in=\myContent,
     %%% TODO: in the function: content inner nodes={#4},
-    style inner nodes/.store in=\zx@genericMultiStyle,
+    style inner nodes/.style store in=\zx@genericMultiStyle,
     style inner nodes={},
     % this will be set by fit content not to override the user value
-    before style inner nodes/.store in=\zx@genericBeforeStyleInnerNodes,
+    before style inner nodes/.style store in=\zx@genericBeforeStyleInnerNodes,
     before style inner nodes={},
     % style for the main style
-    main/.store in=\zx@genericMultiMainStyle,
+    main/.style store in=\zx@genericMultiMainStyle,
     main={},
-    main text/.store in=\zx@genericMultiMainTextStyle,
+    main text/.style store in=\zx@genericMultiMainTextStyle,
     main text={},
     original content/.store in=\zx@GenericMultiOriginalContent,
     % Run additional code after the last \node

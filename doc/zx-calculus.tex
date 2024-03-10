@@ -87,7 +87,7 @@ keys
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2023/09/27+unstable}\\[3mm]
+  {Léo Colisson \quad Version 2.1}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -173,6 +173,67 @@ and create more traditional circuits:
 \end{codeexample}
 }
 
+But this library can be used to create much more complex diagrams, while keeping the matrix easy to read and modify by defining nodes beforehand:
+{\catcode`\|=12 % Ensures | is not anymore \verb|...|
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit, thick lines,zx column sep=6mm,mbr=2,
+    /utils/exec={%
+      \def\FwIfFx{
+        \zxGate[a=fna]{\parbox{1.5cm}{\centering\tiny
+            Forward if $c_i$'s $\neq$ abort and $f(x) = \top$, else $\ket{\bot}^{H}$%
+          }%
+        }
+        \rar[latex-,Bn'Args={H}{pos=.60},thick]
+      }%
+      \def\XiSigma{%
+        \zxGate{\xi_\sigma}
+        \zxContName[orange]{(cR)}{below:$\sigma_M$}
+        \rar[latex-,Bn'Args={H}{pos=.6}, thick]%
+      }%
+      \def\InterfaceParties{%
+        \zxInputMulti{1}{\parbox{1.8cm}{\centering\tiny Interface of honests parties}}
+        \rar[latex-,Bn'Args={H}{pos=.50},thick]%
+      }%
+      \def\Verif{%
+        \zxContName{(fna)(G)}{below:$\mathcal{V}_{\ket{G}}$}%
+      }%
+      \def\G{%
+        \zxGate[a=G]{\ket{G}}
+        \ar[rd,|--,-latex,start anchor={[xshift=1mm]south}, Bn'Args={M}{pos=.80},thick]
+        \ar[ld,|--,-latex,start anchor={[xshift=-1mm]south},Bn'Args={H}{pos=.75},thick]
+        \ar[rrd,'>,start anchor=east, end anchor=north,latex-, "c_i = \bot\text{\tiny\ if abort}"]
+      }%
+      \def\FwIfNoAbort{%
+        \zxGate{\parbox{1.2cm}{\centering\tiny Forward if \\no abort}}
+        \rar[latex-,Bn'Args={H}{pos=.6}, thick]%
+      }%
+      \def\PiH{%
+        \zxGate{\pi_H}
+        \rar[latex-latex]%
+      }%
+      \def\Cr{%
+        \zxGate[a=cR]{\mathcal{R}}
+        \rar[latex-latex]%
+      }
+      \def\MultipleParties{%
+        \zxOutputMulti{1}{\parbox{1.5cm}{\centering\tiny Interface of corrupted parties}}%
+      }%
+      \def\XiH{%
+        \zxGate[a=xi]{\xi_H}
+        \ar[rr,latex-,cl,shift left=-2mm,"{x}" {below}]%
+      }%
+      \def\Filter{%
+        \zxGate{\bot_H}%
+        \ar[to=G,"c_i = 0",-latex]
+      }%
+    },
+    ]
+    \Filter           &         & \Verif & \G &          &              &      &     & \\[\zxZeroRow-1mm]
+    \InterfaceParties & \FwIfFx & \XiH   &    & \XiSigma & \FwIfNoAbort & \PiH & \Cr & \MultipleParties
+  \end{ZX}
+\end{codeexample}
+}
+
 The goal is to provide an alternative to the great |tikzit| package: we wanted a solution that does not require the creation of an additional file, the use of an external software, and which automatically adapts the width of columns and rows depending on the content of the nodes (in |tikzit| one needs to manually tune the position of each node, especially when dealing with large nodes). Our library also provides a default style and tries to separate the content from the style: that way it should be easy to globally change the styling of a given project without redesigning all diagrams. However, it should be fairly easy to combine tikzit and this library: when some diagrams are easier to design in tikzit, then it should be possible to directly load the style of this library inside tikzit.
 
 This library is quite young, so feel free to propose improvements or report issues on \href{https://github.com/leo-colisson/zx-calculus/issues}{\texttt{github.com/leo-colisson/zx-calculus/issues}}. We will of course try to maintain backward compatibility as much as possible, but we can't guarantee at 100\% that small changes (spacing, wire looks\dots{}) won't be made later. In case you want a completely unalterable style, just copy the two files of this library in your project forever (see installation)!
@@ -238,16 +299,55 @@ You may also encounter some shortcuts, like |\rar| instead of |\ar[r]|. Since st
 \end{codeexample}
 
 \alertinfo{
-  \textbf{Tips}: on small diagrams, describing the arrow position using relative position like \texttt{rrb} works really nicely, but on big diagrams that you need to rewrite, it can quickly be hard to manage, as moving a node will break all links to it. While it is possible to specify both |from| and |to| in an absolute way, the experience shows that it is easier to work with a ``semi-relative'' addressing, where only the |to| is specified in an absolute setting, while the |from| is automatically derived from the current position of the arrow. You can use \texttt{a=somename} to give a name for a node (\texttt{a} being the short name of alias).}
+  \textbf{Tips (how to format big diagrams)}: on small diagrams, describing the arrow position using relative position like \texttt{rrb} works really nicely, but on big diagrams that you need to rewrite, it can quickly be hard to manage, as moving a node will break all links to it. While it is possible to specify both |from| and |to| in an absolute way, the experience shows that it is easier to work with a ``semi-relative'' addressing, where only the |to| is specified in an absolute setting, while the |from| is automatically derived from the current position of the arrow. You can use \texttt{a=somename} to give a name for a node (\texttt{a} being the short name of alias).
+  Big diagrams also tend to produce big matrices that do not fit on screen, and are harder to align (for instance emacs will struggle to align automatically the matrix if the nodes also contains |\texttt{\&}| like in matrices), rewrite etc. For this reason, we recommend on big diagrams to define shorter alias before the matrix (just make sure to create them inside the \texttt{ZX} environment via \texttt{/utils/exec} if you plan to be able to easily externalize them):
+}
 
 This way, on non-trivial diagrams, we recommend to format graphs like:
 \begin{codeexample}[]
-\begin{ZX}
-  \zxN{}                                      & \zxZ[a=beta]{\beta} \\
-  \zxZ{\alpha} \ar[to=beta,N] \ar[to=gamma,N] &                     \\
-                                              & \zxZ[a=gamma]{\gamma}
+\begin{ZX}[
+    /utils/exec={
+      \def\Zalpha{
+        \zxZ{\alpha} \ar[to=beta,N] \ar[to=gamma,N]
+      }
+      \def\Zbeta{
+        \zxZ[a=beta]{\beta} \ar[to=gamma,C-]
+      }
+      \def\Zgamma{
+        \zxZ[a=gamma]{\gamma}
+      }
+    },
+  ]    
+          & \Zbeta \\
+  \Zalpha &        \\
+          & \Zgamma
 \end{ZX}
 \end{codeexample}
+This makes it way easier to rewrite as you mostly only need to change the small matrix (and possibly shape of wires):
+\begin{codeexample}[]
+\begin{ZX}[
+    /utils/exec={
+      \def\Zalpha{
+        \zxZ{\alpha} \ar[to=beta,N] \ar[to=gamma,N]
+      }
+      \def\Zbeta{
+        \zxZ[a=beta]{\beta} \ar[to=gamma,C-]
+      }
+      \def\Zgamma{
+        \zxZ[a=gamma]{\gamma}
+      }
+    },
+  ]
+  \Zalpha &        & \Zgamma \\
+          & \Zbeta &         
+\end{ZX}
+\end{codeexample}
+You can of course mix all styles if you find it easier, |\def| and regular nodes and/or arrows, |\ar[rr]|, |\ar[to=foo]|\dots{} Since v2.1, you can also add arguments to def like:
+\begin{verbatim}
+\def\myNode#1#2{\zxX[fill=#1]{#2}}
+\end{verbatim}
+directly in the |/utils/exec| argument, and use later |\myNode{green}{\alpha}|. If you prefer the xparse-style to define functions, make sure to use the exandable variants like |\NewExpandableDocumentCommand{\foo}{m}{\zxX{#1}}|.
+
 Note that you can also set |debug mode| to display the name of the nodes for an easier addressing:
 \begin{codeexample}[]
 \begin{ZX}[debug mode]
@@ -1866,7 +1966,7 @@ Note that the first version of that library (which appeared one week before this
   \index{zx@\texttt {/zx/}!wires definition@\texttt {wires definition/}!vertical --2@\texttt {vertical --\protect\pgfmanualbar}}
   \makeatother
   \pgfmanualbody
-Like \texttt{--\textbar} \texttt{\textbar--} except that it only keeps the horizontal/vertical part. This is mostly useful when you want an horizontal/vertical wire starting/ending at a point without having to bother about shifting the other point to maintain horizontality:
+Like \texttt{--\textbar} \texttt{\textbar--} except that it only keeps the horizontal/vertical part (we also provide shorter alias like \texttt{\textbar--}). This is mostly useful when you want an horizontal/vertical wire starting/ending at a point without having to bother about shifting the other point to maintain horizontality:
 {\catcode`\|=12 % Ensures | is not anymore \verb|...|
 \begin{codeexample}[width=0pt]
 \begin{ZX}
@@ -3414,7 +3514,11 @@ The difference between |\zxSetVariable|, |\zxSetVariableExpandOnce| and |\zxSetV
     content inner nodes=#4,
     a/.store in=\zxGateMultiAlias,
     a=,
-    style inner nodes/.store in=\zxGateMultiStyle,
+    % .style store in is a custom handler we introduce, which
+    % is like .store in but allows the content to have hashes
+    % needed if the style contains something like
+    % style inner nodes={foo/.style={fill=#1,draw=#1!50!black},foo=red}
+    style inner nodes/.style store in=\zxGateMultiStyle,
     style inner nodes={},
     #1,
   }%
@@ -4777,6 +4881,30 @@ I'm very grateful of course to everybody that worked on these amazing field whic
 \section{Changelog}
 
 \begin{itemize}
+\item v2.1 (09/03/2024):
+  \begin{itemize}
+  \item Fix bug with arguments impossible:
+    {\catcode`\|=12 % Ensures | is not anymore \verb|...|
+    \begin{codeexample}[vbox]
+      \begin{ZX}[
+          /utils/exec={
+            \def\foo#1{
+              \node[fill=#1,inner sep=2pt,rounded corners,alias=foo]{\text{Hey #1!}};
+              \node[fill=#1!50!black,circle,inner sep=1pt] at (foo.north west) {};
+            }
+          }
+        ]
+        \foo{green} & \foo{red} & |[foo/.style={color=#1}, foo=red]| Hey
+      \end{ZX}
+    \end{codeexample}}
+  \end{itemize}
+\item v2.0 (22/12/2023, now using semantic versioning):
+  \begin{itemize}
+  \item Fix bugs with baseline like |mbr=1.5|
+  \item Fix bugs related to bracemulti (now can use multiple wires)
+  \item Other bug fixes
+  \item Add new line connection \texttt{--\textbar}, \texttt{h--\textbar} etc.
+  \end{itemize}
 \item 2023/09/26:
   Many updates in the past months:
   \begin{itemize}
@@ -4786,7 +4914,6 @@ I'm very grateful of course to everybody that worked on these amazing field whic
   \item updated the doc to use the latest version of robust-externalize that is much simpler to use now\dots
   \item Some nodes can also now be usable outside tikzcd, but I've not tried (I should provide more options for this).
   \item Group gates
-  \item 
   \end{itemize}
 \item 2022/02/09:
   \begin{itemize}
