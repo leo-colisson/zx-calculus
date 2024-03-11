@@ -87,7 +87,7 @@ keys
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2.1}\\[3mm]
+  {Léo Colisson \quad Version 2.2}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -1620,8 +1620,8 @@ Note that these labels are not taken into account when computing the width of th
 
 \begin{pgfmanualentry}
   \def\extrakeytext{style, }
-  \extractcommand\zxSlice\opt{\oarg{style label}}\opt{\oarg{style line}}\marg{text}\@@
-  \extractcommand\zxVSlice\opt{\oarg{style label}}\opt{\oarg{style line}}\marg{text}\@@
+  \extractcommand\zxSlice\opt{\oarg{style label}}\opt{\oarg{style line}}\opt{position percent}\marg{text}\@@
+  \extractcommand\zxVSlice\opt{\oarg{style label}}\opt{\oarg{style line}}\opt{position percent}\marg{text}\@@
   \makeatletter
   \def\extrakeytext{style, }
   \extractkey/zx/slice label style=\marg{style}\@nil%
@@ -1645,6 +1645,13 @@ We also provide a style |rotated=angle| to rotate the label (the default angle i
        & \zxGate{Y} \zxSlice[rotated]{Second part} \rar & \zxGate{\zxMeter{}} \\
   \rar & \zxGate{H} \rar                       & \zxGate{Y} \rar & 
 \end{ZX}
+\end{codeexample}
+You can change the position using the 3rd optional argument (default to .5):
+\begin{codeexample}[width=0pt]
+  \begin{ZX}[circuit]
+    \rar & \zxGate{X} \zxSlice[][][.2]{1} \rar & \zxGate{Y} \zxSlice[][][.8]{Part\\2} \rar & \zxGate{\zxMeter{}} \\
+    \rar & \zxGate{H} \rar                       & \zxGate{Y} \rar & 
+  \end{ZX}
 \end{codeexample}
 You can also customize it as you want using the two optional arguments (for the label first and for the line after):
 \begin{codeexample}[width=0pt]
@@ -4881,6 +4888,10 @@ I'm very grateful of course to everybody that worked on these amazing field whic
 \section{Changelog}
 
 \begin{itemize}
+\item v2.2 (11/03/2024):
+  \begin{itemize}
+  \item Added slice with percentage position
+  \end{itemize}
 \item v2.1 (09/03/2024):
   \begin{itemize}
   \item Fix bug with arguments impossible:

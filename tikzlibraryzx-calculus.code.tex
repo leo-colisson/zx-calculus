@@ -2842,12 +2842,12 @@
   },
 }
 
-\NewDocumentCommand{\zxSlice}{O{}O{}m}{%
+\NewDocumentCommand{\zxSlice}{O{}O{}O{.5}m}{%
   \zxExecuteAtEndPicture{
     \draw[/zx/slice line style,#2]
-    (\tikzcdmatrixname.north-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!.5!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
-    -- (\tikzcdmatrixname.south-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!.5!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
-    node[rotated/.style={anchor=south west,yshift=-.5ex,rotate=##1},rotated/.default=30, /zx/slice label style,#1]{#3};
+    (\tikzcdmatrixname.north-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!#3!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
+    -- (\tikzcdmatrixname.south-|{$(\zxCurrentDiagram-1-\zxOriginalCol)!#3!(\zxCurrentDiagram-1-\the\numexpr\zxOriginalCol+1\relax)$})
+    node[rotated/.style={anchor=south west,yshift=-.5ex,rotate=##1},rotated/.default=30, /zx/slice label style,#1]{#4};
   }
 }
 
