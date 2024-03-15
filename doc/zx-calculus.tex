@@ -87,7 +87,7 @@ keys
   {\Large\bfseries ZX-calculus with \tikzname}
 
   \vspace{1em}
-  {Léo Colisson \quad Version 2.2}\\[3mm]
+  {Léo Colisson \quad Version 2.3}\\[3mm]
   {\href{https://github.com/leo-colisson/zx-calculus}{\texttt{github.com/leo-colisson/zx-calculus}}}
 \end{center}
 
@@ -240,7 +240,13 @@ This library is quite young, so feel free to propose improvements or report issu
 
 \section{Installation}
 
-If your CTAN distribution is recent enough, you can directly insert in your file:
+\textbf{WARNING:} the versions distributed in the released TexLive 2024 are either too old (the interface has been importantly improved recently), or cannot be loaded due to a bug (you will get an error |ERROR: Missing = inserted for \ifnum| due to a misunderstanding of how to handle \mylink{https://tex.stackexchange.com/questions/713222/providespackage-with-semantic-versionning}{semantic versioning in \LaTeX{}}). CTAN contains now the good version, so you should be able to upgrade your package with |tlmgr|, but it might still be safer to manually install the package (for instance if you plan to submit your article to the arXiv) before TexLive 2025 is out and widely deployed. To manually install this library, simply download (you have a button ``Download raw file'') and copy these two files at the root of your project:
+\begin{itemize}
+\item \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/tikzlibraryzx-calculus.code.tex}{\texttt{tikzlibraryzx-calculus.code.tex}}
+\item \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/zx-calculus.sty}{\texttt{zx-calculus.sty}}
+\end{itemize}
+
+Then, you can insert in your file:
 % verse indents stuff, index adds to the index of command at the end of the file, || is a shortcut of \verb||
 \begin{verse}
   \index{zx@\protect\texttt{zx-calculus} package}%
@@ -253,7 +259,6 @@ or load \tikzname{} and then use:
    \index{Libraries!cd@\protect\texttt{zx-calculus}}%
    |\usetikzlibrary{zx-calculus}|%
 \end{verse}
-If this library is not yet packaged into CTAN (which is very likely in 2021), you must first download \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/tikzlibraryzx-calculus.code.tex}{\texttt{tikzlibraryzx-calculus.code.tex}} and \mylink{https://github.com/leo-colisson/zx-calculus/blob/main/zx-calculus.sty}{\texttt{zx-calculus.sty}} (right-click on ``Raw'' and ``Save link as'') and save them at the root of your project.
 
 \section{Quickstart}
 
@@ -4888,6 +4893,10 @@ I'm very grateful of course to everybody that worked on these amazing field whic
 \section{Changelog}
 
 \begin{itemize}
+\item v2.3 (2024/03/15):
+  \begin{itemize}
+  \item Fix bug that forbids package to load with error |ERROR: Missing = inserted for \ifnum|: \url{https://tex.stackexchange.com/questions/713222/providespackage-with-semantic-versionning}
+  \end{itemize}
 \item v2.2 (11/03/2024):
   \begin{itemize}
   \item Added slice with percentage position
